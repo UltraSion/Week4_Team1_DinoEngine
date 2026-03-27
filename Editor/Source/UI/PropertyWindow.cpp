@@ -7,6 +7,7 @@
 #include "Component/StaticMeshComponent.h"
 #include "Actor/StaticMeshActor.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/MaterialManager.h"
 #include "Core/Paths.h"
 #include <filesystem>
 void FPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation,
@@ -184,37 +185,117 @@ void FPropertyWindow::Render(FCore* Core)
 						}
 						bScanned = true;
 					}
-
+					// ── 텍스처 파일 목록 스캔 (최초 1회) ──
+					static TArray<FString> TextureFiles;
+					static bool bTextureScanned = false;
+					if (!bTextureScanned)
+					{
+						namespace fs = std::filesystem;
+						auto MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
+						if (fs::exists(MeshDir))
+						{
+							for (const auto& entry : fs::directory_iterator(MeshDir))
+							{
+								if (entry.is_regular_file())
+								{
+									auto ext = entry.path().extension().string();
+									if (ext == ".png" || ext == ".PNG" || ext == ".jpg" || ext == ".jpeg")
+									{
+										auto Rel = fs::relative(entry.path(), FPaths::ProjectRoot());
+										TextureFiles.push_back(Rel.generic_string());
+									}
+								}
+							}
+						}
+						bTextureScanned = true;
+					}
 					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(SelectedActor);
 					UStaticMeshComponent* SMComp = SMActor->GetStaticMeshComponent();
 					FString CurrentAsset = SMComp ? SMComp->GetStaticMeshAsset() : "";
 					ImGui::Text("Current: %s", CurrentAsset.empty() ? "None" : CurrentAsset.c_str());
-
-					if (!MeshFiles.empty())
 					{
-						for (int i = 0; i < (int)MeshFiles.size(); ++i)
-							if (MeshFiles[i] == CurrentAsset) SelectedMeshIndex = i;
-
-						auto Getter = [](void* data, int idx, const char** out) -> bool {
-							auto* files = static_cast<TArray<FString>*>(data);
-							if (idx < 0 || idx >= (int)files->size()) return false;
-							*out = (*files)[idx].c_str();
-							return true;
-						};
-
 						std::vector<const char*> Items;
+						Items.push_back("None");
 						for (const auto& F : MeshFiles)
 							Items.push_back(F.c_str());
 
+						// 현재 선택 동기화
+						SelectedMeshIndex = 0; // None
+						for (int i = 0; i < (int)MeshFiles.size(); ++i)
+						{
+							if (MeshFiles[i] == CurrentAsset)
+							{
+								SelectedMeshIndex = i + 1; // +1 because None is at 0
+								break;
+							}
+						}
+
 						if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
 						{
-							if (Core)
+							if (Core && SelectedMeshIndex > 0)
 							{
 								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
-								SMActor->LoadStaticMesh(Device, MeshFiles[SelectedMeshIndex]);
+								SMActor->LoadStaticMesh(Device, MeshFiles[SelectedMeshIndex - 1]);
 							}
 						}
 					}
+					if (!CurrentAsset.empty())
+					{
+						static TArray<FString> MaterialNames;
+						static bool bMatScanned = false;
+						if (!bMatScanned)
+						{
+							namespace fs = std::filesystem;
+							auto MatDir = FPaths::ProjectRoot() / "Assets" / "Materials";
+							if (fs::exists(MatDir))
+							{
+								for (const auto& entry : fs::directory_iterator(MatDir))
+								{
+									if (entry.is_regular_file() && entry.path().extension() == ".json")
+									{
+										FString Name = entry.path().stem().string();
+										MaterialNames.push_back(Name);
+									}
+								}
+							}
+							bMatScanned = true;
+						}
+
+						std::vector<const char*> MatItems;
+						MatItems.push_back("Default");
+						for (const auto& N : MaterialNames)
+							MatItems.push_back(N.c_str());
+
+						if (ImGui::Combo("Material", &SelectedMaterialIndex, MatItems.data(), (int)MatItems.size()))
+						{
+							if (Core && SMComp && SMComp->GetMesh() && SelectedMaterialIndex > 0)
+							{
+								FString MatName = MaterialNames[SelectedMaterialIndex - 1];
+								auto Mat = FMaterialManager::Get().FindByName(MatName);
+								if (Mat)
+								{
+									for (uint32 i = 0; i < SMComp->GetNumMaterials(); ++i)
+										SMComp->SetMaterial(i, Mat.get());
+								}
+							}
+						}
+
+						// ── Texture 콤보 ──
+						std::vector<const char*> TexItems;
+						TexItems.push_back("None");
+						for (const auto& T : TextureFiles)
+							TexItems.push_back(T.c_str());
+
+						if (ImGui::Combo("Texture", &SelectedTextureIndex, TexItems.data(), (int)TexItems.size()))
+						{
+							if (Core && SMComp && SelectedTextureIndex > 0)
+							{
+								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+								SMComp->LoadTexture(Device, TextureFiles[SelectedTextureIndex - 1]);
+							}
+						}
+					}
+
 					ImGui::Unindent(8.0f);
 				}
 			}

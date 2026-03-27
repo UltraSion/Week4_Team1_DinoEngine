@@ -27,6 +27,9 @@ private:
 	FVector EditRotation = { 0.0f, 0.0f, 0.0f };
 	FVector EditScale = { 1.0f, 1.0f, 1.0f };
 	char    ActorNameBuf[128] = "None";
-	int SelectedMeshIndex = 0;
+private:
+	int SelectedMeshIndex = -1;
+	int SelectedTextureIndex = -1;
+	int SelectedMaterialIndex = -1;
 	bool    bModified = false;
 };

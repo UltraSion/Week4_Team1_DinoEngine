@@ -11,7 +11,7 @@ public:
 	void LoadStaticMesh(ID3D11Device* Device, const FString& FilePath);
 	FString GetStaticMeshAsset() const;
 
-private:
 	void LoadTexture(ID3D11Device* Device, const FString& FilePath);
+private:
 	std::unique_ptr<FMaterial> DynamicMaterialOwner;
 };
