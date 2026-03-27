@@ -36,7 +36,6 @@ private:
 	FInputAction MoveUpAction{ "MoveUp",      EInputActionValueType::Float };
 	FInputAction LookXAction{ "LookX",       EInputActionValueType::Float };
 	FInputAction LookYAction{ "LookY",       EInputActionValueType::Float };
-	FInputAction LookWheelAction{ "LookWheel", EInputActionValueType::Float };
 
 	float CurrentDeltaTime = 0.0f; // 콜백에서 DeltaTime 쓰기 위해 보관
 
