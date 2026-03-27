@@ -150,6 +150,7 @@
     <ClCompile Include="Source\Component\CameraComponent.cpp" />
     <ClCompile Include="Source\Component\CubeComponent.cpp" />
     <ClCompile Include="Source\Component\LineBatchComponent.cpp" />
+    <ClCompile Include="Source\Component\MeshComponent.cpp" />
     <ClCompile Include="Source\Component\ObjComponent.cpp" />
     <ClCompile Include="Source\Component\PlaneComponent.cpp" />
     <ClCompile Include="Source\Component\PrimitiveComponent.cpp" />

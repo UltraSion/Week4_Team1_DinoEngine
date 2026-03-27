@@ -59,9 +59,13 @@ std::shared_ptr<FStaticMesh> FStaticMesh::GetCached(const FString& Key)
 
 void FStaticMesh::ClearCache()
 {
+	Cache.clear();
 }
 
 TArray<FString> FStaticMesh::GetCachedKeys()
 {
-	return TArray<FString>();
+	TArray<FString> Keys;
+	for (const auto& Pair : Cache)
+		Keys.push_back(Pair.first);
+	return Keys;
 }

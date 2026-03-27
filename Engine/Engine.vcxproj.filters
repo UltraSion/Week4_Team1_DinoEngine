@@ -310,6 +310,7 @@
     <ClCompile Include="Source\Actor\SkySphereActor.cpp" />
     <ClCompile Include="Source\Mesh\Mesh.cpp" />
     <ClCompile Include="Source\Mesh\StaticMesh.cpp" />
+    <ClCompile Include="Source\Component\MeshComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">

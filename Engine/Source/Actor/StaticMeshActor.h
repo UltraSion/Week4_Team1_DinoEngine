@@ -9,4 +9,4 @@ class ENGINE_API AStaticMeshActor : public AActor
 {
 public:
 	DECLARE_RTTI(AStaticMeshActor, AActor)
-}
+};
