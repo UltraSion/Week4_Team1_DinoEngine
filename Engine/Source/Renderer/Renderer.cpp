@@ -425,11 +425,30 @@ void FRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
 		}
 
 		UpdateObjectConstantBuffer(Cmd.WorldMatrix);
-		//Todo Section Rendering
-		if (!Cmd.MeshData->Indices.empty())
-			DeviceContext->DrawIndexed(static_cast<UINT>(Cmd.MeshData->Indices.size()), 0, 0);
-		else if (!Cmd.MeshData->Vertices.empty())
-			DeviceContext->Draw(static_cast<UINT>(Cmd.MeshData->Vertices.size()), 0);
+
+		if (Cmd.MeshData)
+		{
+			if (Cmd.MeshData != CurrentMesh)
+			{
+				Cmd.MeshData->Bind(DeviceContext);
+				CurrentMesh = Cmd.MeshData;
+			}
+
+			D3D11_PRIMITIVE_TOPOLOGY DesiredTopology = (D3D11_PRIMITIVE_TOPOLOGY)CurrentMesh->Topology;
+			if (DesiredTopology != CurrentMeshTopology)
+			{
+				DeviceContext->IASetPrimitiveTopology(DesiredTopology);
+				CurrentMeshTopology = DesiredTopology;
+			}
+
+			UpdateObjectConstantBuffer(Cmd.WorldMatrix);
+
+			if (!Cmd.MeshData->Indices.empty())
+				DeviceContext->DrawIndexed(static_cast<UINT>(Cmd.MeshData->Indices.size()), 0, 0);
+			else if (!Cmd.MeshData->Vertices.empty())
+				DeviceContext->Draw(static_cast<UINT>(Cmd.MeshData->Vertices.size()), 0);
+		}
+
 	}
 }
 

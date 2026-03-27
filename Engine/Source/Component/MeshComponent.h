@@ -1,5 +1,5 @@
 #pragma once
-#include "SceneComponent.h"
+#include "PrimitiveComponent.h"
 #include "Mesh/Mesh.h"
 #include "Math/Frustum.h"
 #include <memory>
@@ -7,9 +7,9 @@ class FMaterial;
 struct ID3D11Device;
 
 struct FBoxSphereBounds;
-class ENGINE_API UMeshComponent : public USceneComponent
+class ENGINE_API UMeshComponent : public UPrimitiveComponent
 {
-	DECLARE_RTTI(UMeshComponent, USceneComponent)
+	DECLARE_RTTI(UMeshComponent, UPrimitiveComponent)
 
 	std::shared_ptr<FMesh> GetMesh() const { return Mesh; }
 	void SetMesh(const std::shared_ptr<FMesh>& InMesh) { Mesh = InMesh; }

@@ -1,0 +1,12 @@
+{
+  "Name": "M_StaticMesh",
+  "VertexShader": "Engine/Shaders/StaticMeshVertexShader.hlsl",
+  "PixelShader": "Engine/Shaders/StaticMeshPixelShader.hlsl",
+  "ConstantBuffers": [
+    {
+      "Parameters": [
+        { "Name": "ColorTint", "Type": "float4", "Value": [1.0, 1.0, 1.0, 1.0] }
+      ]
+    }
+  ]
+}

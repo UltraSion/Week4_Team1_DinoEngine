@@ -16,7 +16,7 @@ bool FStaticMesh::LoadFromOBJ(const FString& FilePath)
 	}
 	else
 	{
-		CPrimitiveObj Loader(FilePath);
+		FPrimitiveObj Loader(FilePath);
 		MeshData = CPrimitiveBase::GetCached(FilePath);
 		if (!MeshData) return false;
 	}

@@ -6,6 +6,7 @@
 #include "Component/TextComponent.h"
 #include "Component/SceneComponent.h"
 #include "Serializer/Archive.h"
+#include "Component/StaticMeshComponent.h"
 #include "World/Level.h"
 IMPLEMENT_RTTI(AActor, UObject)
 
@@ -198,6 +199,13 @@ void AActor::Serialize(FArchive& Ar)
 				FString PrimFileName = PrimComp->GetPrimitiveFileName();
 				Ar.Serialize("PrimitiveFileName", PrimFileName);
 			}
+		}
+		if (UStaticMeshComponent* Comp = GetComponentByClass<UStaticMeshComponent>())
+		{
+			FString Asset = Comp->GetStaticMeshAsset();
+			Ar.Serialize("ObjStaticMeshAsset", Asset);
+			FString CompType = "StaticMeshComp";
+			Ar.Serialize("Type", CompType);
 		}
 		if (UTextComponent* TC = GetComponentByClass<UTextComponent>())
 		{

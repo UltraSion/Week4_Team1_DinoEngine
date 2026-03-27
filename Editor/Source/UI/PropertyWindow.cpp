@@ -4,6 +4,11 @@
 #include "Component/SubUVComponent.h"
 #include "Component/TextComponent.h"
 #include "Component/UUIDBillboardComponent.h"
+#include "Component/StaticMeshComponent.h"
+#include "Actor/StaticMeshActor.h"
+#include "Renderer/Renderer.h"
+#include "Core/Paths.h"
+#include <filesystem>
 void FPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation,
 	const FVector& Scale, const char* ActorName)
 {
@@ -152,6 +157,66 @@ void FPropertyWindow::Render(FCore* Core)
 					}
 				}
 				ImGui::Unindent(8.0f);
+			}
+			if (SelectedActor && SelectedActor->IsA(AStaticMeshActor::StaticClass()))
+			{
+				if (ImGui::CollapsingHeader("Static Mesh", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::Indent(8.0f);
+
+					// .obj 파일 목록 스캔 (최초 1회)
+					static TArray<FString> MeshFiles;
+					static bool bScanned = false;
+					if (!bScanned)
+					{
+						namespace fs = std::filesystem;
+						auto MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
+						if (fs::exists(MeshDir))
+						{
+							for (const auto& entry : fs::directory_iterator(MeshDir))
+							{
+								if (entry.is_regular_file() && entry.path().extension() == ".obj")
+								{
+									auto Rel = fs::relative(entry.path(), FPaths::ProjectRoot());
+									MeshFiles.push_back(Rel.generic_string());
+								}
+							}
+						}
+						bScanned = true;
+					}
+
+					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(SelectedActor);
+					UStaticMeshComponent* SMComp = SMActor->GetStaticMeshComponent();
+					FString CurrentAsset = SMComp ? SMComp->GetStaticMeshAsset() : "";
+					ImGui::Text("Current: %s", CurrentAsset.empty() ? "None" : CurrentAsset.c_str());
+
+					if (!MeshFiles.empty())
+					{
+						for (int i = 0; i < (int)MeshFiles.size(); ++i)
+							if (MeshFiles[i] == CurrentAsset) SelectedMeshIndex = i;
+
+						auto Getter = [](void* data, int idx, const char** out) -> bool {
+							auto* files = static_cast<TArray<FString>*>(data);
+							if (idx < 0 || idx >= (int)files->size()) return false;
+							*out = (*files)[idx].c_str();
+							return true;
+						};
+
+						std::vector<const char*> Items;
+						for (const auto& F : MeshFiles)
+							Items.push_back(F.c_str());
+
+						if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
+						{
+							if (Core)
+							{
+								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+								SMActor->LoadStaticMesh(Device, MeshFiles[SelectedMeshIndex]);
+							}
+						}
+					}
+					ImGui::Unindent(8.0f);
+				}
 			}
 		}
 	}

@@ -7,7 +7,7 @@
 #include <d3d11.h>
 
 
-IMPLEMENT_RTTI(UMeshComponent, USceneComponent)
+IMPLEMENT_RTTI(UMeshComponent, UPrimitiveComponent)
 FMaterial* UMeshComponent::GetMaterial(uint32 SlotIndex) const
 {
 	if (SlotIndex < OverrideMaterials.size() && OverrideMaterials[SlotIndex])

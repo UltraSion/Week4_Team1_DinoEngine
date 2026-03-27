@@ -20,6 +20,7 @@
 #include "Actor/SkySphereActor.h"
 #include "Controller/EditorViewportController.h"
 #include "Serializer/SceneSerializer.h"
+#include "Actor/StaticMeshActor.h"
 #include <filesystem>
 #include <random>
 #include <chrono>
@@ -192,7 +193,8 @@ void FControlPanelWindow::Render(FCore* Core)
 		ImGui::SeparatorText("Spawn");
 
 		static int32 SpawnTypeIndex = 0;
-		const char* SpawnTypes[] = { "Cube", "Sphere", "Plane", "AttachTest", "SubUV", "Text", "SkySphere" };
+		const char* SpawnTypes[] = { "Cube", "Sphere", "Plane", "AttachTest", "SubUV", "Text", "SkySphere", "StaticMesh" };
+
 
 		ImGui::Combo("Type", &SpawnTypeIndex, SpawnTypes, IM_ARRAYSIZE(SpawnTypes));
 
@@ -255,7 +257,10 @@ void FControlPanelWindow::Render(FCore* Core)
 			{
 				NewActor = Level->SpawnActor<ASkySphereActor>(Name);
 			}
-
+			else if (SpawnTypeIndex == 7)
+			{
+				NewActor = Level->SpawnActor<AStaticMeshActor>(Name);
+			}
 			if (NewActor && !NewActor->IsA<ASkySphereActor>())
 			{
 				Core->SetSelectedActor(NewActor);

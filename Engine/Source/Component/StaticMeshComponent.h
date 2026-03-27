@@ -1,10 +1,10 @@
 #pragma once
 #include"MeshComponent.h"
 
-class ENGINE_API UStaticMeshComp : public UMeshComponent
+class ENGINE_API UStaticMeshComponent : public UMeshComponent
 {
 public:
-	DECLARE_RTTI(UStaticMeshComp, UMeshComponent)
+	DECLARE_RTTI(UStaticMeshComponent, UMeshComponent)
 
 	void Initialize();
 

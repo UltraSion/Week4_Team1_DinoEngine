@@ -15,6 +15,8 @@
 #include "Object/ObjectFactory.h" 
 #include "Serializer/Archive.h"
 #include "Object/Class.h"
+#include "Actor/StaticMeshActor.h"
+#include "Component/StaticMeshComponent.h"
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
@@ -158,7 +160,18 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 				}
 			}
 		}
-
+		if (Value.contains("ObjStaticMeshAsset"))
+		{
+			if (Actor->IsA(AStaticMeshActor::StaticClass()))
+			{
+				const FString MeshAsset = Value["ObjStaticMeshAsset"].get<FString>();
+				if (!MeshAsset.empty())
+				{
+					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(Actor);
+					SMActor->LoadStaticMesh(Device, MeshAsset);
+				}
+			}
+		}
 		++ActorIndex;
 
 	}
