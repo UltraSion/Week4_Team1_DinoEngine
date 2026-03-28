@@ -2,7 +2,6 @@
 
 #include "Core/FEngine.h"
 #include "UI/EditorUI.h"
-#include "UI/PreviewViewportClient.h"
 #include "Controller/EditorViewportController.h"
 
 class AEditorCameraPawn;
@@ -20,6 +19,7 @@ protected:
 	void PreInitialize() override;
 	void PostInitialize() override;
 	void Tick(float DeltaTime) override;
+	void Render() override;
 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
 	std::unique_ptr<FViewportClient> CreateViewportClient() override;
 
@@ -29,8 +29,8 @@ private:
 	void SyncViewportClient();
 
 	FEditorUI EditorUI;
-	std::unique_ptr<FPreviewViewportClient> PreviewViewportClient;
-	TArray<std::unique_ptr<FViewportClient>> AdditionalViewportClients;
-	FEditorViewportController ViewportController;
+	FViewportClient* ActiveViewportClient = nullptr;
+	//TArray<std::unique_ptr<FViewportClient>> AdditionalViewportClients;
+	//FEditorViewportController ViewportController;
 	TArray<AActor*> SeletedActors;
 };

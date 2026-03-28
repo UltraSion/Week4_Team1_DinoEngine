@@ -18,6 +18,7 @@ class AActor;
 class ULevel;
 class ObjectManager;
 class FViewportClient;
+struct FViewportContext;
 
 class ENGINE_API FCore
 {
@@ -37,17 +38,17 @@ public:
 	void Tick(float DeltaTime);
 
 	void ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
-	FRenderer* GetRenderer() const { return Renderer.get(); }
+	//FRenderer* GetRenderer() const { return Renderer.get(); }
 
-	FViewportClient* GetViewportClient() const { return MainViewportClient; }
-	FInputManager* GetInputManager() const { return InputManager; }
+	//FViewportClient* GetViewportClient() const { return MainViewportClient; }
+	//FInputManager* GetInputManager() const { return InputManager; }
 	const FTimer& GetTimer() const { return Timer; }
 
-	void SetViewportClient(FViewportClient* InViewportClient);
-	void AddViewportClient(FViewportClient* InViewportClient);
+	//void SetViewportClient(FViewportClient* InViewportClient);
+	//void AddViewportClient(FViewportClient* InViewportClient);
 
 	void OnResize(int32 Width, int32 Height);
-	FEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
+	//FEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
 	float GetDeltaTime() const { return Timer.GetDeltaTime(); }
 
 	FLevelManager* GetLevelManager() const { return LevelManager.get(); }
@@ -68,24 +69,26 @@ public:
 	UWorld* GetGameWorld() const { return LevelManager->GetGameWorld(); }
 	const FWorldContext* GetActiveWorldContext() const { return LevelManager->GetActiveWorldContext(); }
 
+	//void RenderViewport(TArray<AActor*>& Actors, FViewportContext& ViewportContext);
+	FDebugDrawManager& GetDebugDrawManager() { return DebugDrawManager; }
+
 private:
 	void Input(float DeltaTime);
 	void Physics(float DeltaTime);
 	void GameLogic(float DeltaTime);
-	void Render();
+	//void Render();
 	void LateUpdate(float DeltaTime);
 	void RegisterConsoleVariables();
-	FDebugDrawManager& GetDebugDrawManager() { return DebugDrawManager; }
 
 private:
 	FDebugDrawManager DebugDrawManager;
-	std::unique_ptr<FRenderer> Renderer;
-	FInputManager* InputManager = nullptr;
-	FEnhancedInputManager* EnhancedInput = nullptr;
+	//std::unique_ptr<FRenderer> Renderer;
+	//FInputManager* InputManager = nullptr;
+	//FEnhancedInputManager* EnhancedInput = nullptr;
 
 	ObjectManager* ObjManager = nullptr;
-	FViewportClient* MainViewportClient = nullptr;
-	TArray<FViewportClient*> ViewportClients;
+	//FViewportClient* MainViewportClient = nullptr;
+	//TArray<FViewportClient*> ViewportClients;
 	std::unique_ptr<FLevelManager> LevelManager;
 
 	std::unique_ptr<FPhysicsManager> PhysicsManager;
@@ -96,5 +99,5 @@ private:
 	int32 WindowWidth = 0;
 	int32 WindowHeight = 0;
 
-	FRenderCommandQueue CommandQueue;
+	//FRenderCommandQueue CommandQueue;
 };

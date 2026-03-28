@@ -313,6 +313,8 @@
     <ClCompile Include="Source\Mesh\StaticMesh.cpp" />
     <ClCompile Include="Source\Component\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Actor\StaticMeshActor.cpp" />
+    <ClCompile Include="Source\Core\Viewport.cpp" />
+    <ClCompile Include="Source\Core\ViewportContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">
@@ -645,6 +647,8 @@
     <ClInclude Include="Source\Component\StaticMeshComponent.h" />
     <ClInclude Include="Source\Mesh\Mesh.h" />
     <ClInclude Include="Source\Mesh\StaticMesh.h" />
+    <ClInclude Include="Source\Core\Viewport.h" />
+    <ClInclude Include="Source\Core\ViewportContext.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

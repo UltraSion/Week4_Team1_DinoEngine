@@ -22,9 +22,8 @@ class FEditorViewportClient : public FViewportClient
 public:
 	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors);
 
-	void Attach(FCore* Core, FRenderer* Renderer) override;
-	void Detach(FCore* Core, FRenderer* Renderer) override;
-	void Tick(FCore* Core, float DeltaTime) override;
+	void Attach(FCore* Core) override;
+	void Detach() override;
 	void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
 	EGizmoMode GetGizmoMode() const { return Gizmo.GetMode(); }
 	void SetGizmoMode(EGizmoMode InMode) { Gizmo.SetMode(InMode); }

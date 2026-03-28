@@ -234,7 +234,7 @@ void FPropertyWindow::Render(FCore* Core)
 						{
 							if (Core && SelectedMeshIndex > 0)
 							{
-								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+								ID3D11Device* Device = GRenderer->GetDevice();
 								SMActor->LoadStaticMesh(Device, MeshFiles[SelectedMeshIndex - 1]);
 							}
 						}
@@ -290,7 +290,7 @@ void FPropertyWindow::Render(FCore* Core)
 						{
 							if (Core && SMComp && SelectedTextureIndex > 0)
 							{
-								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+								ID3D11Device* Device = GRenderer->GetDevice();
 								SMComp->LoadTexture(Device, TextureFiles[SelectedTextureIndex - 1]);
 							}
 						}

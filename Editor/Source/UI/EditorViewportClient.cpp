@@ -32,19 +32,19 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 {
 }
 
-void FEditorViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+void FEditorViewportClient::Attach(FCore* Core)
 {
-	if (!Core || !Renderer || !MainWindow)
+	if (!Core || !GRenderer || !MainWindow)
 	{
 		return;
 	}
 
 	EditorUI.Initialize(Core);
 	EditorUI.SetupWindow(MainWindow);
-	EditorUI.AttachToRenderer(Renderer);
+	EditorUI.AttachToRenderer();
 
 	WireFrameMaterial = FMaterialManager::Get().FindByName(WireframeMaterialName);
-	CreateGridResource(Renderer);
+	CreateGridResource(GRenderer);
 }
 
 void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
@@ -100,49 +100,25 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 	}
 }
 
-void FEditorViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+void FEditorViewportClient::Detach()
 {
 	Gizmo.EndDrag();
-	EditorUI.DetachFromRenderer(Renderer);
+	EditorUI.DetachFromRenderer();
 	GridMesh.reset();
 	GridMaterial.reset();
 }
 
-void FEditorViewportClient::Tick(FCore* Core, float DeltaTime)
-{
-	if (!Core)
-	{
-		return;
-	}
-
-	if (ImGui::GetCurrentContext())
-	{
-		const ImGuiIO& IO = ImGui::GetIO();
-		if ((IO.WantCaptureKeyboard || IO.WantCaptureMouse) && !EditorUI.IsViewportInteractive())
-		{
-			return;
-		}
-	}
-
-	if (!EditorUI.IsViewportInteractive())
-	{
-		return;
-	}
-
-	FViewportClient::Tick(Core, DeltaTime);
-}
-
 void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-	if (!Core || !EditorUI.IsViewportInteractive())
-	{
-		return;
-	}
+	//if (!Core || !EditorUI.IsViewportInteractive())
+	//{
+	//	return;
+	//}
 
-	if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse && !EditorUI.IsViewportInteractive())
-	{
-		return;
-	}
+	//if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse && !EditorUI.IsViewportInteractive())
+	//{
+	//	return;
+	//}
 
 	ULevel* Level = ResolveLevel(Core);
 	AActor* SelectedActor = Core->GetSelectedActor();
@@ -151,16 +127,16 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 		return;
 	}
 
-	const bool bHasViewportMouse = EditorUI.GetViewportMousePosition(
-		static_cast<int32>(static_cast<short>(LOWORD(LParam))),
-		static_cast<int32>(static_cast<short>(HIWORD(LParam))),
-		ScreenMouseX,
-		ScreenMouseY,
-		ScreenWidth,
-		ScreenHeight);
+	//const bool bHasViewportMouse = EditorUI.GetViewportMousePosition(
+	//	static_cast<int32>(static_cast<short>(LOWORD(LParam))),
+	//	static_cast<int32>(static_cast<short>(HIWORD(LParam))),
+	//	ScreenMouseX,
+	//	ScreenMouseY,
+	//	ScreenWidth,
+	//	ScreenHeight);
 
-	const bool bRightMouseDown = Core->GetInputManager() &&
-		Core->GetInputManager()->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
+	const bool bRightMouseDown = InputManager &&
+		InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
 
 	switch (Msg)
 	{
@@ -190,10 +166,10 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 		}
 
 	case WM_LBUTTONDOWN:
-		if (!bHasViewportMouse)
-		{
-			return;
-		}
+		//if (!bHasViewportMouse)
+		//{
+		//	return;
+		//}
 
 		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
 		{
@@ -208,11 +184,11 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 		return;
 
 	case WM_MOUSEMOVE:
-		if (!bHasViewportMouse)
-		{
-			Gizmo.ClearHover();
-			return;
-		}
+		//if (!bHasViewportMouse)
+		//{
+		//	Gizmo.ClearHover();
+		//	return;
+		//}
 
 		if (!Gizmo.IsDragging())
 		{
@@ -230,14 +206,14 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 		if (Gizmo.IsDragging())
 		{
 			Gizmo.EndDrag();
-			if (bHasViewportMouse)
-			{
-				Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
-			}
-			else
-			{
-				Gizmo.ClearHover();
-			}
+			//if (bHasViewportMouse)
+			//{
+			//	Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			//}
+			//else
+			//{
+			//	Gizmo.ClearHover();
+			//}
 			EditorUI.SyncSelectedActorProperty();
 		}
 		return;
@@ -254,7 +230,7 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 	{
 		Core->SetSelectedActor(nullptr);
 		Core->GetLevel()->ClearActors();
-		bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), FilePath, Core->GetRenderer()->GetDevice());
+		bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), FilePath, GRenderer->GetDevice());
 
 		if (bLoaded)
 		{
@@ -270,12 +246,12 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (Core && Core->GetRenderer() && FilePath.ends_with(".obj"))
+	if (GRenderer && FilePath.ends_with(".obj"))
 	{
 		const FRay Ray = Picker.ScreenToRay(&CameraTransform, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
 
 		AObjActor* NewActor = Core->GetLevel()->SpawnActor<AObjActor>("ObjActor");
-		NewActor->LoadObj(Core->GetRenderer()->GetDevice(), FPaths::ToRelativePath(FilePath));
+		NewActor->LoadObj(GRenderer->GetDevice(), FPaths::ToRelativePath(FilePath));
 		FVector V = Ray.Origin + Ray.Direction * 5;
 		NewActor->SetActorLocation(V);
 	}

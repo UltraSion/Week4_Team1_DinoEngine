@@ -174,3 +174,5 @@ private:
 public:
 	CShaderManager ShaderManager;
 };
+
+extern ENGINE_API FRenderer* GRenderer;

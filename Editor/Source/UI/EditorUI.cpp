@@ -101,7 +101,7 @@ void FEditorUI::Initialize(FCore* InCore)
 			if (Core)
 			{
 
-				Core->GetViewportClient()->HandleFileDoubleClick(FilePath);
+				//Core->GetViewportClient()->HandleFileDoubleClick(FilePath);
 			}
 		};
 
@@ -153,37 +153,37 @@ void FEditorUI::Initialize(FCore* InCore)
 					}
 				}
 			}
-			else if (Viewport.IsHovered())
-			{
-				UE_LOG("Drop On Viewport");			
-				if (Core)
-				{
-					Core->GetViewportClient()->HandleFileDropOnViewport(DraggingFilePath);
-				}
-			}
+			//else if (Viewport.IsHovered())
+			//{
+			//	UE_LOG("Drop On Viewport");			
+			//	if (Core)
+			//	{
+			//		Core->GetViewportClient()->HandleFileDropOnViewport(DraggingFilePath);
+			//	}
+			//}
 		};
 }
 
-void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
+void FEditorUI::AttachToRenderer()
 {
-	if (!Core || !InRenderer)
+	if (!Core || !GRenderer)
 	{
 		return;
 	}
 
 	bViewportClientActive = true;
-	CurrentRenderer = InRenderer;
+	CurrentRenderer = GRenderer;
 
-	const HWND Hwnd = InRenderer->GetHwnd();
-	ID3D11Device* Device = InRenderer->GetDevice();
-	ID3D11DeviceContext* DeviceContext = InRenderer->GetDeviceContext();
+	const HWND Hwnd = GRenderer->GetHwnd();
+	ID3D11Device* Device = GRenderer->GetDevice();
+	ID3D11DeviceContext* DeviceContext = GRenderer->GetDeviceContext();
 
 	ContentBrowser.SetFolderIcon(CurrentRenderer->GetFolderIconSRV());
 	ContentBrowser.SetFileIcon(CurrentRenderer->GetFileIconSRV());
 
 	std::filesystem::path FontPath = FPaths::ProjectRoot() / "Content" / "Fonts" / "NotoSansKR-Bold.ttf";
 	std::wstring FontPathWString = FontPath.wstring();
-	InRenderer->SetGUICallbacks(
+	GRenderer->SetGUICallbacks(
 		[Hwnd, Device, DeviceContext, FontPathWString, FontPath]()
 		{
 			IMGUI_CHECKVERSION();
@@ -275,9 +275,9 @@ void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
 		}
 	);
 
-	InRenderer->SetGUIUpdateCallback([this]() { Render(); });
+	GRenderer->SetGUIUpdateCallback([this]() { Render(); });
 
-	InRenderer->SetPostRenderCallback([this](FRenderer* Renderer)
+	GRenderer->SetPostRenderCallback([this](FRenderer* Renderer)
 		{
 			if (!Core)
 			{
@@ -287,7 +287,7 @@ void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
 			AActor* Selected = Core->GetSelectedActor();
 			if (Selected && !Selected->IsPendingDestroy() && Selected->IsVisible()
 				&& !Selected->IsA<ASkySphereActor>()
-				&& Core->GetViewportClient()->GetShowFlags().HasFlag(EEngineShowFlags::SF_Primitives))
+				/*&& Core->GetViewportClient()->GetShowFlags().HasFlag(EEngineShowFlags::SF_Primitives)*/)
 			{
 				for (UActorComponent* Component : Selected->GetComponents())
 				{
@@ -313,16 +313,16 @@ void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
 	LoadEditorSettings();
 }
 
-void FEditorUI::DetachFromRenderer(FRenderer* InRenderer)
+void FEditorUI::DetachFromRenderer()
 {
 	bViewportClientActive = false;
 	CurrentRenderer = nullptr;
-	Viewport.ReleaseLevelView();
+	//Viewport.ReleaseLevelView();
 
-	if (InRenderer)
+	if (GRenderer)
 	{
-		InRenderer->ClearLevelRenderTarget();
-		InRenderer->ClearViewportCallbacks();
+		GRenderer->ClearLevelRenderTarget();
+		GRenderer->ClearViewportCallbacks();
 	}
 }
 
@@ -374,10 +374,10 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 
 			const bool bHandledByImGui = ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam) != 0;
 
-			if (IsViewportInteractive())
-			{
-				return false;
-			}
+			//if (IsViewportInteractive())
+			//{
+			//	return false;
+			//}
 
 			return bHandledByImGui;
 		});
@@ -429,53 +429,53 @@ void FEditorUI::LoadEditorSettings()
 	GetPrivateProfileStringW(L"Grid", L"ShowGrid", L"1", Buf, 64, Path.c_str());
 	bool bShowGrid = (_wtoi(Buf) != 0);
 
-	if (Core && Core->GetViewportClient())
-	{
-		auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
-		VPC->SetGridSize(GridSize);
-		VPC->SetLineThickness(Thickness);
-		VPC->SetGridVisible(bShowGrid);
-		FShowFlags& ShowFlags = VPC->GetShowFlags();
+	//if (Core && Core->GetViewportClient())
+	//{
+	//	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+	//	VPC->SetGridSize(GridSize);
+	//	VPC->SetLineThickness(Thickness);
+	//	VPC->SetGridVisible(bShowGrid);
+	//	FShowFlags& ShowFlags = VPC->GetShowFlags();
 
-		GetPrivateProfileStringW(L"ShowFlags", L"Primitives", L"1", Buf, 64, Path.c_str());
-		ShowFlags.SetFlag(EEngineShowFlags::SF_Primitives, _wtoi(Buf) != 0);
+	//	GetPrivateProfileStringW(L"ShowFlags", L"Primitives", L"1", Buf, 64, Path.c_str());
+	//	ShowFlags.SetFlag(EEngineShowFlags::SF_Primitives, _wtoi(Buf) != 0);
 
-		GetPrivateProfileStringW(L"ShowFlags", L"UUID", L"1", Buf, 64, Path.c_str());
-		ShowFlags.SetFlag(EEngineShowFlags::SF_UUID, _wtoi(Buf) != 0);
+	//	GetPrivateProfileStringW(L"ShowFlags", L"UUID", L"1", Buf, 64, Path.c_str());
+	//	ShowFlags.SetFlag(EEngineShowFlags::SF_UUID, _wtoi(Buf) != 0);
 
-		GetPrivateProfileStringW(L"ShowFlags", L"DebugDraw", L"0", Buf, 64, Path.c_str());
-		ShowFlags.SetFlag(EEngineShowFlags::SF_DebugDraw, _wtoi(Buf) != 0);
+	//	GetPrivateProfileStringW(L"ShowFlags", L"DebugDraw", L"0", Buf, 64, Path.c_str());
+	//	ShowFlags.SetFlag(EEngineShowFlags::SF_DebugDraw, _wtoi(Buf) != 0);
 
-		GetPrivateProfileStringW(L"ShowFlags", L"WorldAxis", L"0", Buf, 64, Path.c_str());
-		ShowFlags.SetFlag(EEngineShowFlags::SF_WorldAxis, _wtoi(Buf) != 0);
+	//	GetPrivateProfileStringW(L"ShowFlags", L"WorldAxis", L"0", Buf, 64, Path.c_str());
+	//	ShowFlags.SetFlag(EEngineShowFlags::SF_WorldAxis, _wtoi(Buf) != 0);
 
-		GetPrivateProfileStringW(L"ShowFlags", L"Collision", L"0", Buf, 64, Path.c_str());
-		ShowFlags.SetFlag(EEngineShowFlags::SF_Collision, _wtoi(Buf) != 0);
+	//	GetPrivateProfileStringW(L"ShowFlags", L"Collision", L"0", Buf, 64, Path.c_str());
+	//	ShowFlags.SetFlag(EEngineShowFlags::SF_Collision, _wtoi(Buf) != 0);
 
-	}
+	//}
 
 }
 
 void FEditorUI::SaveEditorSettings()
 {
-	std::wstring Path = GetEditorIniPathW();
-	if (!Core || !Core->GetViewportClient()) return;
-	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+	//std::wstring Path = GetEditorIniPathW();
+	//if (!Core || !Core->GetViewportClient()) return;
+	//auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
 
-	wchar_t Buf[64];
-	swprintf(Buf, 64, L"%.2f", VPC->GetGridSize());
-	WritePrivateProfileStringW(L"Grid", L"GridSize", Buf, Path.c_str());
+	//wchar_t Buf[64];
+	//swprintf(Buf, 64, L"%.2f", VPC->GetGridSize());
+	//WritePrivateProfileStringW(L"Grid", L"GridSize", Buf, Path.c_str());
 
-	swprintf(Buf, 64, L"%.2f", VPC->GetLineThickness());
-	WritePrivateProfileStringW(L"Grid", L"LineThickness", Buf, Path.c_str());
+	//swprintf(Buf, 64, L"%.2f", VPC->GetLineThickness());
+	//WritePrivateProfileStringW(L"Grid", L"LineThickness", Buf, Path.c_str());
 
-	WritePrivateProfileStringW(L"Grid", L"ShowGrid", VPC->IsGridVisible() ? L"1" : L"0", Path.c_str());
-	FShowFlags& ShowFlags = VPC->GetShowFlags();
-	WritePrivateProfileStringW(L"ShowFlags", L"Primitives", ShowFlags.HasFlag(EEngineShowFlags::SF_Primitives) ? L"1" : L"0", Path.c_str());
-	WritePrivateProfileStringW(L"ShowFlags", L"UUID", ShowFlags.HasFlag(EEngineShowFlags::SF_UUID) ? L"1" : L"0", Path.c_str());
-	WritePrivateProfileStringW(L"ShowFlags", L"DebugDraw", ShowFlags.HasFlag(EEngineShowFlags::SF_DebugDraw) ? L"1" : L"0", Path.c_str());
-	WritePrivateProfileStringW(L"ShowFlags", L"WorldAxis", ShowFlags.HasFlag(EEngineShowFlags::SF_WorldAxis) ? L"1" : L"0", Path.c_str());
-	WritePrivateProfileStringW(L"ShowFlags", L"Collision", ShowFlags.HasFlag(EEngineShowFlags::SF_Collision) ? L"1" : L"0", Path.c_str());
+	//WritePrivateProfileStringW(L"Grid", L"ShowGrid", VPC->IsGridVisible() ? L"1" : L"0", Path.c_str());
+	//FShowFlags& ShowFlags = VPC->GetShowFlags();
+	//WritePrivateProfileStringW(L"ShowFlags", L"Primitives", ShowFlags.HasFlag(EEngineShowFlags::SF_Primitives) ? L"1" : L"0", Path.c_str());
+	//WritePrivateProfileStringW(L"ShowFlags", L"UUID", ShowFlags.HasFlag(EEngineShowFlags::SF_UUID) ? L"1" : L"0", Path.c_str());
+	//WritePrivateProfileStringW(L"ShowFlags", L"DebugDraw", ShowFlags.HasFlag(EEngineShowFlags::SF_DebugDraw) ? L"1" : L"0", Path.c_str());
+	//WritePrivateProfileStringW(L"ShowFlags", L"WorldAxis", ShowFlags.HasFlag(EEngineShowFlags::SF_WorldAxis) ? L"1" : L"0", Path.c_str());
+	//WritePrivateProfileStringW(L"ShowFlags", L"Collision", ShowFlags.HasFlag(EEngineShowFlags::SF_Collision) ? L"1" : L"0", Path.c_str());
 
 }
 
@@ -531,7 +531,7 @@ void FEditorUI::Render()
 	ImGui::PopStyleVar();
 	ImGui::End();
 
-	//Viewport.Render(Core, CurrentRenderer, MainWindow ? MainWindow->GetHwnd() : nullptr);
+	ViewportLegacy.Render(MainWindow ? MainWindow->GetHwnd() : nullptr);
 
 	if (Core)
 	{
@@ -579,7 +579,7 @@ void FEditorUI::Render()
 						Core->SetSelectedActor(nullptr);
 						Core->GetLevel()->ClearActors();
 
-						bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), Path, Core->GetRenderer()->GetDevice());
+						bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), Path, GRenderer->GetDevice());
 						if (bLoaded)
 						{
 							UE_LOG("Level loaded: %s", Path.c_str());
@@ -614,57 +614,57 @@ void FEditorUI::Render()
 		}
 		if (ImGui::BeginMenu("View"))
 		{
-			if (Core && Core->GetViewportClient())
-			{
-				auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
-			
+			//if (Core && Core->GetViewportClient())
+			//{
+			//	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+			//
 
-				FViewportClient* ViewportCli = Core->GetViewportClient();
-				if (!ViewportCli) { ImGui::End(); return; }
+			//	FViewportClient* ViewportCli = Core->GetViewportClient();
+			//	if (!ViewportCli) { ImGui::End(); return; }
 
-				FShowFlags& ShowFlags = ViewportCli->GetShowFlags();
-				// ===== Show Flags 섹션 =====
-				ImGui::SeparatorText("Show Flags");
-				// 각 플래그마다 Checkbox 하나씩
-				auto ShowFlagCheckbox = [&](const char* Label, EEngineShowFlags Flag)
-				{
-					bool bValue = ShowFlags.HasFlag(Flag);
-					if (ImGui::Checkbox(Label, &bValue))
-					{
-						ShowFlags.SetFlag(Flag, bValue);
-						SaveEditorSettings();
-					}
-				};
+			//	FShowFlags& ShowFlags = ViewportCli->GetShowFlags();
+			//	// ===== Show Flags 섹션 =====
+			//	ImGui::SeparatorText("Show Flags");
+			//	// 각 플래그마다 Checkbox 하나씩
+			//	auto ShowFlagCheckbox = [&](const char* Label, EEngineShowFlags Flag)
+			//	{
+			//		bool bValue = ShowFlags.HasFlag(Flag);
+			//		if (ImGui::Checkbox(Label, &bValue))
+			//		{
+			//			ShowFlags.SetFlag(Flag, bValue);
+			//			SaveEditorSettings();
+			//		}
+			//	};
 
-				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
-				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
-				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-				//ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
-				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+			//	ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
+			//	ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
+			//	ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+			//	//ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
+			//	ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
-				// ─── Grid ───
-				ImGui::SeparatorText("Grid");
-				bool bShowGrid = VPC->IsGridVisible();
-				if (ImGui::Checkbox("Show Grid", &bShowGrid))
-				{
-					VPC->SetGridVisible(bShowGrid);
-					SaveEditorSettings();
-				}
-				float GridSize = VPC->GetGridSize();
-				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
-				{
-					VPC->SetGridSize(GridSize);
-					SaveEditorSettings();
-				}
+			//	// ─── Grid ───
+			//	ImGui::SeparatorText("Grid");
+			//	bool bShowGrid = VPC->IsGridVisible();
+			//	if (ImGui::Checkbox("Show Grid", &bShowGrid))
+			//	{
+			//		VPC->SetGridVisible(bShowGrid);
+			//		SaveEditorSettings();
+			//	}
+			//	float GridSize = VPC->GetGridSize();
+			//	if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
+			//	{
+			//		VPC->SetGridSize(GridSize);
+			//		SaveEditorSettings();
+			//	}
 
-				float Thickness = VPC->GetLineThickness();
-				if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
-				{
-					VPC->SetLineThickness(Thickness);
-					SaveEditorSettings();
-				}
-			}
-			ImGui::EndMenu();
+			//	float Thickness = VPC->GetLineThickness();
+			//	if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
+			//	{
+			//		VPC->SetLineThickness(Thickness);
+			//		SaveEditorSettings();
+			//	}
+			//}
+			//ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))
 		{
@@ -760,10 +760,10 @@ void FEditorUI::Render()
 	ContentBrowser.Render();
 }
 
-bool FEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
-{
-	return Viewport.GetMousePositionInViewport(WindowMouseX, WindowMouseY, OutViewportX, OutViewportY, OutWidth, OutHeight);
-}
+//bool FEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+//{
+//	return Viewport.GetMousePositionInViewport(WindowMouseX, WindowMouseY, OutViewportX, OutViewportY, OutWidth, OutHeight);
+//}
 
 void FEditorUI::SyncSelectedActorProperty()
 {
@@ -794,7 +794,7 @@ void FEditorUI::SyncSelectedActorProperty()
 	CachedSelectedActor = Selected;
 }
 
-bool FEditorUI::IsViewportInteractive() const
-{
-	return Viewport.IsVisible() && (Viewport.IsHovered() || Viewport.IsFocused());
-}
+//bool FEditorUI::IsViewportInteractive() const
+//{
+//	return Viewport.IsVisible() && (Viewport.IsHovered() || Viewport.IsFocused());
+//}

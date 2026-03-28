@@ -26,9 +26,8 @@ public:
 	FViewportClient() = default;
 	virtual ~FViewportClient() = default;
 
-	virtual void Attach(FCore* Core, FRenderer* Renderer);
-	virtual void Detach(FCore* Core, FRenderer* Renderer);
-	virtual void Tick(FCore* Core, float DeltaTime);
+	virtual void Attach(FCore* Core);
+	virtual void Detach();
 	virtual void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual ULevel* ResolveLevel(FCore* Core) const;
 	virtual UWorld* ResolveWorld(FCore* Core) const;
@@ -42,7 +41,7 @@ public:
 	virtual void Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput);
 	virtual void SetupInputBindings();
 	virtual void Cleanup();
-	void Tick(float DeltaTime);
+	virtual void Tick(float DeltaTime);
 
 	int32 TopLeftX = 0;
 	int32 TopLeftY = 0;
@@ -69,6 +68,6 @@ protected:
 class ENGINE_API FGameViewportClient : public FViewportClient
 {
 public:
-	void Attach(FCore* Core, FRenderer* Renderer) override;
-	void Detach(FCore* Core, FRenderer* Renderer) override;
+	void Attach(FCore* Core) override;
+	void Detach() override;
 };

@@ -47,12 +47,12 @@ namespace
 	}
 }
 
-FViewport::~FViewport()
+FViewportLegacy::~FViewportLegacy()
 {
 	ReleaseLevelView();
 }
 
-void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
+void FViewportLegacy::Render(HWND Hwnd)
 {
 	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
 	if (!bOpen)
@@ -60,9 +60,9 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 		bHovered = false;
 		bFocused = false;
 		bVisible = false;
-		if (Renderer)
+		if (GRenderer)
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
@@ -70,7 +70,7 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 
 	if (ImGui::BeginMenuBar())
 	{
-		FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
+		/*FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
 		if (EditorViewportClient)
 		{
 			ImGui::Separator();
@@ -95,7 +95,7 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 			ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
 			ImGui::Combo("", reinterpret_cast<int*>(&RenderMode), "Lighting\0No Lighting\0Wireframe", 3);
 			EditorViewportClient->SetRenderMode(RenderMode);
-		}
+		}*/
 		ImGui::EndMenuBar();
 	}
 
@@ -125,17 +125,17 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 	if (!bVisible)
 	{
 		ReleaseLevelView();
-		if (Renderer)
+		if (GRenderer)
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
 	}
 
-	if (Renderer)
+	if (GRenderer)
 	{
-		ReadyLevelView(Renderer->GetDevice(), NewWidth, NewHeight);
+		ReadyLevelView(GRenderer->GetDevice(), NewWidth, NewHeight);
 
 		if (RenderTargetView && DepthStencilView)
 		{
@@ -146,18 +146,18 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 			LevelViewport.Height = static_cast<float>(NewHeight);
 			LevelViewport.MinDepth = 0.0f;
 			LevelViewport.MaxDepth = 1.0f;
-			Renderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
+			GRenderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
 		}
 		else
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 	}
 
-	if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
-	{
-		Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
-	}
+	//if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
+	//{
+	//	Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
+	//}
 
 	if (ShaderResourceView)
 	{
@@ -167,7 +167,7 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 	ImGui::End();
 }
 
-void FViewport::ReleaseLevelView()
+void FViewportLegacy::ReleaseLevelView()
 {
 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
 	ReleaseIfValid(Resource);
@@ -193,7 +193,7 @@ void FViewport::ReleaseLevelView()
 	OffscreenHeight = 0;
 }
 
-bool FViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+bool FViewportLegacy::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
 {
 	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
 	{
@@ -219,7 +219,7 @@ bool FViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouse
 	return true;
 }
 
-void FViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
+void FViewportLegacy::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
 {
 	if (Device == nullptr)
 	{

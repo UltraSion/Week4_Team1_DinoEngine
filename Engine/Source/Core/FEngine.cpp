@@ -3,6 +3,8 @@
 #include "Core/ViewportClient.h"
 #include "Platform/Windows/WindowApplication.h"
 #include "Object/ObjectGlobals.h"
+#include "World/World.h"
+#include "Core/ViewportContext.h"
 
 FEngine* GEngine = nullptr;
 
@@ -26,6 +28,7 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 
 	GEngine = this;
 
+
 	MainWindow = App->GetMainWindow();
 	if (!MainWindow)
 	{
@@ -39,8 +42,20 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 	{
 		return false;
 	}
+	InputManager = new FInputManager();
+	EnhancedInput = new FEnhancedInputManager();
 
-	ViewportClient = CreateViewportClient();
+
+	Viewports.push_back({std::make_unique<FViewport>(0, 0, 750, 750), CreateViewportClient()});
+	Viewports.push_back({ std::make_unique<FViewport>(0, 750, 750, 750), CreateViewportClient() });
+	Viewports.push_back({ std::make_unique<FViewport>(750, 0, 750, 750), CreateViewportClient() });
+	Viewports.push_back({ std::make_unique<FViewport>(750, 750, 750, 750), CreateViewportClient() });
+
+	Viewports[0].GetViewportClient()->Initialize(InputManager, EnhancedInput);
+	Viewports[1].GetViewportClient()->Initialize(InputManager, EnhancedInput);
+	Viewports[2].GetViewportClient()->Initialize(InputManager, EnhancedInput);
+	Viewports[3].GetViewportClient()->Initialize(InputManager, EnhancedInput);
+
 
 	PostInitialize();
 
@@ -60,15 +75,14 @@ void FEngine::Run()
 			Tick(Core->GetTimer().GetDeltaTime());
 			Core->Tick();
 		}
+		Input(Core->GetTimer().GetDeltaTime());
+		Render();
 	}
 }
 
 bool FEngine::OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-	if (Core)
-	{
-		Core->ProcessInput(Hwnd, Msg, WParam, LParam);
-	}
+	ProcessInput(Hwnd, Msg, WParam, LParam);
 	return false;
 }
 
@@ -77,6 +91,37 @@ void FEngine::OnResize(int32 Width, int32 Height)
 	if (Core)
 	{
 		Core->OnResize(Width, Height);
+	}
+}
+
+void FEngine::Input(float DeltaTime)
+{
+	if (InputManager)
+	{
+		InputManager->Tick();
+	}
+
+	if (EnhancedInput && InputManager)
+	{
+		EnhancedInput->ProcessInput(InputManager, DeltaTime);
+	}
+}
+
+void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+{
+	if (InputManager)
+	{
+		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
+	}
+
+	Viewports[0].GetViewportClient()->HandleMessage(Core.get(), Hwnd, Msg, WParam, LParam);
+}
+
+void FEngine::Tick(float DeltaTime)
+{
+	for (auto& Client : Viewports)
+	{
+		Client.GetViewportClient()->Tick(DeltaTime);
 	}
 }
 
@@ -91,12 +136,12 @@ void FEngine::Shutdown()
 
 	if (Core)
 	{
-		Core->SetViewportClient(nullptr);
 		Core->Release();
 		Core.reset();
 	}
 
-	ViewportClient.reset();
+	for (auto& ViewportContext : Viewports)
+		ViewportContext.Cleanup();
 
 	if (App)
 	{
@@ -105,4 +150,50 @@ void FEngine::Shutdown()
 	}
 
 	MainWindow = nullptr;
+
+	for (auto& Client : Viewports)
+	{
+		Client.Cleanup();
+	}
+	Viewports.clear();
+}
+
+void FEngine::Render()
+{
+	if (!Core)
+		return;
+
+	ULevel* Level = Core->GetActiveLevel();
+	if (!GRenderer || !Level || GRenderer->IsOccluded())
+	{
+		return;
+	}
+
+	GRenderer->BeginFrame();
+
+	UWorld* ActiveWorld = Core->GetActiveWorld();
+	if (!ActiveWorld)
+	{
+		GRenderer->EndFrame();
+		return;
+	}
+
+	for (const FViewportContext& Context : Viewports)
+	{
+		CommandQueue.Clear();
+		CommandQueue.Reserve(GRenderer->GetPrevCommandCount());
+
+		TArray<AActor*> Actors = ActiveWorld->GetAllActors();
+		Context.GetViewportClient()->BuildRenderCommands(Actors, CommandQueue);
+
+		D3D11_VIEWPORT VP = Context.GetViewport()->GetD3D11Viewport();
+		GRenderer->SetViewport(&VP);
+
+		GRenderer->SubmitCommands(CommandQueue);
+		GRenderer->ExecuteCommands();
+		const FShowFlags& ShowFlags = Context.GetViewportClient()->GetShowFlags();
+		Core.get()->GetDebugDrawManager().Flush(GRenderer, ShowFlags, ActiveWorld);
+	}
+
+	GRenderer->EndFrame();
 }

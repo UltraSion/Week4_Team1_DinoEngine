@@ -12,17 +12,12 @@
 #include "Core/FEngine.h"
 #include "Component/TextComponent.h"
 
-void FViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+void FViewportClient::Attach(FCore* Core)
 {
 }
 
-void FViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+void FViewportClient::Detach()
 {
-}
-
-void FViewportClient::Tick(FCore* Core, float DeltaTime)
-{
-	Tick(DeltaTime);
 }
 
 void FViewportClient::Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput)
@@ -85,18 +80,18 @@ void FViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 }
 
-void FGameViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+void FGameViewportClient::Attach(FCore* Core)
 {
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer->ClearViewportCallbacks();
+		GRenderer->ClearViewportCallbacks();
 	}
 }
 
-void FGameViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+void FGameViewportClient::Detach()
 {
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer->ClearViewportCallbacks();
+		GRenderer->ClearViewportCallbacks();
 	}
 }

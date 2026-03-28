@@ -5,12 +5,12 @@
 class FCore;
 class FRenderer;
 
-class FViewport
+class FViewportLegacy
 {
 public:
-	~FViewport();
+	~FViewportLegacy();
 
-	void Render(FCore* Core, FRenderer* Renderer, HWND Hwnd);
+	void Render(HWND Hwnd);
 	void ReleaseLevelView();
 	bool GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
 	bool IsHovered() const { return bHovered; }

@@ -2,7 +2,6 @@
 
 #include "imgui_impl_dx11.h"
 #include "UI/EditorViewportClient.h"
-#include "UI/PreviewViewportClient.h"
 #include "Core/Core.h"
 #include "Core/ConsoleVariableManager.h"
 #include "World/Level.h"
@@ -53,40 +52,6 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		return false;
 	}
 
-	ViewportClient->TopLeftX = 0;
-	ViewportClient->TopLeftY = 0;
-	ViewportClient->Width = 500;
-	ViewportClient->Height = 500;
-	ViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(ViewportClient.get());
-
-	std::unique_ptr<FViewportClient> Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
-	Client->TopLeftX = 500;
-	Client->TopLeftY = 0;
-	Client->Width = 500;
-	Client->Height = 500;
-	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(Client.get());
-	AdditionalViewportClients.push_back(std::move(Client));
-
-	Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
-	Client->TopLeftX = 0;
-	Client->TopLeftY = 500;
-	Client->Width = 500;
-	Client->Height = 500;
-	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(Client.get());
-	AdditionalViewportClients.push_back(std::move(Client));
-
-	Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
-	Client->TopLeftX = 500;
-	Client->TopLeftY = 500;
-	Client->Width = 500;
-	Client->Height = 500;
-	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(Client.get());
-	AdditionalViewportClients.push_back(std::move(Client));
-
 	return true;
 }
 
@@ -96,22 +61,6 @@ FEditorEngine::~FEditorEngine()
 
 void FEditorEngine::Shutdown()
 {
-	if (Core && Core->GetViewportClient() == PreviewViewportClient.get())
-	{
-		Core->SetViewportClient(nullptr);
-	}
-
-	PreviewViewportClient.reset();
-
-	for (std::unique_ptr<FViewportClient>& Client : AdditionalViewportClients)
-	{
-		if (Client)
-		{
-			Client->Cleanup();
-		}
-	}
-	AdditionalViewportClients.clear();
-
 	FEngine::Shutdown();
 }
 
@@ -126,13 +75,12 @@ void FEditorEngine::PreInitialize()
 void FEditorEngine::PostInitialize()
 {
 	InitializeDefaultPreviewLevel(Core.get());
-	PreviewViewportClient = std::make_unique<FPreviewViewportClient>(EditorUI, MainWindow, PreviewLevelContextName);
 
 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
 	CVM.GetAllNames([this](const FString& Name)
-	{
-		EditorUI.GetConsole().RegisterCommand(Name.c_str());
-	});
+		{
+			EditorUI.GetConsole().RegisterCommand(Name.c_str());
+		});
 
 	EditorUI.GetConsole().SetCommandHandler([](const char* CommandLine)
 		{
@@ -153,20 +101,14 @@ void FEditorEngine::PostInitialize()
 
 void FEditorEngine::Tick(float DeltaTime)
 {
-	if (ViewportClient)
-	{
-		ViewportClient->Tick(DeltaTime);
-	}
-
-	for (std::unique_ptr<FViewportClient>& Client : AdditionalViewportClients)
-	{
-		if (Client)
-		{
-			Client->Tick(DeltaTime);
-		}
-	}
+	FEngine::Tick(DeltaTime);
 
 	SyncViewportClient();
+}
+
+void FEditorEngine::Render()
+{
+	FEngine::Render();
 }
 
 std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
@@ -174,27 +116,39 @@ std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
 }
 
-FEditorViewportController* FEditorEngine::GetViewportController()
-{
-	return &ViewportController;
-}
+//FEditorViewportController* FEditorEngine::GetViewportController()
+//{
+//	return &ViewportController;
+//}
 
 void FEditorEngine::SyncViewportClient()
 {
-	if (!Core)
+	if (!Core || Viewports.empty())
 	{
 		return;
 	}
 
-	FViewportClient* TargetViewportClient = ViewportClient.get();
-	const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
-	if (ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview && PreviewViewportClient)
+	FViewportClient* TargetViewportClient = Viewports[0].GetViewportClient();
+	if (!TargetViewportClient)
 	{
-		TargetViewportClient = PreviewViewportClient.get();
+		return;
 	}
 
-	if (Core->GetViewportClient() != TargetViewportClient)
+	if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(TargetViewportClient))
 	{
-		Core->SetViewportClient(TargetViewportClient);
+		EditorViewportClient->SetSelection(SeletedActors);
 	}
+
+	if (ActiveViewportClient == TargetViewportClient)
+	{
+		return;
+	}
+
+	if (ActiveViewportClient)
+	{
+		ActiveViewportClient->Detach();
+	}
+
+	TargetViewportClient->Attach(Core.get());
+	ActiveViewportClient = TargetViewportClient;
 }

@@ -19,12 +19,12 @@ class FEditorUI
 public:
 	void Initialize(FCore* InCore);
 	void SetupWindow(FWindow* InWindow);
-	void AttachToRenderer(FRenderer* InRenderer);
-	void DetachFromRenderer(FRenderer* InRenderer);
+	void AttachToRenderer();
+	void DetachFromRenderer();
 	void Render();
 	void SyncSelectedActorProperty();
-	bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
-	bool IsViewportInteractive() const;
+	//bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+	//bool IsViewportInteractive() const;
 
 	FConsoleWindow& GetConsole() { return Console; }
 	FCore* GetCore() { return Core; }
@@ -43,7 +43,7 @@ private:
 	FPropertyWindow Property;
 	FConsoleWindow Console;
 	FStatWindow Stat;
-	FViewport Viewport;
+	FViewportLegacy ViewportLegacy;
 	FOutlinerWindow Outliner;
 	FContentBrowserWindow ContentBrowser;
 

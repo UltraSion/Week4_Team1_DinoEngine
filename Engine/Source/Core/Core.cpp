@@ -19,6 +19,7 @@
 #include "Component/UUIDBillboardComponent.h"
 #include "Component/SubUVComponent.h"
 #include "Actor/SkySphereActor.h"
+#include "ViewportContext.h"
 
 FCore::~FCore()
 {
@@ -31,18 +32,20 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	WindowWidth = Width;
 	WindowHeight = Height;
 
-	Renderer = std::make_unique<FRenderer>(Hwnd, Width, Height);
-	if (!Renderer)
+	GRenderer = new FRenderer(Hwnd, Width, Height);
+
+
+	if (!GRenderer)
 	{
 		return false;
 	}
 
 	ObjManager = new ObjectManager();
 
-	FMaterialManager::Get().LoadAllMaterials(Renderer->GetDevice(), Renderer->GetRenderStateManager().get());
+	FMaterialManager::Get().LoadAllMaterials(GRenderer->GetDevice(), GRenderer->GetRenderStateManager().get());
 
-	InputManager = new FInputManager();
-	EnhancedInput = new FEnhancedInputManager();
+	//InputManager = new FInputManager();
+	//EnhancedInput = new FEnhancedInputManager();
 
 	PhysicsManager = std::make_unique<FPhysicsManager>();
 
@@ -50,7 +53,7 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	RegisterConsoleVariables();
 	LevelManager = std::make_unique<FLevelManager>();
 	const float AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
-	if (!LevelManager->Initialize(AspectRatio, StartupLevelType, Renderer.get()))
+	if (!LevelManager->Initialize(AspectRatio, StartupLevelType, GRenderer))
 	{
 		return false;
 	}
@@ -58,51 +61,48 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	return true;
 }
 
-void FCore::SetViewportClient(FViewportClient* InViewportClient)
-{
-	if (MainViewportClient == InViewportClient)
-	{
-		return;
-	}
+//void FCore::SetViewportClient(FViewportClient* InViewportClient)
+//{
+//	if (InViewportClient)
+//	{
+//		InViewportClient->Attach(this);
+//		return;
+//	}
+//
+//	if (GRenderer)
+//	{
+//		GRenderer->ClearViewportCallbacks();
+//	}
+//}
+//
+//void FCore::AddViewportClient(FViewportClient* InViewportClient)
+//{
+//	if (InViewportClient)
+//	{
+//		InViewportClient->Attach(this);
+//	}
+//}
 
-	if (MainViewportClient && Renderer)
-	{
-		MainViewportClient->Detach(this, Renderer.get());
-	}
-
-	MainViewportClient = InViewportClient;
-
-	if (MainViewportClient && Renderer)
-	{
-		MainViewportClient->Attach(this, Renderer.get());
-	}
-}
-
-void FCore::AddViewportClient(FViewportClient* InViewportClient)
-{
-	ViewportClients.push_back(InViewportClient);
-}
-
-void FCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
-{
-	if (InputManager)
-	{
-		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
-	}
-
-	if (MainViewportClient)
-	{
-		MainViewportClient->HandleMessage(this, Hwnd, Msg, WParam, LParam);
-	}
-}
+//void FCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+//{
+//	if (InputManager)
+//	{
+//		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
+//	}
+//
+//	if (MainViewportClient)
+//	{
+//		MainViewportClient->HandleMessage(this, Hwnd, Msg, WParam, LParam);
+//	}
+//}
 
 void FCore::Release()
 {
-	if (MainViewportClient && Renderer)
-	{
-		MainViewportClient->Detach(this, Renderer.get());
-	}
-	MainViewportClient = nullptr;
+	//if (MainViewportClient && GRenderer)
+	//{
+	//	MainViewportClient->Detach(this, GRenderer);
+	//}
+	//MainViewportClient = nullptr;
 
 	if (LevelManager)
 	{
@@ -117,15 +117,16 @@ void FCore::Release()
 		ObjManager = nullptr;
 	}
 
-	delete EnhancedInput;
-	EnhancedInput = nullptr;
-	delete InputManager;
-	InputManager = nullptr;
+	//delete EnhancedInput;
+	//EnhancedInput = nullptr;
+	//delete InputManager;
+	//InputManager = nullptr;
 	CPrimitiveBase::ClearCache();
 
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer.reset();
+		delete GRenderer;
+		GRenderer = nullptr;
 	}
 }
 
@@ -140,39 +141,38 @@ void FCore::Tick(const float DeltaTime)
 	Input(DeltaTime);
 	Physics(DeltaTime);
 	GameLogic(DeltaTime);
-	Render();
+	//Render();
 	LateUpdate(DeltaTime);
 }
 
+//void FCore::RenderViewport(TArray<AActor*>& Actors, FViewportContext& ViewportContext)
+//{
+//	FViewportClient* Client = ViewportContext.GetViewportClient();
+//	FViewport* Viewport = ViewportContext.GetViewport();
+//	if (!ViewportContext.GetViewport() && ViewportContext.GetViewportClient())
+//	{
+//		return;
+//	}
+//
+//	CommandQueue.Clear();
+//	CommandQueue.Reserve(GRenderer->GetPrevCommandCount());
+//
+//	ViewportContext.GetViewportClient()->BuildRenderCommands(Actors, CommandQueue);
+//
+//	Renderer->SetViewport(&ViewportContext.GetViewport()->GetD3D11Viewport());
+//
+//	Renderer->SubmitCommands(CommandQueue);
+//	Renderer->ExecuteCommands();
+//}
+
 void FCore::Input(float DeltaTime)
 {
-	if (InputManager)
-	{
-		InputManager->Tick();
-	}
-
-	if (EnhancedInput && InputManager)
-	{
-		EnhancedInput->ProcessInput(InputManager, DeltaTime);
-	}
-
-	if (MainViewportClient)
-	{
-		MainViewportClient->Tick(this, DeltaTime);
-	}
-
-	for (FViewportClient* ViewportCli : ViewportClients)
-	{
-		if (ViewportCli && ViewportCli != MainViewportClient)
-		{
-			ViewportCli->Tick(this, DeltaTime);
-		}
-	}
+	(void)DeltaTime;
 }
 
 void FCore::Physics(float DeltaTime)
 {
-	ULevel* Level = MainViewportClient ? MainViewportClient->ResolveLevel(this) : GetActiveLevel();
+	ULevel* Level = LevelManager.get()->GetActiveLevel();
 	if (Level)
 	{
 		FVector LineStart(2, 2, 0), LineEnd(5, 5, 0);
@@ -205,7 +205,7 @@ void FCore::Physics(float DeltaTime)
 			}
 		}
 
-		if (Renderer)
+		if (GRenderer)
 		{
 			DebugDrawManager.DrawLine(LineStart, LineEnd, FVector4(0, 1, 1, 1));
 		}
@@ -236,53 +236,53 @@ void FCore::LateUpdate(float DeltaTime)
 	}
 }
 
-void FCore::Render()
-{
-	ULevel* Level = MainViewportClient ? MainViewportClient->ResolveLevel(this) : GetActiveLevel();
-	if (!Renderer || !Level || Renderer->IsOccluded())
-	{
-		return;
-	}
-
-	Renderer->BeginFrame();
-
-	UWorld* ActiveWorld = GetActiveWorld();
-	if (!ActiveWorld)
-	{
-		Renderer->EndFrame();
-		return;
-	}
-
-	for (FViewportClient* Client : ViewportClients)
-	{
-		if (!Client)
-		{
-			continue;
-		}
-
-		CommandQueue.Clear();
-		CommandQueue.Reserve(Renderer->GetPrevCommandCount());
-
-		TArray<AActor*> Actors = ActiveWorld->GetAllActors();
-		Client->BuildRenderCommands(Actors, CommandQueue);
-
-		D3D11_VIEWPORT D3D11Viewport = {};
-		D3D11Viewport.TopLeftX = static_cast<float>(Client->TopLeftX);
-		D3D11Viewport.TopLeftY = static_cast<float>(Client->TopLeftY);
-		D3D11Viewport.Width = static_cast<float>(Client->Width);
-		D3D11Viewport.Height = static_cast<float>(Client->Height);
-		D3D11Viewport.MaxDepth = 1.0f;
-		D3D11Viewport.MinDepth = 0.0f;
-		Renderer->SetViewport(&D3D11Viewport);
-
-		Renderer->SubmitCommands(CommandQueue);
-		Renderer->ExecuteCommands();
-		const FShowFlags& ShowFlags = Client->GetShowFlags();
-		DebugDrawManager.Flush(Renderer.get(), ShowFlags, ActiveWorld);
-	}
-
-	Renderer->EndFrame();
-}
+//void FCore::Render()
+//{
+//	ULevel* Level = MainViewportClient ? MainViewportClient->ResolveLevel(this) : GetActiveLevel();
+//	if (!Renderer || !Level || Renderer->IsOccluded())
+//	{
+//		return;
+//	}
+//
+//	Renderer->BeginFrame();
+//
+//	UWorld* ActiveWorld = GetActiveWorld();
+//	if (!ActiveWorld)
+//	{
+//		Renderer->EndFrame();
+//		return;
+//	}
+//
+//	for (FViewportClient* Client : ViewportClients)
+//	{
+//		if (!Client)
+//		{
+//			continue;
+//		}
+//
+//		CommandQueue.Clear();
+//		CommandQueue.Reserve(Renderer->GetPrevCommandCount());
+//
+//		TArray<AActor*> Actors = ActiveWorld->GetAllActors();
+//		Client->BuildRenderCommands(Actors, CommandQueue);
+//
+//		D3D11_VIEWPORT D3D11Viewport = {};
+//		D3D11Viewport.TopLeftX = static_cast<float>(Client->TopLeftX);
+//		D3D11Viewport.TopLeftY = static_cast<float>(Client->TopLeftY);
+//		D3D11Viewport.Width = static_cast<float>(Client->Width);
+//		D3D11Viewport.Height = static_cast<float>(Client->Height);
+//		D3D11Viewport.MaxDepth = 1.0f;
+//		D3D11Viewport.MinDepth = 0.0f;
+//		Renderer->SetViewport(&D3D11Viewport);
+//
+//		Renderer->SubmitCommands(CommandQueue);
+//		Renderer->ExecuteCommands();
+//		const FShowFlags& ShowFlags = Client->GetShowFlags();
+//		DebugDrawManager.Flush(Renderer.get(), ShowFlags, ActiveWorld);
+//	}
+//
+//	Renderer->EndFrame();
+//}
 
 void FCore::OnResize(int32 Width, int32 Height)
 {
@@ -293,9 +293,9 @@ void FCore::OnResize(int32 Width, int32 Height)
 
 	WindowWidth = Width;
 	WindowHeight = Height;
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer->OnResize(Width, Height);
+		GRenderer->OnResize(Width, Height);
 	}
 	if (LevelManager)
 	{
@@ -325,14 +325,14 @@ void FCore::RegisterConsoleVariables()
 	}
 	VSyncVar->SetOnChanged([this](FConsoleVariable* Var)
 		{
-			if (Renderer)
+			if (GRenderer)
 			{
-				Renderer->SetVSync(Var->GetInt() != 0);
+				GRenderer->SetVSync(Var->GetInt() != 0);
 			}
 		});
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer->SetVSync(VSyncVar->GetInt() != 0);
+		GRenderer->SetVSync(VSyncVar->GetInt() != 0);
 	}
 
 	FConsoleVariable* GCIntervalVar = CVM.Find("gc.Interval");
