@@ -54,7 +54,8 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 						Command.RenderLayer = ERenderLayer::Overlay;
 					}
 				
-					
+#if IS_OBJ_VIEWER
+#else
 					const FVector WorldPos = TextComp->GetRenderWorldPosition();
 					const FVector Scale = TextComp->GetRenderWorldScale();
 
@@ -72,6 +73,7 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 					}
 
 					OutQueue.AddCommand(Command);
+#endif
 				}
 			}
 			continue;

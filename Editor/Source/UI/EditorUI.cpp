@@ -299,16 +299,19 @@ void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
 					UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
 					if (PrimitiveComponent->GetPrimitive())
 					{
+#if IS_OBJ_VIEWER
+#else
 						Renderer->RenderOutline(
 							PrimitiveComponent->GetPrimitive()->GetMeshData(),
 							PrimitiveComponent->GetWorldTransform()
 						);
+#endif
 					}
 				}
 			}
 
-			const float AxisLength = 10000.0f;
-			const FVector Origin = { 0.0f, 0.0f, 0.0f };
+			//const float AxisLength = 10000.0f;
+			//const FVector Origin = { 0.0f, 0.0f, 0.0f };
 		});
 	LoadEditorSettings();
 }
@@ -440,8 +443,11 @@ void FEditorUI::LoadEditorSettings()
 		GetPrivateProfileStringW(L"ShowFlags", L"Primitives", L"1", Buf, 64, Path.c_str());
 		ShowFlags.SetFlag(EEngineShowFlags::SF_Primitives, _wtoi(Buf) != 0);
 
+#if IS_OBJ_VIEWER
+#else
 		GetPrivateProfileStringW(L"ShowFlags", L"UUID", L"1", Buf, 64, Path.c_str());
 		ShowFlags.SetFlag(EEngineShowFlags::SF_UUID, _wtoi(Buf) != 0);
+#endif
 
 		GetPrivateProfileStringW(L"ShowFlags", L"DebugDraw", L"0", Buf, 64, Path.c_str());
 		ShowFlags.SetFlag(EEngineShowFlags::SF_DebugDraw, _wtoi(Buf) != 0);
@@ -561,7 +567,7 @@ void FEditorUI::Render()
 
 					if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
 					{
-						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+						Cam->GetCamera()->SetPosition({ -3.0f, -3.0f, 2.5f });
 						Cam->GetCamera()->SetRotation(0.f, 0.f);
 					}
 					Core->GetLevel()->ClearActors();
@@ -640,7 +646,11 @@ void FEditorUI::Render()
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-				//ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
+				//뷰어에서는 월드축을 킬 수 없어야 합니다.
+#if IS_OBJ_VIEWER
+#else
+				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
+#endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
 				// ─── Grid ───
@@ -753,11 +763,15 @@ void FEditorUI::Render()
 		ImGui::EndPopup();
 	}
 
+	//뷰어를 위해 콘텐츠패널(일단 테스트용)과 콘텐츠브라우저를 제외한 에디터 창을 렌더링하지 않습니다.
 	ControlPanel.Render(Core);
+#if IS_OBJ_VIEWER
+#else
 	Property.Render(Core);
 	Console.Render();
 	Stat.Render();
 	Outliner.Render(Core);
+#endif
 	ContentBrowser.Render();
 }
 

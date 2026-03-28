@@ -23,6 +23,7 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 	: EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
 {
+	SetGridVisible(bShowGrid);
 }
 
 void FEditorViewportClient::Attach(FCore* Core, FRenderer* Renderer)
@@ -162,6 +163,8 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	const bool bRightMouseDown = Core->GetInputManager() &&
 		Core->GetInputManager()->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
 
+#if IS_OBJ_VIEWER
+#else
 	switch (Msg)
 	{
 	case WM_KEYDOWN:
@@ -249,6 +252,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	default:
 		return;
 	}
+#endif
 }
 
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
@@ -321,7 +325,7 @@ void FEditorViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level,
 	}
 
 	// 그리드(Axis) 명령 삽입
-	if (GridMesh && GridMaterial&&bShowGrid)
+	if (GridMesh && GridMaterial && IsGridVisible())
 	{
 		FRenderCommand GridCmd;
 		GridCmd.MeshData = GridMesh.get();
@@ -334,7 +338,10 @@ void FEditorViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level,
 	AActor* GizmoTarget = Core->GetSelectedActor();
 	if (GizmoTarget && !GizmoTarget->IsA<ASkySphereActor>())
 	{
+#if IS_OBJ_VIEWER
+#else
 		Gizmo.BuildRenderCommands(GizmoTarget, Level->GetCamera(), OutQueue);
+#endif
 	}
 }
 
@@ -354,4 +361,15 @@ void FEditorViewportClient::SetLineThickness(float InThickness)
 	{
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
+}
+
+bool FEditorViewportClient::IsGridVisible() const
+{
+	return GetShowFlags().HasFlag(EEngineShowFlags::SF_Grid);
+}
+
+void FEditorViewportClient::SetGridVisible(bool bVisible)
+{
+	bShowGrid = bVisible;
+	GetShowFlags().SetFlag(EEngineShowFlags::SF_Grid, bVisible);
 }
