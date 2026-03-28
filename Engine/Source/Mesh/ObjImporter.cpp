@@ -2,6 +2,7 @@
 #include "ObjImporter.h"
 #include "ObjInfo.h"
 #include "Core/Paths.h"
+#include "StaticMeshRenderData.h"
 #include <fstream>
 #include <filesystem>
 #include <sstream>
@@ -148,7 +149,7 @@ bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& O
 	return true;
 }
 
-FMesh* FObjImporter::Cook(const FObjInfo& Info)
+FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 {
 	auto MeshData = std::make_shared<FMeshData>();
 
@@ -212,7 +213,7 @@ FMesh* FObjImporter::Cook(const FObjInfo& Info)
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
 	MeshData->UpdateLocalBound();
 
-	FStaticMesh* Mesh = new FStaticMesh();
+	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();
 	Mesh->SetMeshData(MeshData);
 	return Mesh;
 }

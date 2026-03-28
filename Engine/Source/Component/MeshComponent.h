@@ -1,11 +1,12 @@
 #pragma once
 #include "PrimitiveComponent.h"
-#include "Mesh/Mesh.h"
+#include "Primitive/PrimitiveBase.h"
 #include "Math/Frustum.h"
 #include <memory>
 class FMaterial;
 struct ID3D11Device;
-
+struct FMeshData;
+struct FMeshSection;
 struct FBoxSphereBounds;
 class ENGINE_API UMeshComponent : public UPrimitiveComponent
 {

@@ -1,10 +1,11 @@
 #include "StaticMeshComponent.h"
-#include "Mesh/StaticMesh.h"
+#include "Mesh/StaticMeshRenderData.h"
 #include "Core/Paths.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialManager.h"
 #include "Object/Class.h"
 #include "ThirdParty/stb_image.h"
+#include "Mesh/ObjManager.h"
 #include <filesystem>
 #include <d3d11.h>
 
@@ -16,10 +17,9 @@ void UStaticMeshComponent::Initialize()
 
 void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& FilePath)
 {
-	auto SM = FStaticMesh::GetOrLoad(FilePath);
-	if (!SM) return;
+	StaticMeshRenderData = FObjManager::LoadObjStaticMeshAsset(FilePath);
+	if (!StaticMeshRenderData) return;
 
-	StaticMesh = SM.get();
 
 	// 텍스처 로드 (.obj → .png)
 	std::filesystem::path PngPath = FilePath;  
@@ -36,14 +36,14 @@ void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& F
 		if (DefaultMat)
 		{
 			for (uint32 i = 0; i < GetNumMaterials(); ++i)
-				StaticMesh->SetDefaultMaterial(i, DefaultMat.get());  
+				StaticMeshRenderData->SetDefaultMaterial(i, DefaultMat.get());
 		}
 	}
 }
 
 FString UStaticMeshComponent::GetStaticMeshAsset() const
 {
-	if (StaticMesh) return StaticMesh->GetAssetPath();
+	if (StaticMeshRenderData) return StaticMeshRenderData->GetAssetPath();
 	return "";
 }
 
@@ -97,24 +97,29 @@ void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& File
 	MT->TextureSRV = srv;
 	DynamicMaterialOwner->SetMaterialTexture(MT);
 
-	if (StaticMesh)
+	if (StaticMeshRenderData)
 	{
-		for (uint32 i = 0; i < StaticMesh->GetNumMaterialSlots(); ++i)
-			StaticMesh->SetDefaultMaterial(i, DynamicMaterialOwner.get());
+		for (uint32 i = 0; i < StaticMeshRenderData->GetNumMaterialSlots(); ++i)
+			StaticMeshRenderData->SetDefaultMaterial(i, DynamicMaterialOwner.get());
 	}
+}
+
+void UStaticMeshComponent::SetStaticMeshData(FStaticMeshRenderData* InMesh)
+{
+	StaticMeshRenderData = InMesh;
 }
 
 FMeshData* UStaticMeshComponent::GetMeshData() const
 {
-	if (StaticMesh)
-		return StaticMesh->GetMeshData();
+	if (StaticMeshRenderData)
+		return StaticMeshRenderData->GetMeshData();
 	return nullptr;
 }
 
 const TArray<FMeshSection>& UStaticMeshComponent::GetSections() const
 {
-	if (StaticMesh)
-		return StaticMesh->GetSections();
+	if (StaticMeshRenderData)
+		return StaticMeshRenderData->GetSections();
 	static TArray<FMeshSection> Empty;
 	return Empty;
 }
@@ -123,14 +128,14 @@ FMaterial* UStaticMeshComponent::GetMaterial(uint32 SlotIndex) const
 {
 	if (SlotIndex < OverrideMaterials.size() && OverrideMaterials[SlotIndex])
 		return OverrideMaterials[SlotIndex];
-	if (StaticMesh)
-		return StaticMesh->GetDefaultMaterial(SlotIndex);
+	if (StaticMeshRenderData)
+		return StaticMeshRenderData->GetDefaultMaterial(SlotIndex);
 	return nullptr;
 }
 
 uint32 UStaticMeshComponent::GetNumMaterials() const
 {
-	if (StaticMesh)
-		return StaticMesh->GetNumMaterialSlots();
+	if (StaticMeshRenderData)
+		return StaticMeshRenderData->GetNumMaterialSlots();
 	return 0;
 }

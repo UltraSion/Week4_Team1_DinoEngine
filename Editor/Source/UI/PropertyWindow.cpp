@@ -8,6 +8,8 @@
 #include "Actor/StaticMeshActor.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/MaterialManager.h"
+#include "Object/ObjectIterator.h"
+#include "Object/StaticMesh.h"
 #include "Core/Paths.h"
 #include <filesystem>
 void FPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation,
@@ -164,28 +166,8 @@ void FPropertyWindow::Render(FCore* Core)
 				if (ImGui::CollapsingHeader("Static Mesh", ImGuiTreeNodeFlags_DefaultOpen))
 				{
 					ImGui::Indent(8.0f);
-
-					// .obj 파일 목록 스캔 (최초 1회)
-					static TArray<FString> MeshFiles;
-					static bool bScanned = false;
-					if (!bScanned)
-					{
-						namespace fs = std::filesystem;
-						auto MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
-						if (fs::exists(MeshDir))
-						{
-							for (const auto& entry : fs::directory_iterator(MeshDir))
-							{
-								if (entry.is_regular_file() && entry.path().extension() == ".obj")
-								{
-									auto Rel = fs::relative(entry.path(), FPaths::ProjectRoot());
-									MeshFiles.push_back(Rel.generic_string());
-								}
-							}
-						}
-						bScanned = true;
-					}
-					// ── 텍스처 파일 목록 스캔 (최초 1회) ──
+					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(SelectedActor);
+					UStaticMeshComponent* SMComp = SMActor->GetStaticMeshComponent();
 					static TArray<FString> TextureFiles;
 					static bool bTextureScanned = false;
 					if (!bTextureScanned)
@@ -209,34 +191,34 @@ void FPropertyWindow::Render(FCore* Core)
 						}
 						bTextureScanned = true;
 					}
-					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(SelectedActor);
-					UStaticMeshComponent* SMComp = SMActor->GetStaticMeshComponent();
-					FString CurrentAsset = SMComp ? SMComp->GetStaticMeshAsset() : "";
-					ImGui::Text("Current: %s", CurrentAsset.empty() ? "None" : CurrentAsset.c_str());
+					// .obj 파일 목록 스캔 (최초 1회)
+					std::vector<UStaticMesh*> LoadedMeshes;
+					std::vector<const char*> Items;
+					Items.push_back("None");
+
+					for (TObjectIterator<UStaticMesh> It; It; ++It)
 					{
-						std::vector<const char*> Items;
-						Items.push_back("None");
-						for (const auto& F : MeshFiles)
-							Items.push_back(F.c_str());
+						LoadedMeshes.push_back(*It);
+						Items.push_back((*It)->GetAssetPathFileName().c_str());
+					}
 
-						// 현재 선택 동기화
-						SelectedMeshIndex = 0; // None
-						for (int i = 0; i < (int)MeshFiles.size(); ++i)
+					SelectedMeshIndex = 0;
+					FString CurrentAsset = SMComp ? SMComp->GetStaticMeshAsset() : "";
+					for (int i = 0; i < (int)LoadedMeshes.size(); ++i)
+					{
+						if (LoadedMeshes[i]->GetAssetPathFileName() == CurrentAsset)
 						{
-							if (MeshFiles[i] == CurrentAsset)
-							{
-								SelectedMeshIndex = i + 1; // +1 because None is at 0
-								break;
-							}
+							SelectedMeshIndex = i + 1;
+							break;
 						}
+					}
 
-						if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
+					if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
+					{
+						if (Core && SelectedMeshIndex > 0)
 						{
-							if (Core && SelectedMeshIndex > 0)
-							{
-								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
-								SMActor->LoadStaticMesh(Device, MeshFiles[SelectedMeshIndex - 1]);
-							}
+							UStaticMesh* Selected = LoadedMeshes[SelectedMeshIndex - 1];
+							SMComp->SetStaticMeshData(Selected->GetStaticMeshAsset());
 						}
 					}
 					if (!CurrentAsset.empty())

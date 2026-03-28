@@ -310,10 +310,11 @@
     </ClCompile>
     <ClCompile Include="Source\Component\MeshComponent.cpp" />
     <ClCompile Include="Source\Mesh\Mesh.cpp" />
-    <ClCompile Include="Source\Mesh\StaticMesh.cpp" />
     <ClCompile Include="Source\Component\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Actor\StaticMeshActor.cpp" />
     <ClCompile Include="Source\Mesh\ObjImporter.cpp" />
+    <ClCompile Include="Source\Object\StaticMesh.cpp" />
+    <ClCompile Include="Source\Mesh\ObjManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">
@@ -645,10 +646,12 @@
     <ClInclude Include="Source\Component\MeshComponent.h" />
     <ClInclude Include="Source\Component\StaticMeshComponent.h" />
     <ClInclude Include="Source\Mesh\Mesh.h" />
-    <ClInclude Include="Source\Mesh\StaticMesh.h" />
     <ClInclude Include="Source\Object\ObjectIterator.h" />
     <ClInclude Include="Source\Mesh\ObjInfo.h" />
     <ClInclude Include="Source\Mesh\ObjImporter.h" />
+    <ClInclude Include="Source\Mesh\StaticMeshRenderData.h" />
+    <ClInclude Include="Source\Object\StaticMesh.h" />
+    <ClInclude Include="Source\Mesh\ObjManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

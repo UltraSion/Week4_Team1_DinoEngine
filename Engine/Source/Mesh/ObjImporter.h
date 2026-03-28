@@ -1,7 +1,7 @@
 #pragma once
 #include "ObjInfo.h"
-#include "StaticMesh.h"
-class FStaticMesh;
+#include "Mesh.h"
+class FStaticMeshRenderData;
 
 class ENGINE_API FObjImporter
 {
@@ -13,5 +13,5 @@ public:
 	static bool ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& OutMaterials);
 
 	// Raw > Cooked (FStaticMesh)
-	static FMesh* Cook(const FObjInfo& Info);
+	static FStaticMeshRenderData* Cook(const FObjInfo& Info);
 };
