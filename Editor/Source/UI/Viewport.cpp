@@ -219,6 +219,24 @@ bool FViewportLegacy::GetMousePositionInViewport(int32 WindowMouseX, int32 Windo
 	return true;
 }
 
+bool FViewportLegacy::GetContentRect(int32& OutClientPosX, int32& OutClientPosY, uint32& OutWidth, uint32& OutHeight) const
+{
+	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
+	{
+		OutClientPosX = 0;
+		OutClientPosY = 0;
+		OutWidth = 0;
+		OutHeight = 0;
+		return false;
+	}
+
+	OutClientPosX = ClientPosX;
+	OutClientPosY = ClientPosY;
+	OutWidth = OffscreenWidth;
+	OutHeight = OffscreenHeight;
+	return true;
+}
+
 void FViewportLegacy::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
 {
 	if (Device == nullptr)

@@ -19,17 +19,33 @@
 #include "imgui.h"
 #include "Actor/ObjActor.h"
 #include "Actor/SkySphereActor.h"
-#include "Input/InputAction.h"
-#include "Input/EnhancedInputManager.h"
-#include "Input/InputMappingContext.h"
-#include "Input/InputModifier.h"
-#include "Input/InputTrigger.h"
+namespace
+{
+	const char* GetViewportTypeLabel(EEditorViewportType ViewportType)
+	{
+		switch (ViewportType)
+		{
+		case EEditorViewportType::Top:
+			return "Top";
+		case EEditorViewportType::Front:
+			return "Front";
+		case EEditorViewportType::Right:
+			return "Right";
+		case EEditorViewportType::Perspective:
+		default:
+			return "Perspective";
+		}
+	}
+}
 
-FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors)
+FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors, EEditorViewportType InViewportType, ELevelType InWorldType)
 	: EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
 	, SeletedActors(InSeletedActors)
+	, ViewportType(InViewportType)
 {
+	SetWorldType(InWorldType);
+	ConfigureDefaultView();
 }
 
 void FEditorViewportClient::Attach(FCore* Core)
@@ -39,12 +55,39 @@ void FEditorViewportClient::Attach(FCore* Core)
 		return;
 	}
 
-	EditorUI.Initialize(Core);
-	EditorUI.SetupWindow(MainWindow);
-	EditorUI.AttachToRenderer();
-
 	WireFrameMaterial = FMaterialManager::Get().FindByName(WireframeMaterialName);
 	CreateGridResource(GRenderer);
+}
+
+void FEditorViewportClient::ConfigureDefaultView()
+{
+	switch (ViewportType)
+	{
+	case EEditorViewportType::Top:
+		CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+		CameraTransform.SetOrthoWidth(24.0f);
+		CameraTransform.SetPosition({ 0.0f, 0.0f, 25.0f });
+		CameraTransform.SetRotation(0.0f, -89.0f);
+		break;
+	case EEditorViewportType::Front:
+		CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+		CameraTransform.SetOrthoWidth(24.0f);
+		CameraTransform.SetPosition({ -25.0f, 0.0f, 0.0f });
+		CameraTransform.SetRotation(0.0f, 0.0f);
+		break;
+	case EEditorViewportType::Right:
+		CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+		CameraTransform.SetOrthoWidth(24.0f);
+		CameraTransform.SetPosition({ 0.0f, -25.0f, 0.0f });
+		CameraTransform.SetRotation(90.0f, 0.0f);
+		break;
+	case EEditorViewportType::Perspective:
+	default:
+		CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
+		CameraTransform.SetPosition({ -5.0f, 0.0f, 2.0f });
+		CameraTransform.SetRotation(0.0f, 0.0f);
+		break;
+	}
 }
 
 void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
@@ -103,9 +146,18 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 void FEditorViewportClient::Detach()
 {
 	Gizmo.EndDrag();
-	EditorUI.DetachFromRenderer();
 	GridMesh.reset();
 	GridMaterial.reset();
+}
+
+UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
+{
+	return FViewportClient::ResolveWorld(Core);
+}
+
+const char* FEditorViewportClient::GetViewportLabel() const
+{
+	return GetViewportTypeLabel(ViewportType);
 }
 
 void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -121,8 +173,9 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	//}
 
 	ULevel* Level = ResolveLevel(Core);
+	UWorld* World = ResolveWorld(Core);
 	AActor* SelectedActor = Core->GetSelectedActor();
-	if (!Level)
+	if (!Level || !World)
 	{
 		return;
 	}
@@ -171,13 +224,13 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 		//	return;
 		//}
 
-		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 		{
 			return;
 		}
 
 		{
-			AActor* PickedActor = Picker.PickActor(Core->GetActiveWorld()->GetAllActors(), &CameraTransform, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			AActor* PickedActor = Picker.PickActor(World->GetAllActors(), &CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
 			Core->SetSelectedActor(PickedActor);
 			EditorUI.SyncSelectedActorProperty();
 		}
@@ -192,11 +245,11 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 
 		if (!Gizmo.IsDragging())
 		{
-			Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
 			return;
 		}
 
-		if (Gizmo.UpdateDrag(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+		if (Gizmo.UpdateDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 		{
 			EditorUI.SyncSelectedActorProperty();
 		}
@@ -229,8 +282,14 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 	if (Core && FilePath.ends_with(".json"))
 	{
 		Core->SetSelectedActor(nullptr);
-		Core->GetLevel()->ClearActors();
-		bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), FilePath, GRenderer->GetDevice());
+		ULevel* Level = ResolveLevel(Core);
+		if (!Level)
+		{
+			return;
+		}
+
+		Level->ClearActors();
+		bool bLoaded = FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice());
 
 		if (bLoaded)
 		{
@@ -246,11 +305,17 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (GRenderer && FilePath.ends_with(".obj"))
+	if (GRenderer && Core && FilePath.ends_with(".obj"))
 	{
-		const FRay Ray = Picker.ScreenToRay(&CameraTransform, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+		ULevel* Level = ResolveLevel(Core);
+		if (!Level)
+		{
+			return;
+		}
 
-		AObjActor* NewActor = Core->GetLevel()->SpawnActor<AObjActor>("ObjActor");
+		const FRay Ray = Picker.ScreenToRay(&CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
+
+		AObjActor* NewActor = Level->SpawnActor<AObjActor>("ObjActor");
 		NewActor->LoadObj(GRenderer->GetDevice(), FPaths::ToRelativePath(FilePath));
 		FVector V = Ray.Origin + Ray.Direction * 5;
 		NewActor->SetActorLocation(V);
@@ -294,6 +359,42 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 	}
 }
 
+void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
+{
+	if (!Core || !Renderer)
+	{
+		return;
+	}
+
+	AActor* Selected = Core->GetSelectedActor();
+	if (!Selected || Selected->IsPendingDestroy() || !Selected->IsVisible() || Selected->IsA<ASkySphereActor>())
+	{
+		return;
+	}
+
+	if (!GetShowFlags().HasFlag(EEngineShowFlags::SF_Primitives))
+	{
+		return;
+	}
+
+	for (UActorComponent* Component : Selected->GetComponents())
+	{
+		if (!Component->IsA(UPrimitiveComponent::StaticClass()))
+		{
+			continue;
+		}
+
+		UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
+		if (PrimitiveComponent->GetPrimitive())
+		{
+			Renderer->RenderOutline(
+				PrimitiveComponent->GetPrimitive()->GetMeshData(),
+				PrimitiveComponent->GetWorldTransform()
+			);
+		}
+	}
+}
+
 void FEditorViewportClient::SetGridSize(float InSize)
 {
 	GridSize = InSize;
@@ -319,76 +420,65 @@ void FEditorViewportClient::SetSelection(TArray<AActor*>& SeletedActorArrayPtr)
 
 void FEditorViewportClient::SetupInputBindings()
 {
-	CameraContext = new FInputMappingContext();
+}
 
-	auto& W = CameraContext->AddMapping(&MoveForwardAction, 'W');
-	W.Triggers.push_back(new FTriggerDown());
+void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
+{
+	(void)Core;
 
-	auto& S = CameraContext->AddMapping(&MoveForwardAction, 'S');
-	S.Triggers.push_back(new FTriggerDown());
-	S.Modifiers.push_back(new FModifierNegative());
+	if (!InputManager || !InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+	{
+		return;
+	}
 
-	auto& D = CameraContext->AddMapping(&MoveRightAction, 'D');
-	D.Triggers.push_back(new FTriggerDown());
+	float ForwardInput = 0.0f;
+	float RightInput = 0.0f;
+	float UpInput = 0.0f;
 
-	auto& A = CameraContext->AddMapping(&MoveRightAction, 'A');
-	A.Triggers.push_back(new FTriggerDown());
-	A.Modifiers.push_back(new FModifierNegative());
+	if (InputManager->IsKeyDown('W'))
+	{
+		ForwardInput += 1.0f;
+	}
+	if (InputManager->IsKeyDown('S'))
+	{
+		ForwardInput -= 1.0f;
+	}
+	if (InputManager->IsKeyDown('D'))
+	{
+		RightInput += 1.0f;
+	}
+	if (InputManager->IsKeyDown('A'))
+	{
+		RightInput -= 1.0f;
+	}
+	if (InputManager->IsKeyDown('E'))
+	{
+		UpInput += 1.0f;
+	}
+	if (InputManager->IsKeyDown('Q'))
+	{
+		UpInput -= 1.0f;
+	}
 
-	auto& E = CameraContext->AddMapping(&MoveUpAction, 'E');
-	E.Triggers.push_back(new FTriggerDown());
+	if (ForwardInput != 0.0f)
+	{
+		CameraTransform.MoveForward(ForwardInput * DeltaTime);
+	}
+	if (RightInput != 0.0f)
+	{
+		CameraTransform.MoveRight(RightInput * DeltaTime);
+	}
+	if (UpInput != 0.0f)
+	{
+		CameraTransform.MoveUp(UpInput * DeltaTime);
+	}
 
-	auto& Q = CameraContext->AddMapping(&MoveUpAction, 'Q');
-	Q.Triggers.push_back(new FTriggerDown());
-	Q.Modifiers.push_back(new FModifierNegative());
-
-	CameraContext->AddMapping(&LookXAction, static_cast<int32>(EInputKey::MouseX));
-	CameraContext->AddMapping(&LookYAction, static_cast<int32>(EInputKey::MouseY));
-
-	EnhancedInput->AddMappingContext(CameraContext, 0);
-
-	EnhancedInput->BindAction(&MoveForwardAction, ETriggerEvent::Triggered,
-		[this](const FInputActionValue& Value)
-		{
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-			{
-				CameraTransform.MoveForward(Value.Get() * CurrentDeltaTime);
-			}
-		});
-
-	EnhancedInput->BindAction(&MoveRightAction, ETriggerEvent::Triggered,
-		[this](const FInputActionValue& Value)
-		{
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-			{
-				CameraTransform.MoveRight(Value.Get() * CurrentDeltaTime);
-			}
-		});
-
-	EnhancedInput->BindAction(&MoveUpAction, ETriggerEvent::Triggered,
-		[this](const FInputActionValue& Value)
-		{
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-			{
-				CameraTransform.MoveUp(Value.Get() * CurrentDeltaTime);
-			}
-		});
-
-	EnhancedInput->BindAction(&LookXAction, ETriggerEvent::Triggered,
-		[this](const FInputActionValue& Value)
-		{
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-			{
-				CameraTransform.Rotate(Value.Get() * CameraTransform.GetMouseSensitivity(), 0.0f);
-			}
-		});
-
-	EnhancedInput->BindAction(&LookYAction, ETriggerEvent::Triggered,
-		[this](const FInputActionValue& Value)
-		{
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-			{
-				CameraTransform.Rotate(0.0f, -Value.Get() * CameraTransform.GetMouseSensitivity());
-			}
-		});
+	const float MouseDeltaX = InputManager->GetMouseDeltaX();
+	const float MouseDeltaY = InputManager->GetMouseDeltaY();
+	if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
+	{
+		CameraTransform.Rotate(
+			MouseDeltaX * CameraTransform.GetMouseSensitivity(),
+			-MouseDeltaY * CameraTransform.GetMouseSensitivity());
+	}
 }

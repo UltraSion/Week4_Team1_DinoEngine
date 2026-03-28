@@ -22,6 +22,7 @@ protected:
 	void Render() override;
 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
 	std::unique_ptr<FViewportClient> CreateViewportClient() override;
+	void ConfigureViewportContext(size_t Index, FViewportContext& Context) override;
 
 	FEditorViewportController* GetViewportController();
 

@@ -6,6 +6,7 @@
 #include "ShowFlags.h"
 #include "Renderer/RenderCommand.h"
 #include "World/RenderCollector.h"
+#include "World/LevelTypes.h"
 #include "Input/InputManager.h"
 #include "Camera/Camera.h"
 #include "Input/InputAction.h"
@@ -31,22 +32,31 @@ public:
 	virtual void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual ULevel* ResolveLevel(FCore* Core) const;
 	virtual UWorld* ResolveWorld(FCore* Core) const;
+	virtual const char* GetViewportLabel() const { return "Viewport"; }
 	FShowFlags& GetShowFlags() { return ShowFlags; }
 	const FShowFlags& GetShowFlags() const { return ShowFlags; }
 	virtual void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue);
+	virtual void PostRender(FCore* Core, FRenderer* Renderer);
 	virtual void HandleFileDoubleClick(const FString& FilePath);
 	virtual void HandleFileDropOnViewport(const FString& FilePath);
 	FCamera* GetCamera() { return &CameraTransform; }
 
 	virtual void Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput);
 	virtual void SetupInputBindings();
+	virtual void ProcessCameraInput(FCore* Core, float DeltaTime);
 	virtual void Cleanup();
 	virtual void Tick(float DeltaTime);
+	virtual void SetViewportRect(int32 InTopLeftX, int32 InTopLeftY, int32 InWidth, int32 InHeight);
+	virtual void SetViewportInputState(int32 InMouseX, int32 InMouseY, int32 InWidth, int32 InHeight);
+	void SetWorldType(ELevelType InWorldType);
+	ELevelType GetWorldType() const;
 
-	int32 TopLeftX = 0;
-	int32 TopLeftY = 0;
-	int32 Width = 0;
-	int32 Height = 0;
+	int32 GetViewportTopLeftX() const { return ViewportTopLeftX; }
+	int32 GetViewportTopLeftY() const { return ViewportTopLeftY; }
+	int32 GetViewportWidth() const { return ViewportWidth; }
+	int32 GetViewportHeight() const { return ViewportHeight; }
+	int32 GetViewportMouseX() const { return ViewportMouseX; }
+	int32 GetViewportMouseY() const { return ViewportMouseY; }
 
 protected:
 	FCamera CameraTransform;
@@ -63,6 +73,13 @@ protected:
 	FInputAction LookYAction{ "LookY", EInputActionValueType::Float };
 
 	float CurrentDeltaTime = 0.0f;
+	int32 ViewportTopLeftX = 0;
+	int32 ViewportTopLeftY = 0;
+	int32 ViewportWidth = 0;
+	int32 ViewportHeight = 0;
+	int32 ViewportMouseX = 0;
+	int32 ViewportMouseY = 0;
+	ELevelType WorldType = ELevelType::Game;
 };
 
 class ENGINE_API FGameViewportClient : public FViewportClient

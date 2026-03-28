@@ -4,6 +4,7 @@
 
 class FCore;
 class FRenderer;
+class FViewportClient;
 
 class FViewportLegacy
 {
@@ -13,6 +14,7 @@ public:
 	void Render(HWND Hwnd);
 	void ReleaseLevelView();
 	bool GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+	bool GetContentRect(int32& OutClientPosX, int32& OutClientPosY, uint32& OutWidth, uint32& OutHeight) const;
 	bool IsHovered() const { return bHovered; }
 	bool IsFocused() const { return bFocused; }
 	bool IsVisible() const { return bVisible; }

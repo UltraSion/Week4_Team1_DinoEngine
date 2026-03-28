@@ -11,6 +11,7 @@
 #include "Component/SubUVComponent.h"
 #include "Core/FEngine.h"
 #include "Component/TextComponent.h"
+#include "Input/InputMappingContext.h"
 
 void FViewportClient::Attach(FCore* Core)
 {
@@ -43,6 +44,42 @@ void FViewportClient::Tick(float DeltaTime)
 	CurrentDeltaTime = DeltaTime;
 }
 
+void FViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
+{
+	(void)Core;
+	(void)DeltaTime;
+}
+
+void FViewportClient::SetViewportRect(int32 InTopLeftX, int32 InTopLeftY, int32 InWidth, int32 InHeight)
+{
+	ViewportTopLeftX = InTopLeftX;
+	ViewportTopLeftY = InTopLeftY;
+	ViewportWidth = InWidth;
+	ViewportHeight = InHeight;
+	if (ViewportWidth > 0 && ViewportHeight > 0)
+	{
+		CameraTransform.SetAspectRatio(static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight));
+	}
+}
+
+void FViewportClient::SetViewportInputState(int32 InMouseX, int32 InMouseY, int32 InWidth, int32 InHeight)
+{
+	ViewportMouseX = InMouseX;
+	ViewportMouseY = InMouseY;
+	ViewportWidth = InWidth;
+	ViewportHeight = InHeight;
+}
+
+void FViewportClient::SetWorldType(ELevelType InWorldType)
+{
+	WorldType = InWorldType;
+}
+
+ELevelType FViewportClient::GetWorldType() const
+{
+	return WorldType;
+}
+
 void FViewportClient::SetupInputBindings()
 {
 }
@@ -53,12 +90,28 @@ void FViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WPa
 
 ULevel* FViewportClient::ResolveLevel(FCore* Core) const
 {
-	return Core ? Core->GetActiveLevel() : nullptr;
+	UWorld* World = ResolveWorld(Core);
+	return World ? World->GetLevel() : nullptr;
 }
 
 UWorld* FViewportClient::ResolveWorld(FCore* Core) const
 {
-	return Core ? Core->GetActiveWorld() : nullptr;
+	if (!Core)
+	{
+		return nullptr;
+	}
+
+	switch (WorldType)
+	{
+	case ELevelType::Editor:
+		return Core->GetEditorWorld();
+	case ELevelType::Game:
+	case ELevelType::PIE:
+		return Core->GetGameWorld();
+	case ELevelType::Inactive:
+	default:
+		return Core->GetActiveWorld();
+	}
 }
 
 void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
@@ -70,6 +123,12 @@ void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderComm
 	OutQueue.ViewMatrix = CameraTransform.GetViewMatrix();
 	OutQueue.ProjectionMatrix = CameraTransform.GetProjectionMatrix();
 	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, OutQueue);
+}
+
+void FViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
+{
+	(void)Core;
+	(void)Renderer;
 }
 
 void FViewportClient::HandleFileDoubleClick(const FString& FilePath)

@@ -17,22 +17,36 @@ enum class ERenderMode
 	Wireframe,
 };
 
+enum class EEditorViewportType : uint8_t
+{
+	Perspective,
+	Top,
+	Front,
+	Right
+};
+
 class FEditorViewportClient : public FViewportClient
 {
 public:
-	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors);
+	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors, EEditorViewportType InViewportType, ELevelType InWorldType);
 
 	void Attach(FCore* Core) override;
 	void Detach() override;
 	void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
+	UWorld* ResolveWorld(FCore* Core) const override;
+	const char* GetViewportLabel() const override;
 	EGizmoMode GetGizmoMode() const { return Gizmo.GetMode(); }
 	void SetGizmoMode(EGizmoMode InMode) { Gizmo.SetMode(InMode); }
 	ERenderMode GetRenderMode() { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
+	EEditorViewportType GetViewportType() const { return ViewportType; }
+	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
 
 	void HandleFileDoubleClick(const FString& FilePath) override;
 	void HandleFileDropOnViewport(const FString& FilePath) override;
 	void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue) override;
+	void PostRender(FCore* Core, FRenderer* Renderer) override;
+	void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	float GetGridSize() const { return GridSize; }
 	void SetGridSize(float InSize);
 	float GetLineThickness() const { return LineThickness; }
@@ -53,15 +67,12 @@ private:
 	const FString WireframeMaterialName = "M_Wireframe";
 	std::shared_ptr<FMaterial> WireFrameMaterial = nullptr;
 
-	int32 ScreenWidth = 0;
-	int32 ScreenHeight = 0;
-	int32 ScreenMouseX = 0;
-	int32 ScreenMouseY = 0;
-
 	std::unique_ptr<FMeshData> GridMesh;
 	std::shared_ptr<FMaterial> GridMaterial;
+	void ConfigureDefaultView();
 	void CreateGridResource(FRenderer* Renderer);
 	float GridSize = 10.0f;
 	float LineThickness = 1.0f;
 	bool bShowGrid = true;
+	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
 };

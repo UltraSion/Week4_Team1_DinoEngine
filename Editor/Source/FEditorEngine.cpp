@@ -5,43 +5,8 @@
 #include "Core/Core.h"
 #include "Core/ConsoleVariableManager.h"
 #include "World/Level.h"
-#include "Actor/Actor.h"
-#include "Component/CubeComponent.h"
-#include "Object/ObjectFactory.h"
 #include "Debug/EngineLog.h"
-#include "World/World.h"
 #include "imgui_impl_win32.h"
-
-namespace
-{
-	constexpr const char* PreviewLevelContextName = "PreviewLevel";
-
-	void InitializeDefaultPreviewLevel(FCore* Core)
-	{
-		if (Core == nullptr)
-		{
-			return;
-		}
-
-		FEditorWorldContext* PreviewContext = Core->GetLevelManager()->CreatePreviewWorldContext(PreviewLevelContextName, 1280, 720);
-		if (PreviewContext == nullptr || PreviewContext->World == nullptr)
-		{
-			return;
-		}
-
-		UWorld* PreviewWorld = PreviewContext->World;
-		if (PreviewWorld->GetActors().empty())
-		{
-			AActor* PreviewActor = PreviewWorld->SpawnActor<AActor>("PreviewCube");
-			if (PreviewActor)
-			{
-				UCubeComponent* PreviewComponent = FObjectFactory::ConstructObject<UCubeComponent>(PreviewActor);
-				PreviewActor->AddOwnedComponent(PreviewComponent);
-				PreviewActor->SetActorLocation({ 0.0f, 0.0f, 0.0f });
-			}
-		}
-	}
-}
 
 bool FEditorEngine::Initialize(HINSTANCE hInstance)
 {
@@ -61,6 +26,7 @@ FEditorEngine::~FEditorEngine()
 
 void FEditorEngine::Shutdown()
 {
+	EditorUI.DetachFromRenderer();
 	FEngine::Shutdown();
 }
 
@@ -74,8 +40,6 @@ void FEditorEngine::PreInitialize()
 
 void FEditorEngine::PostInitialize()
 {
-	InitializeDefaultPreviewLevel(Core.get());
-
 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
 	CVM.GetAllNames([this](const FString& Name)
 		{
@@ -95,6 +59,10 @@ void FEditorEngine::PostInitialize()
 			}
 		});
 
+	EditorUI.Initialize(Core.get());
+	EditorUI.SetupWindow(MainWindow);
+	EditorUI.AttachToRenderer();
+
 	SyncViewportClient();
 	UE_LOG("EditorEngine initialized");
 }
@@ -113,7 +81,29 @@ void FEditorEngine::Render()
 
 std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 {
-	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
+	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors, EEditorViewportType::Perspective, ELevelType::Editor);
+}
+
+void FEditorEngine::ConfigureViewportContext(size_t Index, FViewportContext& Context)
+{
+	FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(Context.GetViewportClient());
+	if (!EditorViewportClient)
+	{
+		return;
+	}
+
+	const EEditorViewportType ViewportTypes[] =
+	{
+		EEditorViewportType::Perspective,
+		EEditorViewportType::Top,
+		EEditorViewportType::Front,
+		EEditorViewportType::Right
+	};
+
+	if (Index < std::size(ViewportTypes))
+	{
+		Context.ViewportClient = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors, ViewportTypes[Index], ELevelType::Editor);
+	}
 }
 
 //FEditorViewportController* FEditorEngine::GetViewportController()
@@ -123,32 +113,24 @@ std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 
 void FEditorEngine::SyncViewportClient()
 {
-	if (!Core || Viewports.empty())
+	if (!Core)
 	{
 		return;
 	}
 
-	FViewportClient* TargetViewportClient = Viewports[0].GetViewportClient();
-	if (!TargetViewportClient)
+	for (FViewportContext& ViewportContext : Viewports)
 	{
-		return;
+		if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(ViewportContext.GetViewportClient()))
+		{
+			EditorViewportClient->SetSelection(SeletedActors);
+		}
 	}
 
-	if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(TargetViewportClient))
+	ActiveViewportClient = nullptr;
+	if (FViewportContext* ActiveViewportContext = GetActiveViewportContext())
 	{
-		EditorViewportClient->SetSelection(SeletedActors);
+		ActiveViewportClient = ActiveViewportContext->GetViewportClient();
 	}
 
-	if (ActiveViewportClient == TargetViewportClient)
-	{
-		return;
-	}
-
-	if (ActiveViewportClient)
-	{
-		ActiveViewportClient->Detach();
-	}
-
-	TargetViewportClient->Attach(Core.get());
-	ActiveViewportClient = TargetViewportClient;
+	EditorUI.SetActiveViewportClient(dynamic_cast<FEditorViewportClient*>(ActiveViewportClient));
 }

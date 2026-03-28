@@ -23,6 +23,9 @@ public:
 	void DetachFromRenderer();
 	void Render();
 	void SyncSelectedActorProperty();
+	void SetActiveViewportClient(FEditorViewportClient* InViewportClient) { ActiveViewportClient = InViewportClient; }
+	FEditorViewportClient* GetActiveViewportClient() const { return ActiveViewportClient; }
+	bool HasActiveViewportClient() const { return ActiveViewportClient != nullptr; }
 	//bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
 	//bool IsViewportInteractive() const;
 
@@ -51,4 +54,5 @@ private:
 	bool bViewportClientActive = false;
 	bool bLayoutInitialized = false;
 	FRenderer* CurrentRenderer = nullptr;
+	FEditorViewportClient* ActiveViewportClient = nullptr;
 };

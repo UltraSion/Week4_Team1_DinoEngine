@@ -1,29 +1,20 @@
 #include "ControlPanelWindow.h"
-#include "World/WorldContext.h"
 #include "imgui.h"
 #include "Core/Core.h"
-#include "Renderer/Renderer.h"
+#include "World/WorldContext.h"
 #include "World/Level.h"
+#include "Camera/Camera.h"
 #include "Actor/Actor.h"
 #include "Actor/AttachTestActor.h"
 #include "Actor/CubeActor.h"
-#include "Actor/SphereActor.h"
 #include "Actor/PlaneActor.h"
+#include "Actor/SphereActor.h"
+#include "Actor/StaticMeshActor.h"
 #include "Actor/SubUVActor.h"
+#include "Actor/SkySphereActor.h"
 #include "Actor/TextActor.h"
 #include "Component/TextComponent.h"
-#include "Object/ObjectFactory.h"
-#include "Camera/Camera.h"
-#include "Core/Paths.h"
-#include "Debug/EngineLog.h"
-#include "Component/CameraComponent.h"
-#include "Actor/SkySphereActor.h"
-#include "Controller/EditorViewportController.h"
-#include "Serializer/SceneSerializer.h"
-#include "Actor/StaticMeshActor.h"
-#include <filesystem>
-#include <random>
-#include <chrono>
+#include "UI/EditorViewportClient.h"
 
 namespace
 {
@@ -37,8 +28,6 @@ namespace
 			return "Editor";
 		case ELevelType::PIE:
 			return "PIE";
-		case ELevelType::Preview:
-			return "Preview";
 		case ELevelType::Inactive:
 			return "Inactive";
 		default:
@@ -47,7 +36,7 @@ namespace
 	}
 }
 
-void FControlPanelWindow::Render(FCore* Core)
+void FControlPanelWindow::Render(FCore* Core, FEditorViewportClient* ActiveViewportClient)
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 	const bool bOpen = ImGui::Begin("Control Panel");
@@ -61,81 +50,28 @@ void FControlPanelWindow::Render(FCore* Core)
 
 	if (Core && Core->GetLevel())
 	{
-	
 		const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
-		const TArray<std::unique_ptr<FEditorWorldContext>>& PreviewLevelContexts = Core->GetLevelManager()->GetPreviewWorldContexts();
-		const bool bPreviewActive = ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview;
+		FCamera* Camera = ActiveViewportClient ? ActiveViewportClient->GetCamera() : nullptr;
 
-		/*
-			PreviewLevel 등 아마 확장의 여지를 둔 것으로 보이나 아무 기능도 없어 주석 처리함		
-		*/
-		/*
-		ImGui::SeparatorText("World");
+		ImGui::SeparatorText("Viewport");
+		if (ActiveViewportClient)
+		{
+			ImGui::Text("Active: %s", ActiveViewportClient->GetViewportLabel());
+			ImGui::Text("World: %s", GetLevelTypeLabel(ActiveViewportClient->GetWorldType()));
+		}
+		else
+		{
+			ImGui::TextUnformatted("Active: None");
+		}
 
 		if (ActiveWorldContext)
 		{
-			ImGui::Text("Active: %s", ActiveWorldContext->ContextName.c_str());
-			ImGui::Text("Type: %s", GetLevelTypeLabel(ActiveWorldContext->WorldType));
+			ImGui::Text("Scene Context: %s", ActiveWorldContext->ContextName.c_str());
 		}
-		*/
-
-		/*
-		if (ImGui::Button("Editor Level"))
-		{
-			Core->ActivateEditorLevel();
-		}
-		*/
-
-		/*
-		ImGui::SameLine();
-
-		if (PreviewLevelContexts.empty())
-		{
-			ImGui::BeginDisabled();
-			ImGui::Button("Preview Level");
-			ImGui::EndDisabled();
-		}
-		else if (ImGui::Button("Preview Level"))
-		{
-			Core->ActivatePreviewLevel(PreviewLevelContexts.front()->ContextName);
-		}
-
-		if (bPreviewActive)
-		{
-			ImGui::TextUnformatted("Preview Level is editor-only. Level save/load is disabled.");
-		}
-		*/
 
 		ImGui::SeparatorText("Camera");
-		
-
-		/*
-		if (ImGui::Button("Spawn Test"))
+		if (Camera)
 		{
-			ULevel* Level = Core->GetLevel();
-			AActor* NewActor = nullptr;
-
-			for (int i = 0; i < 1000; i++)
-			{
-				// 시드: 현재 시간 기반
-				static std::mt19937 rng(static_cast<unsigned int>(
-					std::chrono::steady_clock::now().time_since_epoch().count()
-					));
-
-				std::uniform_real_distribution<float> dist(-10, 10);
-
-				FVector V{ 0, 0, 0 };
-				NewActor = Level->SpawnActor<ACubeActor>("Test");
-				NewActor->SetActorLocation(V);
-			}
-		}
-		*/
-		
-		if (FCamera* Camera = Core->GetLevel()->GetCamera())
-		/*
-		if (FCamera* Camera = Core->GetLevel()->GetCamera())
-		{
-		
 			float Sensitivity = Camera->GetMouseSensitivity();
 			if (ImGui::SliderFloat("Mouse Sensitivity", &Sensitivity, 0.01f, 1.0f))
 			{
@@ -147,6 +83,7 @@ void FControlPanelWindow::Render(FCore* Core)
 			{
 				Camera->SetSpeed(Speed);
 			}
+
 			const FVector CameraPosition = Camera->GetPosition();
 			float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
 			if (ImGui::DragFloat3("Position", Position, 0.1f))
@@ -191,19 +128,14 @@ void FControlPanelWindow::Render(FCore* Core)
 				}
 			}
 		}
-		*/
 
 		ImGui::SeparatorText("Spawn");
 
 		static int32 SpawnTypeIndex = 0;
 		const char* SpawnTypes[] = { "Cube", "Sphere", "Plane", "AttachTest", "SubUV", "Text", "SkySphere", "StaticMesh" };
-
-
 		ImGui::Combo("Type", &SpawnTypeIndex, SpawnTypes, IM_ARRAYSIZE(SpawnTypes));
 
 		static char SpawnTextBuffer[256] = "Text";
-
-
 		if (SpawnTypeIndex == 5)
 		{
 			ImGui::InputText("Text", SpawnTextBuffer, IM_ARRAYSIZE(SpawnTextBuffer));
@@ -212,7 +144,6 @@ void FControlPanelWindow::Render(FCore* Core)
 		if (ImGui::Button("Spawn"))
 		{
 			ULevel* Level = Core->GetLevel();
-			static int32 SpawnCount = 0;
 			const FString Name = SpawnTypes[SpawnTypeIndex];
 
 			AActor* NewActor = nullptr;
@@ -242,8 +173,10 @@ void FControlPanelWindow::Render(FCore* Core)
 				if (NewActor)
 				{
 					ATextActor* TextActor = static_cast<ATextActor*>(NewActor);
-					if (UTextComponent* TC = TextActor->GetTextComponent())
-						TC->SetText(SpawnTextBuffer[0] != '\0' ? SpawnTextBuffer : "Text");
+					if (UTextComponent* TextComponent = TextActor->GetTextComponent())
+					{
+						TextComponent->SetText(SpawnTextBuffer[0] != '\0' ? SpawnTextBuffer : "Text");
+					}
 				}
 			}
 			else if (SpawnTypeIndex == 6)
@@ -254,11 +187,11 @@ void FControlPanelWindow::Render(FCore* Core)
 			{
 				NewActor = Level->SpawnActor<AStaticMeshActor>(Name);
 			}
+
 			if (NewActor && !NewActor->IsA<ASkySphereActor>())
 			{
 				Core->SetSelectedActor(NewActor);
 			}
-			UE_LOG("Spawned %s: %s", SpawnTypes[SpawnTypeIndex], Name.c_str());
 		}
 
 		ImGui::SameLine();
@@ -270,10 +203,8 @@ void FControlPanelWindow::Render(FCore* Core)
 
 		if (ImGui::Button("Delete"))
 		{
-			const FString Name = SelectedActor->GetName();
 			Core->GetLevel()->DestroyActor(SelectedActor);
 			Core->SetSelectedActor(nullptr);
-			UE_LOG("Deleted actor: %s", Name.c_str());
 		}
 
 		if (!SelectedActor)

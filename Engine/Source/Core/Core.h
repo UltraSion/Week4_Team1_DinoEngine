@@ -62,7 +62,6 @@ public:
 	AActor* GetSelectedActor() const { return LevelManager->GetSelectedActor(); }
 	void ActivateEditorLevel() { LevelManager->ActivateEditorLevel(); }
 	void ActivateGameLevel() { LevelManager->ActivateGameLevel(); }
-	bool ActivatePreviewLevel(const FString& ContextName) { return LevelManager->ActivatePreviewLevel(ContextName); }
 
 	UWorld* GetActiveWorld() const { return LevelManager->GetActiveWorld(); }
 	UWorld* GetEditorWorld() const { return LevelManager->GetEditorWorld(); }

@@ -29,6 +29,7 @@
 #include "Actor/ObjActor.h"
 #include "Core/ShowFlags.h"
 #include "EditorViewportClient.h"
+#include "Core/FEngine.h"
 
 enum class EFileDialogType
 {
@@ -98,10 +99,9 @@ void FEditorUI::Initialize(FCore* InCore)
 
 	ContentBrowser.OnFileDoubleClickCallback = [this](const FString& FilePath)
 		{
-			if (Core)
+			if (ActiveViewportClient)
 			{
-
-				//Core->GetViewportClient()->HandleFileDoubleClick(FilePath);
+				ActiveViewportClient->HandleFileDoubleClick(FilePath);
 			}
 		};
 
@@ -153,14 +153,10 @@ void FEditorUI::Initialize(FCore* InCore)
 					}
 				}
 			}
-			//else if (Viewport.IsHovered())
-			//{
-			//	UE_LOG("Drop On Viewport");			
-			//	if (Core)
-			//	{
-			//		Core->GetViewportClient()->HandleFileDropOnViewport(DraggingFilePath);
-			//	}
-			//}
+			else if (ActiveViewportClient)
+			{
+				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath);
+			}
 		};
 }
 
@@ -276,40 +272,6 @@ void FEditorUI::AttachToRenderer()
 	);
 
 	GRenderer->SetGUIUpdateCallback([this]() { Render(); });
-
-	GRenderer->SetPostRenderCallback([this](FRenderer* Renderer)
-		{
-			if (!Core)
-			{
-				return;
-			}
-	
-			AActor* Selected = Core->GetSelectedActor();
-			if (Selected && !Selected->IsPendingDestroy() && Selected->IsVisible()
-				&& !Selected->IsA<ASkySphereActor>()
-				/*&& Core->GetViewportClient()->GetShowFlags().HasFlag(EEngineShowFlags::SF_Primitives)*/)
-			{
-				for (UActorComponent* Component : Selected->GetComponents())
-				{
-					if (!Component->IsA(UPrimitiveComponent::StaticClass()))
-					{
-						continue;
-					}
-
-					UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
-					if (PrimitiveComponent->GetPrimitive())
-					{
-						Renderer->RenderOutline(
-							PrimitiveComponent->GetPrimitive()->GetMeshData(),
-							PrimitiveComponent->GetWorldTransform()
-						);
-					}
-				}
-			}
-
-			const float AxisLength = 10000.0f;
-			const FVector Origin = { 0.0f, 0.0f, 0.0f };
-		});
 	LoadEditorSettings();
 }
 
@@ -532,6 +494,15 @@ void FEditorUI::Render()
 	ImGui::End();
 
 	ViewportLegacy.Render(MainWindow ? MainWindow->GetHwnd() : nullptr);
+	int32 ViewportClientPosX = 0;
+	int32 ViewportClientPosY = 0;
+	uint32 ViewportWidth = 0;
+	uint32 ViewportHeight = 0;
+	if (GEngine)
+	{
+		ViewportLegacy.GetContentRect(ViewportClientPosX, ViewportClientPosY, ViewportWidth, ViewportHeight);
+		GEngine->SetViewportLayoutBounds(ViewportClientPosX, ViewportClientPosY, ViewportWidth, ViewportHeight);
+	}
 
 	if (Core)
 	{
@@ -557,29 +528,35 @@ void FEditorUI::Render()
 			{
 				if (Core)
 				{
-					Core->SetSelectedActor(nullptr);
-					if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
+					ULevel* ActiveLevel = ActiveViewportClient ? ActiveViewportClient->ResolveLevel(Core) : Core->GetLevel();
+					UWorld* ActiveWorld = ActiveViewportClient ? ActiveViewportClient->ResolveWorld(Core) : Core->GetActiveWorld();
+					if (ActiveLevel && ActiveWorld)
 					{
-						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
-						Cam->GetCamera()->SetRotation(0.f, 0.f);
+						Core->SetSelectedActor(nullptr);
+						if (UCameraComponent* Cam = ActiveWorld->GetActiveCameraComponent())
+						{
+							Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+							Cam->GetCamera()->SetRotation(0.f, 0.f);
+						}
+						ActiveLevel->ClearActors();
+						UE_LOG("New Level created");
 					}
-					Core->GetLevel()->ClearActors();
-					UE_LOG("New Level created");
 				}
 			}
 
 			if (ImGui::MenuItem("Open Level"))
 			{
-				if (Core && Core->GetActiveLevel())
+				ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
+				if (Core && ActiveLevel)
 				{
 					FString Path = GetFilePathUsingDialog(EFileDialogType::Open);
 
 					if (!Path.empty())
 					{
 						Core->SetSelectedActor(nullptr);
-						Core->GetLevel()->ClearActors();
+						ActiveLevel->ClearActors();
 
-						bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), Path, GRenderer->GetDevice());
+						bool bLoaded = FSceneSerializer::Load(ActiveLevel, Path, GRenderer->GetDevice());
 						if (bLoaded)
 						{
 							UE_LOG("Level loaded: %s", Path.c_str());
@@ -599,13 +576,14 @@ void FEditorUI::Render()
 
 			if (ImGui::MenuItem("Save Level As..."))
 			{
-				if (Core && Core->GetActiveLevel())
+				ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
+				if (Core && ActiveLevel)
 				{
 					FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
 
 					if (!Path.empty())
 					{
-						FSceneSerializer::Save(Core->GetLevel(),Path);
+						FSceneSerializer::Save(ActiveLevel, Path);
 					}
 				}
 			}
@@ -614,6 +592,52 @@ void FEditorUI::Render()
 		}
 		if (ImGui::BeginMenu("View"))
 		{
+			if (!ActiveViewportClient)
+			{
+				ImGui::BeginDisabled();
+			}
+
+			if (ActiveViewportClient)
+			{
+				FShowFlags& ShowFlags = ActiveViewportClient->GetShowFlags();
+				auto ShowFlagCheckbox = [&ShowFlags](const char* Label, EEngineShowFlags Flag)
+				{
+					bool bValue = ShowFlags.HasFlag(Flag);
+					if (ImGui::Checkbox(Label, &bValue))
+					{
+						ShowFlags.SetFlag(Flag, bValue);
+					}
+				};
+
+				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel());
+				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
+				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
+				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+
+				bool bShowGrid = ActiveViewportClient->IsGridVisible();
+				if (ImGui::Checkbox("Show Grid", &bShowGrid))
+				{
+					ActiveViewportClient->SetGridVisible(bShowGrid);
+				}
+
+				float GridSize = ActiveViewportClient->GetGridSize();
+				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
+				{
+					ActiveViewportClient->SetGridSize(GridSize);
+				}
+
+				float Thickness = ActiveViewportClient->GetLineThickness();
+				if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
+				{
+					ActiveViewportClient->SetLineThickness(Thickness);
+				}
+			}
+
+			if (!ActiveViewportClient)
+			{
+				ImGui::EndDisabled();
+			}
 			//if (Core && Core->GetViewportClient())
 			//{
 			//	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
@@ -664,7 +688,7 @@ void FEditorUI::Render()
 			//		SaveEditorSettings();
 			//	}
 			//}
-			//ImGui::EndMenu();
+			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))
 		{
@@ -752,7 +776,7 @@ void FEditorUI::Render()
 		ImGui::EndPopup();
 	}
 
-	ControlPanel.Render(Core);
+	ControlPanel.Render(Core, ActiveViewportClient);
 	Property.Render(Core);
 	Console.Render();
 	Stat.Render();

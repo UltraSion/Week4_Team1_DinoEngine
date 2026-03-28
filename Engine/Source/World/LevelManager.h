@@ -26,11 +26,8 @@ public:
 	// World 전환
 	void ActivateEditorLevel() { ActiveWorldContext = EditorWorldContext.World ? &EditorWorldContext : nullptr; }
 	void ActivateGameLevel() { ActiveWorldContext = GameWorldContext.World ? &GameWorldContext : nullptr; }
-	bool ActivatePreviewLevel(const FString& ContextName);
 
 	// Preview 관리
-	FEditorWorldContext* CreatePreviewWorldContext(const FString& ContextName, int32 WindowWidth, int32 WindowHeight);
-	bool DestroyPreviewWorld(const FString& ContextName);
 
 	// World 접근자
 	UWorld* GetActiveWorld() const { return ActiveWorldContext ? ActiveWorldContext->World : nullptr; }
@@ -38,13 +35,11 @@ public:
 	UWorld* GetGameWorld() const { return GameWorldContext.World; }
 
 	const FWorldContext* GetActiveWorldContext() const { return ActiveWorldContext; }
-	const TArray<std::unique_ptr<FEditorWorldContext>>& GetPreviewWorldContexts() const { return PreviewWorldContexts; }
 
 	// 하위 호환 — World 경유로 Level 반환
 	ULevel* GetActiveLevel() const;
 	ULevel* GetEditorLevel() const;
 	ULevel* GetGameLevel() const;
-	ULevel* GetPreviewLevel(const FString& ContextName) const;
 
 	// 선택 Actor
 	void SetSelectedActor(AActor* InActor);
@@ -61,13 +56,10 @@ private:
 
 	FEditorWorldContext* GetActiveEditorContext();
 	const FEditorWorldContext* GetActiveEditorContext() const;
-	FEditorWorldContext* FindPreviewWorld(const FString& ContextName);
-	const FEditorWorldContext* FindPreviewWorld(const FString& ContextName) const;
 
 private:
 	FWorldContext GameWorldContext;
 	FEditorWorldContext EditorWorldContext;
-	TArray<std::unique_ptr<FEditorWorldContext>> PreviewWorldContexts;
 	FWorldContext* ActiveWorldContext = nullptr;
 	FRenderer* Renderer = nullptr;
 };
