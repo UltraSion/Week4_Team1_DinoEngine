@@ -24,18 +24,18 @@ void UWorld::InitializeWorld(float AspectRatio, ID3D11Device* Device)
 
 	PersistentLevel->SetSceneType(WorldType);
 
-	if (!SceneCameraComponent)
-	{
-		SceneCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "SceneCamera");
-	}
-	if (!ActiveCameraComponent)
-	{
-		ActiveCameraComponent = SceneCameraComponent;
-	}
-	if (SceneCameraComponent->GetCamera())
-	{
-		SceneCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
-	}
+	//if (!SceneCameraComponent)
+	//{
+	//	SceneCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "SceneCamera");
+	//}
+	//if (!ActiveCameraComponent)
+	//{
+	//	ActiveCameraComponent = SceneCameraComponent;
+	//}
+	//if (SceneCameraComponent->GetCamera())
+	//{
+	//	SceneCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
+	//}
 
 	if (Device)
 	{
@@ -91,15 +91,15 @@ void UWorld::CleanupWorld()
 		PersistentLevel->MarkPendingKill();
 		PersistentLevel = nullptr;
 	}
-	if (SceneCameraComponent)
-	{
-		SceneCameraComponent->MarkPendingKill();
-	}
-	if (ActiveCameraComponent == SceneCameraComponent)
-	{
-		ActiveCameraComponent = nullptr;
-	}
-	SceneCameraComponent = nullptr;
+	//if (SceneCameraComponent)
+	//{
+	//	SceneCameraComponent->MarkPendingKill();
+	//}
+	//if (ActiveCameraComponent == SceneCameraComponent)
+	//{
+	//	ActiveCameraComponent = nullptr;
+	//}
+	//SceneCameraComponent = nullptr;
 	WorldTime = 0.f;
 	DeltaSeconds = 0.f;
 }
@@ -109,17 +109,17 @@ void UWorld::DestroyActor(AActor* InActor)
 	if (!InActor || !PersistentLevel) return;
 
 
-	if (ActiveCameraComponent && ActiveCameraComponent != SceneCameraComponent)
-	{
-		for (UActorComponent* Component : InActor->GetComponents())
-		{
-			if (Component == ActiveCameraComponent)
-			{
-				ActiveCameraComponent = SceneCameraComponent;
-				break;
-			}
-		}
-	}
+	//if (ActiveCameraComponent && ActiveCameraComponent != SceneCameraComponent)
+	//{
+	//	for (UActorComponent* Component : InActor->GetComponents())
+	//	{
+	//		if (Component == ActiveCameraComponent)
+	//		{
+	//			ActiveCameraComponent = SceneCameraComponent;
+	//			break;
+	//		}
+	//	}
+	//}
 
 	PersistentLevel->DestroyActor(InActor);
 }
@@ -202,19 +202,19 @@ const TArray<AActor*>& UWorld::GetActors() const
 	return EmptyArray;
 }
 
-void UWorld::SetActiveCameraComponent(UCameraComponent* InCamera)
-{
-	ActiveCameraComponent = InCamera ? InCamera : SceneCameraComponent;
-}
-
-UCameraComponent* UWorld::GetActiveCameraComponent() const
-{
-	return ActiveCameraComponent ? ActiveCameraComponent.Get() : SceneCameraComponent;
-}
-
-CCamera* UWorld::GetCamera() const
-{
-	UCameraComponent* Cam = GetActiveCameraComponent();
-	return Cam ? Cam->GetCamera() : nullptr;
-}
+//void UWorld::SetActiveCameraComponent(UCameraComponent* InCamera)
+//{
+//	ActiveCameraComponent = InCamera ? InCamera : SceneCameraComponent;
+//}
+//
+//UCameraComponent* UWorld::GetActiveCameraComponent() const
+//{
+//	return ActiveCameraComponent ? ActiveCameraComponent.Get() : SceneCameraComponent;
+//}
+//
+//CCamera* UWorld::GetCamera() const
+//{
+//	UCameraComponent* Cam = GetActiveCameraComponent();
+//	return Cam ? Cam->GetCamera() : nullptr;
+//}
 

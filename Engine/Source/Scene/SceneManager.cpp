@@ -290,22 +290,22 @@ void FSceneManager::OnResize(int32 Width, int32 Height)
 
 	const float NewAspect = static_cast<float>(Width) / static_cast<float>(Height);
 
-	auto UpdateAspect = [NewAspect](UWorld* World)
-	{
-		if (World && World->GetCamera())
-		{
-			World->GetCamera()->SetAspectRatio(NewAspect);
-		}
-	};
+	//auto UpdateAspect = [NewAspect](UWorld* World)
+	//{
+	//	if (World && World->GetCamera())
+	//	{
+	//		World->GetCamera()->SetAspectRatio(NewAspect);
+	//	}
+	//};
 
-	UpdateAspect(GameWorldContext.World);
-	UpdateAspect(EditorWorldContext.World);
+	//UpdateAspect(GameWorldContext.World);
+	//UpdateAspect(EditorWorldContext.World);
 
-	for (const std::unique_ptr<FEditorWorldContext>& PreviewContext : PreviewWorldContexts)
-	{
-		if (PreviewContext)
-		{
-			UpdateAspect(PreviewContext->World);
-		}
-	}
+	//for (const std::unique_ptr<FEditorWorldContext>& PreviewContext : PreviewWorldContexts)
+	//{
+	//	if (PreviewContext)
+	//	{
+	//		UpdateAspect(PreviewContext->World);
+	//	}
+	//}
 }

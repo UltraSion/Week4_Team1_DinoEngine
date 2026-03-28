@@ -10,6 +10,7 @@
 #include "World/WorldContext.h"
 #include <memory>
 #include "Debug/DebugDrawManager.h"
+
 class CEnhancedInputManager;
 class CInputManager;
 
@@ -43,6 +44,8 @@ public:
 	const FTimer& GetTimer() const { return Timer; }
 
 	void SetViewportClient(IViewportClient* InViewportClient);
+	void AddViewportClient(IViewportClient* InViewportClient);
+	void SetViewpotsClients(TArray<IViewportClient*> InViewportClients);
 
 	void OnResize(int32 Width, int32 Height);
 	CEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
@@ -85,6 +88,7 @@ private:
 
 	ObjectManager* ObjManager = nullptr;
 	IViewportClient* ViewportClient = nullptr;
+	TArray< IViewportClient*> ViewportClients;
 	std::unique_ptr<FSceneManager> SceneManager;
 
 	std::unique_ptr<CPhysicsManager> PhysicsManager;

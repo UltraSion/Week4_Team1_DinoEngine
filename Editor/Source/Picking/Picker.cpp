@@ -100,21 +100,19 @@ bool CPicker::RayTriangleIntersect(const FRay& Ray,
 	return false;
 }
 
-AActor* CPicker::PickActor(UScene* Scene, int32 ScreenX, int32 ScreenY,
-						   int32 ScreenWidth, int32 ScreenHeight) const
+AActor* CPicker::PickActor(const TArray<AActor*>& InActors, const CCamera* InCamera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
 {
-	if (!Scene || !Scene->GetCamera())
+	if (!InCamera)
 	{
 		return nullptr;
 	}
 
-	CCamera* Camera = Scene->GetCamera();
-	const FRay Ray = ScreenToRay(Camera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+	const FRay Ray = ScreenToRay(InCamera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
 
 	AActor* ClosestActor = nullptr;
 	float ClosestDistance = (std::numeric_limits<float>::max)();
 
-	for (AActor* Actor : Scene->GetActors())
+	for (AActor* Actor : InActors)
 	{
 		if (!Actor || Actor->IsPendingDestroy())
 		{

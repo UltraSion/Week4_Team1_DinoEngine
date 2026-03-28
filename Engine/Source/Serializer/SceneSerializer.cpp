@@ -21,13 +21,13 @@
 void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
 {
 	nlohmann::json Json;
-	CCamera* Camera = Scene->GetCamera();
-	if (Camera)
-	{
-		const FVector Position = Camera->GetPosition();
-		Json["Camera"]["Position"] = { Position.X, Position.Y, Position.Z };
-		Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
-	}
+	//CCamera* Camera = Scene->GetCamera();
+	//if (Camera)
+	//{
+	//	const FVector Position = Camera->GetPosition();
+	//	Json["Camera"]["Position"] = { Position.X, Position.Y, Position.Z };
+	//	Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
+	//}
 
 	// Materials (로드된 Material 파일 경로를 프로젝트 루트 기준 상대 경로로 저장)
 	TArray<FString> LoadedPaths = FMaterialManager::Get().GetLoadedPaths();
@@ -92,21 +92,21 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
 	if (!Json.contains("Primitives"))
 		return false;
 
-	CCamera* Camera = Scene->GetCamera();
-	if (Camera && Json.contains("Camera"))
-	{
-		auto& Cam = Json["Camera"];
-		if (Cam.contains("Position"))
-		{
-			auto& P = Cam["Position"];
-			Camera->SetPosition({ P[0].get<float>(), P[1].get<float>(), P[2].get<float>() });
-		}
-		if (Cam.contains("Rotation"))
-		{
-			auto& R = Cam["Rotation"];
-			Camera->SetRotation(R[0].get<float>(), R[1].get<float>());
-		}
-	}
+	//CCamera* Camera = Scene->GetCamera();
+	//if (Camera && Json.contains("Camera"))
+	//{
+	//	auto& Cam = Json["Camera"];
+	//	if (Cam.contains("Position"))
+	//	{
+	//		auto& P = Cam["Position"];
+	//		Camera->SetPosition({ P[0].get<float>(), P[1].get<float>(), P[2].get<float>() });
+	//	}
+	//	if (Cam.contains("Rotation"))
+	//	{
+	//		auto& R = Cam["Rotation"];
+	//		Camera->SetRotation(R[0].get<float>(), R[1].get<float>());
+	//	}
+	//}
 
 	int32 ActorIndex = 0;
 	for (auto& [Key, Value] : Json["Primitives"].items())

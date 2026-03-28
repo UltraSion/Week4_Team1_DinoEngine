@@ -45,12 +45,12 @@ namespace
 			}
 		}
 
-		if (UCameraComponent* PreviewCamera = PreviewWorld->GetActiveCameraComponent())
-		{
-			PreviewCamera->GetCamera()->SetPosition({ -8.0f, -8.0f, 6.0f });
-			PreviewCamera->GetCamera()->SetRotation(45.0f, -20.0f);
-			PreviewCamera->SetFov(50.0f);
-		}
+		//if (UCameraComponent* PreviewCamera = PreviewWorld->GetActiveCameraComponent())
+		//{
+		//	PreviewCamera->GetCamera()->SetPosition({ -8.0f, -8.0f, 6.0f });
+		//	PreviewCamera->GetCamera()->SetRotation(45.0f, -20.0f);
+		//	PreviewCamera->SetFov(50.0f);
+		//}
 	}
 }
 
@@ -62,6 +62,41 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 	{
 		return false;
 	}
+
+
+	ViewportClient->TopLeftX = 0;
+	ViewportClient->TopLeftY = 0;
+	ViewportClient->Width = 500;
+	ViewportClient->Height = 500;
+	ViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(ViewportClient.get());
+
+	std::unique_ptr<IViewportClient> Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	Client->TopLeftX = 500;
+	Client->TopLeftY = 0;
+	Client->Width = 500;
+	Client->Height = 500;
+	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(Client.get());
+	AdditionalViewportClients.push_back(std::move(Client));
+
+	Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	Client->TopLeftX = 0;
+	Client->TopLeftY = 500;
+	Client->Width = 500;
+	Client->Height = 500;
+	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(Client.get());
+	AdditionalViewportClients.push_back(std::move(Client));
+
+	Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	Client->TopLeftX = 500;
+	Client->TopLeftY = 500;
+	Client->Width = 500;
+	Client->Height = 500;
+	Client->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(Client.get());
+	AdditionalViewportClients.push_back(std::move(Client));
 
 	return true;
 }
@@ -79,16 +114,25 @@ void FEditorEngine::Shutdown()
 	}
 
 	// EditorPawn은 Scene 소속이 아니므로 직접 정리
-	if (EditorPawn)
-	{
-		EditorPawn->Destroy();
-		EditorPawn = nullptr;
-	}
+	//if (EditorPawn)
+	//{
+	//	EditorPawn->Destroy();
+	//	EditorPawn = nullptr;
+	//}
 
 	PreviewViewportClient.reset();
+	for (std::unique_ptr<IViewportClient>& Client : AdditionalViewportClients)
+	{
+		if (Client)
+		{
+			Client->Cleanup();
+		}
+	}
+	AdditionalViewportClients.clear();
 
 	// ViewportController가 EnhancedInput을 참조하므로, Engine이 해제하기 전에 정리
-	ViewportController.Cleanup();
+	ViewportClient.get()->Cleanup();
+	//ViewportController.Cleanup();
 
 	FEngine::Shutdown();
 }
@@ -104,7 +148,7 @@ void FEditorEngine::PreInitialize()
 void FEditorEngine::PostInitialize()
 {
 	InitializeDefaultPreviewScene(Core.get());
-	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewSceneContextName);
+	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewSceneContextName, Core.get()->GetEditorWorld());
 
 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
 
@@ -131,13 +175,10 @@ void FEditorEngine::PostInitialize()
 		});
 	// EditorPawn은 Scene에 등록하지 않음 — FEditorEngine이 직접 소유
 	
-	EditorPawn = FObjectFactory::ConstructObject<AEditorCameraPawn>(nullptr, "EditorCameraPawn");
-	EditorPawn->Initialize();
-	Core->GetActiveWorld()->SetActiveCameraComponent(EditorPawn->GetCameraComponent());
-	ViewportController.Initialize(
-		EditorPawn->GetCameraComponent(),
-		Core->GetInputManager(),
-		Core->GetEnhancedInputManager());
+	//EditorPawn = FObjectFactory::ConstructObject<AEditorCameraPawn>(nullptr, "EditorCameraPawn");
+	//EditorPawn->Initialize();
+	//Core->GetActiveWorld()->SetActiveCameraComponent(EditorPawn->GetCameraComponent());
+	//ViewportController.Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
 
 
 	SyncViewportClient();
@@ -148,22 +189,23 @@ void FEditorEngine::Tick(float DeltaTime)
 {
 	// Editor Scene에서는 EditorPawn 카메라가 항상 활성화되도록 보장
 	// (ClearActors 후 SceneCameraComponent로 폴백된 경우 복원)
-	if (EditorPawn && Core && Core->GetScene() && Core->GetScene()->IsEditorScene())
-	{
-		UCameraComponent* EditorCamera = EditorPawn->GetCameraComponent();
-		if (Core->GetActiveWorld()->GetActiveCameraComponent() != EditorCamera)
-		{
-			Core->GetActiveWorld()->SetActiveCameraComponent(EditorCamera);
-		}
-	}
+	//if (EditorPawn && Core && Core->GetScene() && Core->GetScene()->IsEditorScene())
+	//{
+	//	UCameraComponent* EditorCamera = EditorPawn->GetCameraComponent();
+	//	if (Core->GetActiveWorld()->GetActiveCameraComponent() != EditorCamera)
+	//	{
+	//		Core->GetActiveWorld()->SetActiveCameraComponent(EditorCamera);
+	//	}
+	//}
 
-	ViewportController.Tick(DeltaTime);
+	ViewportClient.get()->Tick(DeltaTime);
+	//ViewportController.Tick(DeltaTime);
 	SyncViewportClient();
 }
 
 std::unique_ptr<IViewportClient> FEditorEngine::CreateViewportClient()
 {
-	return std::make_unique<CEditorViewportClient>(EditorUI, MainWindow);
+	return std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
 }
 
 CEditorViewportController* FEditorEngine::GetViewportController()

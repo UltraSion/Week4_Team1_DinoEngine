@@ -5,10 +5,10 @@
 class CCore;
 class CRenderer;
 
-class CViewport
+class CViewportLegacy
 {
 public:
-	~CViewport();
+	~CViewportLegacy();
 
 	void Render(CCore* Core, CRenderer* Renderer, HWND Hwnd);
 	void ReleaseSceneView();

@@ -36,11 +36,11 @@ UScene::~UScene()
 }
 
 
-CCamera* UScene::GetCamera() const
-{
-	UWorld* World = GetTypedOuter<UWorld>();
-	return World ? World->GetCamera() : nullptr;
-}
+//CCamera* UScene::GetCamera() const
+//{
+//	UWorld* World = GetTypedOuter<UWorld>();
+//	return World ? World->GetCamera() : nullptr;
+//}
 
 
 

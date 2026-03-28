@@ -7,12 +7,13 @@
 
 #include "imgui.h"
 
-CPreviewViewportClient::CPreviewViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, FString InPreviewContextName)
-	: EditorUI(InEditorUI)
+CPreviewViewportClient::CPreviewViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, FString InPreviewContextName, UWorld* World) : IViewportClient(World)
+	, EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
 	, PreviewContextName(std::move(InPreviewContextName))
 {
 }
+
 
 void CPreviewViewportClient::Attach(CCore* Core, CRenderer* Renderer)
 {

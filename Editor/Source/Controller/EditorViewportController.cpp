@@ -6,6 +6,8 @@
 #include "Input/InputModifier.h"
 #include "Input/InputMappingContext.h"
 #include "Camera/Camera.h"
+
+
 CEditorViewportController::~CEditorViewportController()
 {
 	Cleanup();
@@ -20,9 +22,8 @@ void CEditorViewportController::Cleanup()
 	EnhancedInput = nullptr;
 }
 
-void CEditorViewportController::Initialize(UCameraComponent* InCameraComp, CInputManager* InInput, CEnhancedInputManager* InEnhancedInput)
+void CEditorViewportController::Initialize(CInputManager* InInput, CEnhancedInputManager* InEnhancedInput)
 {
-	CameraComponent = InCameraComp;
 	InputManager = InInput;
 	EnhancedInput = InEnhancedInput;
 	SetupInputBindings();

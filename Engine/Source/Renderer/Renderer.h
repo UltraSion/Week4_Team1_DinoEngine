@@ -65,8 +65,8 @@ public:
 
 	// ─── 명령 실행 ───
 	/** 커맨드 큐 제출 및 GPU 버퍼 업데이트 */
-	void SubmitCommands(const FRenderCommandQueue& Queue);
-	
+	void SubmitCommands(const FRenderCommandQueue& InQueue);
+	void SetViewport(D3D11_VIEWPORT* Viewport);
 	/** 수집된 커맨드 정렬 및 실행 */
 	void ExecuteCommands();
 	

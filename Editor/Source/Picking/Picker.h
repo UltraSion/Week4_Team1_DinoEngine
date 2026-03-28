@@ -2,8 +2,9 @@
 
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
+#include "Actor/Actor.h"
 
-class AActor;
+//class AActor;
 class UScene;
 class CCamera;
 
@@ -25,6 +26,5 @@ public:
                               float& OutDistance) const;
 
     // 씬의 모든 Actor를 대상으로 피킹 (가장 가까운 Actor 반환)
-    AActor* PickActor(UScene* Scene, int32 ScreenX, int32 ScreenY,
-                      int32 ScreenWidth, int32 ScreenHeight) const;
+    AActor* PickActor(const TArray<AActor*>& InActors, const CCamera* InCamera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
 };

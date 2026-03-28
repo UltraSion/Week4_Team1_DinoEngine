@@ -1,4 +1,5 @@
 #include "Viewport.h"
+#include "Viewport.h"
 
 #include "EditorViewportClient.h"
 #include "Core/Core.h"
@@ -47,12 +48,12 @@ namespace
 	}
 }
 
-CViewport::~CViewport()
+CViewportLegacy::~CViewportLegacy()
 {
 	ReleaseSceneView();
 }
 
-void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 {
 	//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
@@ -167,10 +168,10 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 		}
 	}
 
-	if (Core && Core->GetScene() && Core->GetScene()->GetCamera())
-	{
-		Core->GetScene()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
-	}
+	//if (Core && Core->GetScene() && Core->GetScene()->GetCamera())
+	//{
+	//	Core->GetScene()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
+	//}
 
 	if (ShaderResourceView)
 	{
@@ -180,7 +181,7 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 	ImGui::End();
 }
 
-void CViewport::ReleaseSceneView()
+void CViewportLegacy::ReleaseSceneView()
 {
 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
 	ReleaseIfValid(Resource);
@@ -206,7 +207,7 @@ void CViewport::ReleaseSceneView()
 	OffscreenHeight = 0;
 }
 
-bool CViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+bool CViewportLegacy::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
 {
 	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
 	{
@@ -232,7 +233,7 @@ bool CViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouse
 	return true;
 }
 
-void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height)
+void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height)
 {
 	if (Device == nullptr)
 	{

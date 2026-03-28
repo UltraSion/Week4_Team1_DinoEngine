@@ -5,7 +5,7 @@
 #include "Scene/Scene.h"
 #include "Actor/Actor.h"
 #include "Input/EnhancedInputManager.h"
-#include "Component/CameraComponent.h"
+//#include "Component/CameraComponent.h"
 #include "Object/ObjectFactory.h"
 #include "Object/ObjectManager.h"
 #include "Component/PrimitiveComponent.h"
@@ -20,6 +20,7 @@
 #include "Component/UUIDBillboardComponent.h"
 #include "Component/SubUVComponent.h"
 #include "Actor/SkySphereActor.h"
+
 CCore::~CCore()
 {
 	Release();
@@ -81,6 +82,26 @@ void CCore::SetViewportClient(IViewportClient* InViewportClient)
 	{
 		ViewportClient->Attach(this, Renderer.get());
 	}
+}
+
+void CCore::AddViewportClient(IViewportClient* InViewportClient)
+{
+	//if (ViewportClient && Renderer)
+	//{
+	//	InViewportClient->Detach(this, Renderer.get());
+	//}
+
+	//if (InViewportClient && Renderer)
+	//{
+	//	InViewportClient->Attach(this, Renderer.get());
+	//}
+
+	ViewportClients.push_back(InViewportClient);
+}
+
+void CCore::SetViewpotsClients(TArray<IViewportClient*> InViewportClients)
+{
+	ViewportClients = InViewportClients;
 }
 
 void CCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -161,6 +182,11 @@ void CCore::Input(float DeltaTime)
 	{
 		ViewportClient->Tick(this, DeltaTime);
 	}
+
+	for (const auto& ViewportCli : ViewportClients)
+	{
+		ViewportCli->Tick(this, DeltaTime);
+	}
 }
 
 void CCore::Physics(float DeltaTime)
@@ -236,11 +262,11 @@ void CCore::LateUpdate(float DeltaTime)
 
 void CCore::Render()
 {
-	UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
-	if (!Renderer || !Scene || Renderer->IsOccluded())
-	{
-		return;
-	}
+	//UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
+	//if (!Renderer || !Scene || Renderer->IsOccluded())
+	//{
+	//	return;
+	//}
 
 	Renderer->BeginFrame();
 
@@ -250,35 +276,46 @@ void CCore::Render()
 		Renderer->EndFrame();
 		return;
 	}
-	UCameraComponent* ActiveCamera = ActiveWorld->GetActiveCameraComponent();
-	if (!ActiveCamera)
+	//UCameraComponent* ActiveCamera = ActiveWorld->GetActiveCameraComponent();
+	//if (!ActiveCamera)
+	//{
+	//	Renderer->EndFrame();
+	//	return;
+	//}
+
+
+
+	for (int i = 0; i < ViewportClients.size(); i++)
 	{
-		Renderer->EndFrame();
-		return;
+		IViewportClient* Client = ViewportClients[i];
+		CommandQueue.Clear();
+		CommandQueue.Reserve(Renderer->GetPrevCommandCount());
+		//CommandQueue.ViewMatrix = CameraTransform->GetViewMatrix();
+		//CommandQueue.ProjectionMatrix = CameraTransform->GetProjectionMatrix();
+
+		//FFrustum Frustum;
+		//const FMatrix ViewProjection = CommandQueue.ViewMatrix * CommandQueue.ProjectionMatrix;
+		//Frustum.ExtractFromVP(ViewProjection);
+
+		auto Actors = GetActiveWorld()->GetAllActors();
+
+		Client->BuildRenderCommands(Actors, CommandQueue);
+		D3D11_VIEWPORT D3D11Viewport;
+		D3D11Viewport.TopLeftX = Client->TopLeftX;
+		D3D11Viewport.TopLeftY = Client->TopLeftY;
+		D3D11Viewport.Width = Client->Width;
+		D3D11Viewport.Height = Client->Height;
+		D3D11Viewport.MaxDepth = 1.f;
+		D3D11Viewport.MinDepth = 0.f;
+		Renderer->SetViewport(&D3D11Viewport);
+		
+		Renderer->SubmitCommands(CommandQueue);
+		Renderer->ExecuteCommands();
+		const FShowFlags& ShowFlags = Client ? Client->GetShowFlags() : FShowFlags();
+		DebugDrawManager.Flush(Renderer.get(), ShowFlags, ActiveWorld);
 	}
 
-	CommandQueue.Clear();
-	CommandQueue.Reserve(Renderer->GetPrevCommandCount());
-	CommandQueue.ViewMatrix = ActiveCamera->GetViewMatrix();
-	CommandQueue.ProjectionMatrix = ActiveCamera->GetProjectionMatrix();
 
-	FFrustum Frustum;
-	const FMatrix ViewProjection = CommandQueue.ViewMatrix * CommandQueue.ProjectionMatrix;
-	Frustum.ExtractFromVP(ViewProjection);
-
-	if (ViewportClient)
-	{
-		ViewportClient->BuildRenderCommands(this, Scene, Frustum, CommandQueue);
-	}
-	else
-	{
-		// Scene->CollectRenderCommands(Frustum, CommandQueue);
-	}
-
-	Renderer->SubmitCommands(CommandQueue);
-	Renderer->ExecuteCommands();
-	const FShowFlags& ShowFlags = ViewportClient ? ViewportClient->GetShowFlags() : FShowFlags();
-	DebugDrawManager.Flush(Renderer.get(), ShowFlags, ActiveWorld);
 	Renderer->EndFrame();
 }
 

@@ -29,6 +29,10 @@ private:
 
 	CEditorUI EditorUI;
 	std::unique_ptr<CPreviewViewportClient> PreviewViewportClient;
-	AEditorCameraPawn* EditorPawn = nullptr;
+	TArray<std::unique_ptr<IViewportClient>> AdditionalViewportClients;
+	//AEditorCameraPawn* EditorPawn = nullptr;
 	CEditorViewportController ViewportController;
+
+	TArray<AActor*> SeletedActors;
+
 };

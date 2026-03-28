@@ -531,7 +531,7 @@ void CEditorUI::Render()
 	ImGui::PopStyleVar();
 	ImGui::End();
 
-	Viewport.Render(Core, CurrentRenderer, MainWindow ? MainWindow->GetHwnd() : nullptr);
+	//Viewport.Render(Core, CurrentRenderer, MainWindow ? MainWindow->GetHwnd() : nullptr);
 
 	if (Core)
 	{
@@ -559,11 +559,11 @@ void CEditorUI::Render()
 				{
 					Core->SetSelectedActor(nullptr);
 
-					if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
-					{
-						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
-						Cam->GetCamera()->SetRotation(0.f, 0.f);
-					}
+					//if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
+					//{
+					//	Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+					//	Cam->GetCamera()->SetRotation(0.f, 0.f);
+					//}
 					Core->GetScene()->ClearActors();
 					UE_LOG("New scene created");
 				}

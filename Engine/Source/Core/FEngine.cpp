@@ -41,7 +41,12 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 	}
 
 	ViewportClient = CreateViewportClient();
-	Core->SetViewportClient(ViewportClient.get());
+
+	//ViewportClient.get()->TopLeftX = 0;
+	//ViewportClient.get()->TopLeftY = 0;
+	//ViewportClient.get()->Width = 500;
+	//ViewportClient.get()->Height = 500;
+	//Core->AddViewportClient(ViewportClient.get());
 
 	PostInitialize();
 
@@ -83,7 +88,7 @@ void FEngine::OnResize(int32 Width, int32 Height)
 
 std::unique_ptr<IViewportClient> FEngine::CreateViewportClient()
 {
-	return std::make_unique<CGameViewportClient>();
+	return std::make_unique<CGameViewportClient>(Core.get()->GetActiveWorld());
 }
 
 void FEngine::Shutdown()

@@ -14,7 +14,7 @@ public:
 	~CEditorViewportController();
 
 	// ← EnhancedInput 포인터 추가
-	void Initialize(UCameraComponent* InCameraComp, CInputManager* InInput, CEnhancedInputManager* InEnhancedInput);
+	void Initialize(CInputManager* InInput, CEnhancedInputManager* InEnhancedInput);
 	void Cleanup();
 
 	void Tick(float DeltaTime);
@@ -38,6 +38,4 @@ private:
 	FInputAction LookYAction{ "LookY",       EInputActionValueType::Float };
 
 	float CurrentDeltaTime = 0.0f; // 콜백에서 DeltaTime 쓰기 위해 보관
-
-
 };

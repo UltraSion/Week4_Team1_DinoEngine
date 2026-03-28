@@ -321,16 +321,21 @@ void CRenderer::EndFrame()
 	if (GUIPostPresent) GUIPostPresent();
 }
 
-void CRenderer::SubmitCommands(const FRenderCommandQueue& Queue)
+void CRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
 {
-	ViewMatrix = Queue.ViewMatrix;
-	ProjectionMatrix = Queue.ProjectionMatrix;
+	ViewMatrix = InQueue.ViewMatrix;
+	ProjectionMatrix = InQueue.ProjectionMatrix;
 
-	for (const auto& Cmd : Queue.Commands)
+	for (const auto& Cmd : InQueue.Commands)
 	{
 		if (Cmd.MeshData) Cmd.MeshData->UpdateVertexAndIndexBuffer(Device);
 		AddCommand(Cmd);
 	}
+}
+
+void CRenderer::SetViewport(D3D11_VIEWPORT* Viewport)
+{
+	DeviceContext->RSSetViewports(1, Viewport);
 }
 
 void CRenderer::AddCommand(const FRenderCommand& Command)

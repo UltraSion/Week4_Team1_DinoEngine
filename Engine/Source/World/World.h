@@ -6,8 +6,8 @@
 // Forward declarations — include 최소화
 class UScene;
 class AActor;
-class UCameraComponent;
-class CCamera;
+//class UCameraComponent;
+//class CCamera;
 class FFrustum;
 struct FRenderCommandQueue;
 struct ID3D11Device;
@@ -36,9 +36,9 @@ public:
 
 	UScene* GetScene() const { return PersistentLevel; }
 	// 카메라
-	void SetActiveCameraComponent(UCameraComponent* InCamera);
-	UCameraComponent* GetActiveCameraComponent() const;
-	CCamera* GetCamera() const;
+	//void SetActiveCameraComponent(UCameraComponent* InCamera);
+	//UCameraComponent* GetActiveCameraComponent() const;
+	//CCamera* GetCamera() const;
 
 
 	// 라이프사이클
@@ -62,8 +62,8 @@ private:
 	float WorldTime = 0.f;
 	float DeltaSeconds = 0.f;
 	ESceneType WorldType = ESceneType::Game;
-	UCameraComponent* SceneCameraComponent = nullptr;    
-	TObjectPtr<UCameraComponent> ActiveCameraComponent;
+	//UCameraComponent* SceneCameraComponent = nullptr;    
+	//TObjectPtr<UCameraComponent> ActiveCameraComponent;
 };
 #include "Scene/Scene.h"
 

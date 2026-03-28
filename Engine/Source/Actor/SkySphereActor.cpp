@@ -35,16 +35,16 @@ void ASkySphereActor::Tick(float DeltaTime)
 	AActor::Tick(DeltaTime);
 	if (UWorld* World = GetWorld())
 	{
-		if (UCameraComponent* CameraComp = World->GetActiveCameraComponent())
-		{
-			if (USceneComponent* Root = GetRootComponent())
-			{
-				FTransform T = Root->GetRelativeTransform();
+		//if (UCameraComponent* CameraComp = World->GetActiveCameraComponent())
+		//{
+		//	if (USceneComponent* Root = GetRootComponent())
+		//	{
+		//		FTransform T = Root->GetRelativeTransform();
 
-				T.SetTranslation(CameraComp->GetCamera()->GetPosition());
-				T.SetScale3D({ 2000.0f, 2000.0f, 2000.0f }); // tempcode need a fix
-				Root->SetRelativeTransform(T);
-			}
-		}
+		//		T.SetTranslation(CameraComp->GetCamera()->GetPosition());
+		//		T.SetScale3D({ 2000.0f, 2000.0f, 2000.0f }); // tempcode need a fix
+		//		Root->SetRelativeTransform(T);
+		//	}
+		//}
 	}
 }

@@ -130,7 +130,7 @@ void CControlPanelWindow::Render(CCore* Core)
 		}
 		*/
 		
-		if (CCamera* Camera = Core->GetScene()->GetCamera())
+		/*if (CCamera* Camera = Core->GetScene()->GetCamera())
 		{
 		
 			float Sensitivity = Camera->GetMouseSensitivity();
@@ -187,7 +187,7 @@ void CControlPanelWindow::Render(CCore* Core)
 					Camera->SetFOV(CameraFOV);
 				}
 			}
-		}
+		}*/
 
 		ImGui::SeparatorText("Spawn");
 

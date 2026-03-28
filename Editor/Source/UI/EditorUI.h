@@ -42,7 +42,7 @@ private:
 	CPropertyWindow Property;
 	CConsoleWindow Console;
 	CStatWindow Stat;
-	CViewport Viewport;
+	CViewportLegacy Viewport;
 	COutlinerWindow Outliner;
 	CContentBrowserWindow ContentBrowser;
 

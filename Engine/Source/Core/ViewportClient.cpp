@@ -1,7 +1,6 @@
 #include "ViewportClient.h"
 #include "World/World.h"
 #include "Core/Core.h"
-#include "Input/InputManager.h"
 #include "Camera/Camera.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderCommand.h"
@@ -12,7 +11,6 @@
 #include "Component/SubUVComponent.h"
 #include "Core/FEngine.h"
 #include "Component/TextComponent.h"
-
 
 void IViewportClient::Attach(CCore* Core, CRenderer* Renderer)
 {
@@ -56,7 +54,34 @@ void IViewportClient::Tick(CCore* Core, float DeltaTime)
 	//	const float DeltaY = InputManager->GetMouseDeltaY();
 	//	Camera->Rotate(DeltaX * 0.2f, -DeltaY * 0.2f);
 	//}
+	Tick(DeltaTime);
 }
+
+void IViewportClient::Initialize(CInputManager* InInput, CEnhancedInputManager* InEnhancedInput)
+{
+	InputManager = InInput;
+	EnhancedInput = InEnhancedInput;
+	SetupInputBindings();
+}
+
+void IViewportClient::Cleanup()
+{
+	if (EnhancedInput && CameraContext)
+		EnhancedInput->RemoveMappingContext(CameraContext);
+	delete CameraContext;
+	CameraContext = nullptr;
+	EnhancedInput = nullptr;
+}
+
+void IViewportClient::Tick(float DeltaTime)
+{
+	CurrentDeltaTime = DeltaTime;
+}
+
+void IViewportClient::SetupInputBindings()
+{
+}
+
 
 void IViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
@@ -72,14 +97,17 @@ UWorld* IViewportClient::ResolveWorld(CCore* Core) const
 	return Core ? Core->GetActiveWorld() : nullptr;
 }
 
-void IViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+void IViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
 {
-	UWorld* World = ResolveWorld(Core);
-	if (!World) return;
 
 	// Persistent + Streaming 전체 액터를 렌더
-	TArray<AActor*> AllActors = World->GetAllActors();
-	RenderCollector.CollectRenderCommands(AllActors, Frustum, ShowFlags, OutQueue);
+	FFrustum Frustum;
+	const FMatrix ViewProjection = CameraTransform.GetViewMatrix() * CameraTransform.GetProjectionMatrix();
+	Frustum.ExtractFromVP(ViewProjection);
+
+	OutQueue.ViewMatrix = CameraTransform.GetViewMatrix();
+	OutQueue.ProjectionMatrix = CameraTransform.GetProjectionMatrix();
+	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, OutQueue);
 }
 
 void IViewportClient::HandleFileDoubleClick(const FString& FilePath)

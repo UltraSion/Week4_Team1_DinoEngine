@@ -19,9 +19,16 @@
 #include "imgui.h"
 #include "Actor/ObjActor.h"
 #include "Actor/SkySphereActor.h"
-CEditorViewportClient::CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow)
-	: EditorUI(InEditorUI)
+#include "Camera/Camera.h"
+#include "Input/InputAction.h"
+#include "Input/EnhancedInputManager.h"
+#include "Input/InputMappingContext.h"
+#include "Input/InputModifier.h"
+
+CEditorViewportClient::CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, TArray<AActor*>& InSeletedActors, UWorld* InWorld) : IViewportClient(InWorld)
+	, EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
+	, SeletedActors(InSeletedActors)
 {
 }
 
@@ -199,13 +206,13 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
 			return;
 		}
 
-		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
 		{
 			return;
 		}
 
 		{
-			AActor* PickedActor = Picker.PickActor(Scene, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			AActor* PickedActor = Picker.PickActor(World->GetAllActors(), &CameraTransform, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
 			Core->SetSelectedActor(PickedActor);
 			EditorUI.SyncSelectedActorProperty();
 		}
@@ -220,11 +227,11 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
 
 		if (!Gizmo.IsDragging())
 		{
-			Gizmo.UpdateHover(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
 			return;
 		}
 
-		if (Gizmo.UpdateDrag(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+		if (Gizmo.UpdateDrag(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
 		{
 			EditorUI.SyncSelectedActorProperty();
 		}
@@ -236,7 +243,7 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
 			Gizmo.EndDrag();
 			if (bHasViewportMouse)
 			{
-				Gizmo.UpdateHover(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+				Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
 			}
 			else
 			{
@@ -288,7 +295,7 @@ void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 	{
 		if (FilePath.ends_with(".obj"))
 		{
-			const FRay Ray = Picker.ScreenToRay(Core->GetScene()->GetCamera(), ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+			const FRay Ray = Picker.ScreenToRay(&CameraTransform, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
 
 			AObjActor* NewActor = Core->GetScene()->SpawnActor<AObjActor>("ObjActor");
 			
@@ -299,10 +306,9 @@ void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 	}
 }
 
-void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
-	const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+void CEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
 {
-	IViewportClient::BuildRenderCommands(Core, Scene, Frustum, OutQueue);  // non-const 부모 호출
+	IViewportClient::BuildRenderCommands(InActors, OutQueue);  // non-const 부모 호출
 
 	// RenderMode 처리
 	if (RenderMode == ERenderMode::Wireframe)
@@ -313,11 +319,6 @@ void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
 			if(it->RenderLayer != ERenderLayer::Overlay)
 				it->Material = WireFrameMaterial.get();
 		}
-	}
-
-	if (!Core || !Scene || !Scene->GetCamera())
-	{
-		return;
 	}
 
 	// 그리드(Axis) 명령 삽입
@@ -331,10 +332,13 @@ void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
 		OutQueue.AddCommand(GridCmd);
 	}
 
-	AActor* GizmoTarget = Core->GetSelectedActor();
+	if (SeletedActors.empty())
+		return;
+
+	AActor* GizmoTarget = SeletedActors[0];
 	if (GizmoTarget && !GizmoTarget->IsA<ASkySphereActor>())
 	{
-		Gizmo.BuildRenderCommands(GizmoTarget, Scene->GetCamera(), OutQueue);
+		Gizmo.BuildRenderCommands(GizmoTarget, &CameraTransform, OutQueue);
 	}
 }
 
@@ -354,4 +358,74 @@ void CEditorViewportClient::SetLineThickness(float InThickness)
 	{
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
+}
+
+void CEditorViewportClient::SetSelection(TArray<AActor*>& SeletedActorArrayPtr)
+{
+	SeletedActors = SeletedActorArrayPtr;
+}
+
+void CEditorViewportClient::SetupInputBindings()
+{
+	CameraContext = new FInputMappingContext();
+
+
+	auto& W = CameraContext->AddMapping(&MoveForwardAction, 'W');
+	W.Triggers.push_back(new FTriggerDown());
+
+	auto& S = CameraContext->AddMapping(&MoveForwardAction, 'S');
+	S.Triggers.push_back(new FTriggerDown());
+	S.Modifiers.push_back(new FModifierNegative()); // -1.0f
+
+	auto& D = CameraContext->AddMapping(&MoveRightAction, 'D');
+	D.Triggers.push_back(new FTriggerDown());
+
+	auto& A = CameraContext->AddMapping(&MoveRightAction, 'A');
+	A.Triggers.push_back(new FTriggerDown());
+	A.Modifiers.push_back(new FModifierNegative());
+
+	auto& E = CameraContext->AddMapping(&MoveUpAction, 'E');
+	E.Triggers.push_back(new FTriggerDown());
+
+	auto& Q = CameraContext->AddMapping(&MoveUpAction, 'Q');
+	Q.Triggers.push_back(new FTriggerDown());
+	Q.Modifiers.push_back(new FModifierNegative());
+
+
+	CameraContext->AddMapping(&LookXAction, static_cast<int32>(EInputKey::MouseX));
+	CameraContext->AddMapping(&LookYAction, static_cast<int32>(EInputKey::MouseY));
+
+	EnhancedInput->AddMappingContext(CameraContext, 0);
+
+
+	EnhancedInput->BindAction(&MoveForwardAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
+				CameraTransform.MoveForward(Value.Get() * CurrentDeltaTime);
+		});
+
+	EnhancedInput->BindAction(&MoveRightAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
+				CameraTransform.MoveRight(Value.Get() * CurrentDeltaTime);
+		});
+
+	EnhancedInput->BindAction(&MoveUpAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
+				CameraTransform.MoveUp(Value.Get() * CurrentDeltaTime);
+		});
+
+	EnhancedInput->BindAction(&LookXAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
+				CameraTransform.Rotate(Value.Get() * CameraTransform.GetMouseSensitivity(), 0.0f);
+		});
+
+	EnhancedInput->BindAction(&LookYAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
+				CameraTransform.Rotate(0.0f, -Value.Get() * CameraTransform.GetMouseSensitivity());
+		});
+
 }

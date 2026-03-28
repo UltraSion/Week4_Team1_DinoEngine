@@ -20,7 +20,7 @@ enum class ERenderMode
 class CEditorViewportClient : public IViewportClient
 {
 public:
-	CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow);
+	CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, TArray<AActor*>& InSeletedActors, UWorld* InWorld);
 
 	void Attach(CCore* Core, CRenderer* Renderer) override;
 	void Detach(CCore* Core, CRenderer* Renderer) override;
@@ -33,19 +33,31 @@ public:
 
 	void HandleFileDoubleClick(const FString& FilePath) override;
 	void HandleFileDropOnViewport(const FString& FilePath) override;
-	void BuildRenderCommands(CCore* Core, UScene* Scene,
-		const FFrustum& Frustum, FRenderCommandQueue& OutQueue) override;
+	void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue) override;
 	float GetGridSize() const { return GridSize; }
 	void SetGridSize(float InSize);
 	float GetLineThickness() const { return LineThickness; }
 	void SetLineThickness(float InThickness);
 	bool IsGridVisible() const { return bShowGrid; }
 	void SetGridVisible(bool bVisible) { bShowGrid = bVisible; }
+	void SetSelection(TArray<AActor*>& SeletedActorArrayPtr);
+	void SetupInputBindings() override;
+
 private:
+	FInputMappingContext* CameraContext = nullptr; // 소멸자에서 정리
+
+	// Action 정의 (포인터 아닌 값으로 소유)
+	FInputAction MoveForwardAction{ "MoveForward", EInputActionValueType::Float };
+	FInputAction MoveRightAction{ "MoveRight",   EInputActionValueType::Float };
+	FInputAction MoveUpAction{ "MoveUp",      EInputActionValueType::Float };
+	FInputAction LookXAction{ "LookX",       EInputActionValueType::Float };
+	FInputAction LookYAction{ "LookY",       EInputActionValueType::Float };
+
 	CEditorUI& EditorUI;
 	CWindow* MainWindow = nullptr;
 	CPicker Picker;
 	mutable CGizmo Gizmo;
+	TArray<AActor*>& SeletedActors;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";
