@@ -46,11 +46,11 @@ public:
 	void SetOrthoWidth(float InOrthoWidth);
 
 private:
-	FVector Position = { -5.0f, 0.0f, 0.0f };
+	FVector Position = { -3.0f, -3.0f, 2.5f };
 	FVector Up = { 0.0f, 0.0f, 1.0f };
 
-	float Yaw = 0.0f;
-	float Pitch = 0.0f;
+	float Yaw = 45.0f;
+	float Pitch = -30.0f;
 	float Speed = 5.0f;
 	float Sensitivity = 0.2f;
 	float FOV = 45.0f;

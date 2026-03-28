@@ -567,7 +567,7 @@ void FEditorUI::Render()
 
 					if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
 					{
-						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+						Cam->GetCamera()->SetPosition({ -3.0f, -3.0f, 2.5f });
 						Cam->GetCamera()->SetRotation(0.f, 0.f);
 					}
 					Core->GetLevel()->ClearActors();

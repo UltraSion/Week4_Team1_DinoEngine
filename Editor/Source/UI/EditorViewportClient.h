@@ -39,8 +39,8 @@ public:
 	void SetGridSize(float InSize);
 	float GetLineThickness() const { return LineThickness; }
 	void SetLineThickness(float InThickness);
-	bool IsGridVisible() const { return bShowGrid; }
-	void SetGridVisible(bool bVisible) { bShowGrid = bVisible; }
+	bool IsGridVisible() const;
+	void SetGridVisible(bool bVisible);
 private:
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
