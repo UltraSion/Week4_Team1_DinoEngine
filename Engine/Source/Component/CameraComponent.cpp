@@ -43,7 +43,7 @@ void UCameraComponent::MoveUp(float Value)
 void UCameraComponent::PanRight(float Value)
 {
 	const FVector Right = Camera->GetRight().GetSafeNormal();
-	Camera->SetPosition(Camera->GetPosition() + Right * (Value * Camera->GetSpeed()));
+	Camera->OffsetPosition(Right * (Value * Camera->GetSpeed()));
 }
 
 void UCameraComponent::PanUp(float Value)
@@ -52,7 +52,7 @@ void UCameraComponent::PanUp(float Value)
 	const FVector Forward = Camera->GetForward().GetSafeNormal();
 	const FVector Right = Camera->GetRight().GetSafeNormal();
 	const FVector PanUp = FVector::CrossProduct(Forward, Right).GetSafeNormal();
-	Camera->SetPosition(Camera->GetPosition() + PanUp * (Value * Camera->GetSpeed()));
+	Camera->OffsetPosition(PanUp * (Value * Camera->GetSpeed()));
 }
 
 void UCameraComponent::FootZoom(float Value)

@@ -6,12 +6,43 @@
 void FCamera::SetPosition(const FVector& InPosition)
 {
 	Position = InPosition;
+
+#if IS_OBJ_VIEWER
+	PanOffset = FVector::ZeroVector;
+	OrbitDistance = Position.Size();
+
+	const FVector ForwardToTarget = (-Position).GetSafeNormal();
+	if (!ForwardToTarget.IsNearlyZero())
+	{
+		Yaw = FMath::RadiansToDegrees(std::atan2(ForwardToTarget.Y, ForwardToTarget.X));
+		Pitch = FMath::RadiansToDegrees(std::asin(std::clamp(ForwardToTarget.Z, -1.0f, 1.0f)));
+	}
+#else
+#endif
 }
 
 void FCamera::SetRotation(float InYaw, float InPitch)
 {
 	Yaw = InYaw;
 	Pitch = InPitch;
+
+#if IS_OBJ_VIEWER
+	if (OrbitDistance <= 0.0f)
+	{
+		OrbitDistance = Position.Size();
+	}
+
+	const float YawRad = FMath::DegreesToRadians(Yaw);
+	const float PitchRad = FMath::DegreesToRadians(Pitch);
+
+	FVector ForwardToTarget;
+	ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
+	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
+	ForwardToTarget.Z = sinf(PitchRad);
+
+	Position = -ForwardToTarget * OrbitDistance + PanOffset;
+#else
+#endif
 }
 
 FVector FCamera::GetForward() const
@@ -34,6 +65,18 @@ FVector FCamera::GetRight() const
 
 void FCamera::MoveForward(float Delta)
 {
+#if IS_OBJ_VIEWER
+	if (OrbitDistance <= 0.0f)
+	{
+		OrbitDistance = Position.Size();
+	}
+
+	OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
+	Position = -GetForward() * OrbitDistance + PanOffset;
+	return;
+#else
+#endif
+
 	FVector Forward = GetForward();
 	Position = Position + Forward * (Delta * Speed);
 }
@@ -41,12 +84,22 @@ void FCamera::MoveForward(float Delta)
 void FCamera::MoveRight(float Delta)
 {
 	FVector Right = GetRight();
-	Position = Position + Right * (Delta * Speed);
+	OffsetPosition(Right * (Delta * Speed));
 }
 
 void FCamera::MoveUp(float Delta)
 {
-	Position = Position + Up * (Delta * Speed);
+	OffsetPosition(Up * (Delta * Speed));
+}
+
+void FCamera::OffsetPosition(const FVector& Delta)
+{
+	Position = Position + Delta;
+
+#if IS_OBJ_VIEWER
+	PanOffset = PanOffset + Delta;
+#else
+#endif
 }
 
 void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
@@ -54,9 +107,22 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 	Yaw += DeltaYaw;
 	Pitch += DeltaPitch;
 
-	// Pitch 제한 (-89 ~ 89도)
-	if (Pitch > 89.0f) Pitch = 89.0f;
-	if (Pitch < -89.0f) Pitch = -89.0f;
+#if IS_OBJ_VIEWER
+	if (OrbitDistance <= 0.0f)
+	{
+		OrbitDistance = Position.Size();
+	}
+
+	const float YawRad = FMath::DegreesToRadians(Yaw);
+	const float PitchRad = FMath::DegreesToRadians(Pitch);
+	
+	FVector ForwardToTarget;
+	ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
+	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
+	ForwardToTarget.Z = sinf(PitchRad);
+	Position = -ForwardToTarget * OrbitDistance + PanOffset;
+#else
+#endif
 }
 
 FMatrix FCamera::GetViewMatrix() const

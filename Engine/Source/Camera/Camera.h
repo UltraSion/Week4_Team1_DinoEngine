@@ -20,6 +20,7 @@ public:
 	void MoveRight(float Delta);
 	void MoveUp(float Delta);
 	void Rotate(float DeltaYaw, float DeltaPitch);
+	void OffsetPosition(const FVector& Delta);
 
 	FVector GetForward() const;
 	FVector GetRight() const;
@@ -45,7 +46,7 @@ public:
 	void SetOrthoWidth(float InOrthoWidth);
 
 private:
-	FVector Position = { -5.0f, 0.0f, 2.0f };
+	FVector Position = { -5.0f, 0.0f, 0.0f };
 	FVector Up = { 0.0f, 0.0f, 1.0f };
 
 	float Yaw = 0.0f;
@@ -58,4 +59,6 @@ private:
 	float OrthoWidth = 20.0f;
 	float NearPlane = 0.1f;
 	float FarPlane = 1000.0f;
+	float OrbitDistance = 0.0f;
+	FVector PanOffset = FVector::ZeroVector;
 };
