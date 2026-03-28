@@ -7,9 +7,12 @@ void FAxisRenderer::RenderWorldAxis(FRenderer* Renderer, float Length)
     {
         return;
     }
+#if IS_OBJ_VIEWER
+#else
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { Length, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, Length, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f });
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, Length }, { 0.0f, 0.0f, 1.0f, 1.0f });
+#endif
 }
 
 //오컴의 면도날, 안 쓰는 코드 

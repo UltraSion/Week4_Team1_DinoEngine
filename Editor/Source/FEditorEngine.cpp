@@ -141,6 +141,12 @@ void FEditorEngine::PostInitialize()
 
 
 	SyncViewportClient();
+
+	//뷰어 모드는 기본적으로 월드축을 끕니다. 참고로 키지도 못합니다.
+#if IS_OBJ_VIEWER
+	Core->GetViewportClient()->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
+#else
+#endif
 	UE_LOG("EditorEngine initialized");
 }
 
