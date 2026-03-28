@@ -26,6 +26,7 @@ protected:
 	FEditorViewportController* GetViewportController();
 private:
 	void SyncViewportClient();
+	void RunObjViewerStartupTest();
 
 	FEditorUI EditorUI;
 	std::unique_ptr<FPreviewViewportClient> PreviewViewportClient;

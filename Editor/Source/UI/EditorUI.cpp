@@ -764,15 +764,15 @@ void FEditorUI::Render()
 	}
 
 	//뷰어를 위해 콘텐츠패널(일단 테스트용)과 콘텐츠브라우저를 제외한 에디터 창을 렌더링하지 않습니다.
-	ControlPanel.Render(Core);
 #if IS_OBJ_VIEWER
 #else
 	Property.Render(Core);
 	Console.Render();
 	Stat.Render();
 	Outliner.Render(Core);
-#endif
+	ControlPanel.Render(Core);
 	ContentBrowser.Render();
+#endif
 }
 
 bool FEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const

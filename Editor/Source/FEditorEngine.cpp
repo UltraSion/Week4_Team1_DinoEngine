@@ -11,6 +11,7 @@
 #include "Component/CameraComponent.h"
 
 #include "Component/CubeComponent.h"
+#include "Actor/ObjActor.h"
 #include "Object/ObjectFactory.h"
 #include "Debug/EngineLog.h"
 #include "World/World.h"
@@ -18,9 +19,34 @@
 #include "Pawn/EditorCameraPawn.h"
 #include "Camera/Camera.h"
 #include "Actor/SkySphereActor.h"
+#include "Core/Paths.h"
+#include <commdlg.h>
+#include <filesystem>
 namespace
 {
 	constexpr const char* PreviewLevelContextName = "PreviewLevel";
+
+	FString PromptForObjFilePath()
+	{
+		char FileName[MAX_PATH] = "";
+		const FString MeshDir = FPaths::MeshDir().string();
+
+		OPENFILENAMEA Ofn = {};
+		Ofn.lStructSize = sizeof(OPENFILENAMEA);
+		Ofn.lpstrFilter = "OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
+		Ofn.lpstrFile = FileName;
+		Ofn.nMaxFile = MAX_PATH;
+		Ofn.lpstrDefExt = "obj";
+		Ofn.lpstrInitialDir = MeshDir.c_str();
+		Ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+		if (GetOpenFileNameA(&Ofn))
+		{
+			return FString(FileName);
+		}
+
+		return "";
+	}
 
 	void InitializeDefaultPreviewLevel(FCore* Core)
 	{
@@ -146,6 +172,7 @@ void FEditorEngine::PostInitialize()
 #if IS_OBJ_VIEWER
 	Core->GetViewportClient()->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
 	Core->GetViewportClient()->GetShowFlags().SetFlag(EEngineShowFlags::SF_Grid, false);
+	RunObjViewerStartupTest();
 #else
 #endif
 	UE_LOG("EditorEngine initialized");
@@ -196,4 +223,61 @@ void FEditorEngine::SyncViewportClient()
 	{
 		Core->SetViewportClient(TargetViewportClient);
 	}
+}
+
+void FEditorEngine::RunObjViewerStartupTest()
+{
+#if IS_OBJ_VIEWER
+	if (!Core || !EditorPawn || !Core->GetRenderer())
+	{
+		return;
+	}
+
+	ULevel* Level = Core->GetLevel();
+	UWorld* World = Core->GetActiveWorld();
+	UCameraComponent* CameraComponent = EditorPawn->GetCameraComponent();
+	if (!Level || !World || !CameraComponent)
+	{
+		return;
+	}
+
+	const FString SelectedPath = PromptForObjFilePath();
+	if (SelectedPath.empty())
+	{
+		UE_LOG("[ObjViewerTest] Startup mesh selection canceled");
+		return;
+	}
+
+	const std::filesystem::path AssetPath = FPaths::ToAbsolutePath(SelectedPath);
+	const std::filesystem::path Extension = AssetPath.extension();
+	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ"))
+	{
+		UE_LOG("[ObjViewerTest] Invalid startup mesh selection: %s", SelectedPath.c_str());
+		return;
+	}
+
+	Level->ClearActors();
+
+	AObjActor* TestActor = Level->SpawnActor<AObjActor>("ObjViewerStartupTest");
+	if (!TestActor)
+	{
+		UE_LOG("[ObjViewerTest] Failed to spawn startup actor");
+		return;
+	}
+
+	TestActor->SetActorLocation(FVector::ZeroVector);
+	TestActor->LoadObj(Core->GetRenderer()->GetDevice(), FPaths::ToRelativePath(SelectedPath));
+
+	FCamera* Camera = CameraComponent->GetCamera();
+	if (Camera)
+	{
+		//viewer 모드에서의 카메라 위치
+		Camera->SetPosition({ -6.0f, -6.0f, 5.0f });
+		Camera->SetRotation(45.0f, -30.0f);
+		Camera->SetFOV(50.0f);
+	}
+
+	World->SetActiveCameraComponent(CameraComponent);
+	UE_LOG("[ObjViewerTest] Loaded startup mesh: %s", SelectedPath.c_str());
+#endif
 }

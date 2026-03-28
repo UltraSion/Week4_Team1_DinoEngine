@@ -3,6 +3,27 @@
 #include <cmath>
 #include "Math/MathUtility.h"
 
+namespace
+{
+#if IS_OBJ_VIEWER
+	constexpr float MinOrbitPitchDegrees = -89.0f;
+	constexpr float MaxOrbitPitchDegrees = 89.0f;
+
+	float NormalizeAngleDegrees(float Angle)
+	{
+		while (Angle > 180.0f)
+		{
+			Angle -= 360.0f;
+		}
+		while (Angle <= -180.0f)
+		{
+			Angle += 360.0f;
+		}
+		return Angle;
+	}
+#endif
+}
+
 void FCamera::SetPosition(const FVector& InPosition)
 {
 	Position = InPosition;
@@ -27,6 +48,9 @@ void FCamera::SetRotation(float InYaw, float InPitch)
 	Pitch = InPitch;
 
 #if IS_OBJ_VIEWER
+	Yaw = NormalizeAngleDegrees(Yaw);
+	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
+
 	if (OrbitDistance <= 0.0f)
 	{
 		OrbitDistance = Position.Size();
@@ -108,6 +132,9 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 	Pitch += DeltaPitch;
 
 #if IS_OBJ_VIEWER
+	Yaw = NormalizeAngleDegrees(Yaw);
+	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
+
 	if (OrbitDistance <= 0.0f)
 	{
 		OrbitDistance = Position.Size();
