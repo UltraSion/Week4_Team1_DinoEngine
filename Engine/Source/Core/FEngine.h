@@ -35,7 +35,7 @@ protected:
 	CWindowApplication* App = nullptr;
 	CWindow* MainWindow = nullptr;
 	std::unique_ptr<CCore> Core;
-	std::unique_ptr<IViewportClient> ViewportClient;
+	std::unique_ptr<IViewportClient> MainViewportClient;
 
 private:
 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);

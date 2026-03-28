@@ -64,12 +64,13 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 	}
 
 
-	ViewportClient->TopLeftX = 0;
-	ViewportClient->TopLeftY = 0;
-	ViewportClient->Width = 500;
-	ViewportClient->Height = 500;
-	ViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(ViewportClient.get());
+	MainViewportClient->TopLeftX = 0;
+	MainViewportClient->TopLeftY = 0;
+	MainViewportClient->Width = 500;
+	MainViewportClient->Height = 500;
+	MainViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(MainViewportClient.get());
+	//AdditionalViewportClients.push_back(std::move(MainViewportClient));
 
 	std::unique_ptr<IViewportClient> Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
 	Client->TopLeftX = 500;
@@ -110,15 +111,8 @@ void FEditorEngine::Shutdown()
 {
 	if (Core && Core->GetViewportClient() == PreviewViewportClient.get())
 	{
-		Core->SetViewportClient(nullptr);
+		Core->SetMainViewportClient(nullptr);
 	}
-
-	// EditorPawn은 Scene 소속이 아니므로 직접 정리
-	//if (EditorPawn)
-	//{
-	//	EditorPawn->Destroy();
-	//	EditorPawn = nullptr;
-	//}
 
 	PreviewViewportClient.reset();
 	for (std::unique_ptr<IViewportClient>& Client : AdditionalViewportClients)
@@ -130,8 +124,6 @@ void FEditorEngine::Shutdown()
 	}
 	AdditionalViewportClients.clear();
 
-	// ViewportController가 EnhancedInput을 참조하므로, Engine이 해제하기 전에 정리
-	ViewportClient.get()->Cleanup();
 	//ViewportController.Cleanup();
 
 	FEngine::Shutdown();
@@ -173,13 +165,6 @@ void FEditorEngine::PostInitialize()
 				FEngineLog::Get().Log("[error] Unknown command: '%s'", CommandLine);
 			}
 		});
-	// EditorPawn은 Scene에 등록하지 않음 — FEditorEngine이 직접 소유
-	
-	//EditorPawn = FObjectFactory::ConstructObject<AEditorCameraPawn>(nullptr, "EditorCameraPawn");
-	//EditorPawn->Initialize();
-	//Core->GetActiveWorld()->SetActiveCameraComponent(EditorPawn->GetCameraComponent());
-	//ViewportController.Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-
 
 	SyncViewportClient();
 	UE_LOG("EditorEngine initialized");
@@ -187,18 +172,14 @@ void FEditorEngine::PostInitialize()
 
 void FEditorEngine::Tick(float DeltaTime)
 {
-	// Editor Scene에서는 EditorPawn 카메라가 항상 활성화되도록 보장
-	// (ClearActors 후 SceneCameraComponent로 폴백된 경우 복원)
-	//if (EditorPawn && Core && Core->GetScene() && Core->GetScene()->IsEditorScene())
-	//{
-	//	UCameraComponent* EditorCamera = EditorPawn->GetCameraComponent();
-	//	if (Core->GetActiveWorld()->GetActiveCameraComponent() != EditorCamera)
-	//	{
-	//		Core->GetActiveWorld()->SetActiveCameraComponent(EditorCamera);
-	//	}
-	//}
-
-	ViewportClient.get()->Tick(DeltaTime);
+	MainViewportClient->Tick(DeltaTime);
+	for (std::unique_ptr<IViewportClient>& Client : AdditionalViewportClients)
+	{
+		if (Client)
+		{
+			Client->Tick(DeltaTime);
+		}
+	}
 	//ViewportController.Tick(DeltaTime);
 	SyncViewportClient();
 }
@@ -220,7 +201,7 @@ void FEditorEngine::SyncViewportClient()
 		return;
 	}
 
-	IViewportClient* TargetViewportClient = ViewportClient.get();
+	IViewportClient* TargetViewportClient = MainViewportClient.get();
 	const FWorldContext* ActiveSceneContext = Core->GetActiveWorldContext();
 	if (ActiveSceneContext && ActiveSceneContext->WorldType == ESceneType::Preview && PreviewViewportClient)
 	{
@@ -229,6 +210,6 @@ void FEditorEngine::SyncViewportClient()
 
 	if (Core->GetViewportClient() != TargetViewportClient)
 	{
-		Core->SetViewportClient(TargetViewportClient);
+		Core->SetMainViewportClient(TargetViewportClient);
 	}
 }

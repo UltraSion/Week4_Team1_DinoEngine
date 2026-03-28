@@ -64,23 +64,23 @@ bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ESceneType StartupS
 
 
 
-void CCore::SetViewportClient(IViewportClient* InViewportClient)
+void CCore::SetMainViewportClient(IViewportClient* InViewportClient)
 {
-	if (ViewportClient == InViewportClient)
+	if (MainViewportClient == InViewportClient)
 	{
 		return;
 	}
 
-	if (ViewportClient && Renderer)
+	if (MainViewportClient && Renderer)
 	{
-		ViewportClient->Detach(this, Renderer.get());
+		MainViewportClient->Detach(this, Renderer.get());
 	}
 
-	ViewportClient = InViewportClient;
+	MainViewportClient = InViewportClient;
 
-	if (ViewportClient && Renderer)
+	if (MainViewportClient && Renderer)
 	{
-		ViewportClient->Attach(this, Renderer.get());
+		MainViewportClient->Attach(this, Renderer.get());
 	}
 }
 
@@ -99,11 +99,6 @@ void CCore::AddViewportClient(IViewportClient* InViewportClient)
 	ViewportClients.push_back(InViewportClient);
 }
 
-void CCore::SetViewpotsClients(TArray<IViewportClient*> InViewportClients)
-{
-	ViewportClients = InViewportClients;
-}
-
 void CCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
 	if (InputManager)
@@ -111,19 +106,19 @@ void CCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
 	}
 
-	if (ViewportClient)
+	if (MainViewportClient)
 	{
-		ViewportClient->HandleMessage(this, Hwnd, Msg, WParam, LParam);
+		MainViewportClient->HandleMessage(this, Hwnd, Msg, WParam, LParam);
 	}
 }
 
 void CCore::Release()
 {
-	if (ViewportClient && Renderer)
+	if (MainViewportClient && Renderer)
 	{
-		ViewportClient->Detach(this, Renderer.get());
+		MainViewportClient->Detach(this, Renderer.get());
 	}
-	ViewportClient = nullptr;
+	MainViewportClient = nullptr;
 	if (SceneManager)
 	{
 		SceneManager->Release();
@@ -178,9 +173,9 @@ void CCore::Input(float DeltaTime)
 		EnhancedInput->ProcessInput(InputManager, DeltaTime);
 	}
 
-	if (ViewportClient)
+	if (MainViewportClient)
 	{
-		ViewportClient->Tick(this, DeltaTime);
+		MainViewportClient->Tick(this, DeltaTime);
 	}
 
 	for (const auto& ViewportCli : ViewportClients)
@@ -191,7 +186,7 @@ void CCore::Input(float DeltaTime)
 
 void CCore::Physics(float DeltaTime)
 {
-	UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
+	UScene* Scene = MainViewportClient ? MainViewportClient->ResolveScene(this) : GetActiveScene();
 	
 	if (Scene)
 	{
@@ -262,11 +257,6 @@ void CCore::LateUpdate(float DeltaTime)
 
 void CCore::Render()
 {
-	//UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
-	//if (!Renderer || !Scene || Renderer->IsOccluded())
-	//{
-	//	return;
-	//}
 
 	Renderer->BeginFrame();
 
@@ -276,14 +266,6 @@ void CCore::Render()
 		Renderer->EndFrame();
 		return;
 	}
-	//UCameraComponent* ActiveCamera = ActiveWorld->GetActiveCameraComponent();
-	//if (!ActiveCamera)
-	//{
-	//	Renderer->EndFrame();
-	//	return;
-	//}
-
-
 
 	for (int i = 0; i < ViewportClients.size(); i++)
 	{

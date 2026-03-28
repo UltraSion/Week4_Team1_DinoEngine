@@ -39,13 +39,12 @@ public:
 	void ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	CRenderer* GetRenderer() const { return Renderer.get(); }
 
-	IViewportClient* GetViewportClient() const { return ViewportClient; }
+	IViewportClient* GetViewportClient() const { return MainViewportClient; }
 	CInputManager* GetInputManager() const { return InputManager; }
 	const FTimer& GetTimer() const { return Timer; }
 
-	void SetViewportClient(IViewportClient* InViewportClient);
+	void SetMainViewportClient(IViewportClient* InViewportClient);
 	void AddViewportClient(IViewportClient* InViewportClient);
-	void SetViewpotsClients(TArray<IViewportClient*> InViewportClients);
 
 	void OnResize(int32 Width, int32 Height);
 	CEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
@@ -87,7 +86,7 @@ private:
 	CEnhancedInputManager* EnhancedInput = nullptr;
 
 	ObjectManager* ObjManager = nullptr;
-	IViewportClient* ViewportClient = nullptr;
+	IViewportClient* MainViewportClient = nullptr;
 	TArray< IViewportClient*> ViewportClients;
 	std::unique_ptr<FSceneManager> SceneManager;
 

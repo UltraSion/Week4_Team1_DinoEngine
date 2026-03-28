@@ -40,13 +40,7 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 		return false;
 	}
 
-	ViewportClient = CreateViewportClient();
-
-	//ViewportClient.get()->TopLeftX = 0;
-	//ViewportClient.get()->TopLeftY = 0;
-	//ViewportClient.get()->Width = 500;
-	//ViewportClient.get()->Height = 500;
-	//Core->AddViewportClient(ViewportClient.get());
+	MainViewportClient = CreateViewportClient();
 
 	PostInitialize();
 
@@ -97,12 +91,12 @@ void FEngine::Shutdown()
 
 	if (Core)
 	{
-		Core->SetViewportClient(nullptr);
+		Core->SetMainViewportClient(nullptr);
 		Core->Release();
 		Core.reset();
 	}
 
-	ViewportClient.reset();
+	MainViewportClient.reset();
 
 	if (App)
 	{

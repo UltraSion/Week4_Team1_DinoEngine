@@ -20,8 +20,8 @@ private:
 
 	uint32 OffscreenWidth = 0;
 	uint32 OffscreenHeight = 0;
-	int32 ClientPosX = 0;
-	int32 ClientPosY = 0;
+	int32 TopLeftX = 0;
+	int32 TopLeftY = 0;
 	bool bHovered = false;
 	bool bFocused = false;
 	bool bVisible = false;
