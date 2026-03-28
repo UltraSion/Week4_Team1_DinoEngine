@@ -3,7 +3,7 @@
 
 FViewport::FViewport()
 {
-	EnhancedInput = new CEnhancedInputManager();
+	EnhancedInput = new FEnhancedInputManager();
 }
 
 FViewport::~FViewport()

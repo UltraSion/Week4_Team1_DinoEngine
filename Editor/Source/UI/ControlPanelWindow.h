@@ -1,14 +1,14 @@
 #pragma once
 #include "CoreMinimal.h"
 
-class CCore;
+class FCore;
 
-class CControlPanelWindow
+class FControlPanelWindow
 {
 public:
-	void Render(CCore* Core);
+	void Render(FCore* Core);
 
 private:
-	TArray<FString> SceneFiles;
-	int32 SelectedSceneIndex = -1;
+	TArray<FString> LevelFiles;
+	int32 SelectedLevelIndex = -1;
 };

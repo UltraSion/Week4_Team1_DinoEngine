@@ -21,33 +21,33 @@ static FVector GetCameraWorldPositionFromViewMatrix(const FMatrix& ViewMatrix)
 	return FVector(InvView.M[3][0], InvView.M[3][1], InvView.M[3][2]);
 }
 
-CRenderer::CRenderer(HWND InHwnd, int32 InWidth, int32 InHeight)
+FRenderer::FRenderer(HWND InHwnd, int32 InWidth, int32 InHeight)
 {
 	Initialize(InHwnd, InWidth, InHeight);
 }
 
-CRenderer::~CRenderer()
+FRenderer::~FRenderer()
 {
 	Release();
 }
 
-void CRenderer::SetSceneRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
+void FRenderer::SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
 {
-	SceneRenderTargetView = InRenderTargetView;
-	SceneDepthStencilView = InDepthStencilView;
-	SceneViewport = InViewport;
-	bUseSceneRenderTargetOverride = (SceneRenderTargetView != nullptr && SceneDepthStencilView != nullptr);
+	LevelRenderTargetView = InRenderTargetView;
+	LevelDepthStencilView = InDepthStencilView;
+	LevelViewport = InViewport;
+	bUseLevelRenderTargetOverride = (LevelRenderTargetView != nullptr && LevelDepthStencilView != nullptr);
 }
 
-void CRenderer::ClearSceneRenderTarget()
+void FRenderer::ClearLevelRenderTarget()
 {
-	SceneRenderTargetView = nullptr;
-	SceneDepthStencilView = nullptr;
-	SceneViewport = {};
-	bUseSceneRenderTargetOverride = false;
+	LevelRenderTargetView = nullptr;
+	LevelDepthStencilView = nullptr;
+	LevelViewport = {};
+	bUseLevelRenderTargetOverride = false;
 }
 
-void CRenderer::SetGUICallbacks(
+void FRenderer::SetGUICallbacks(
 	FGUICallback InInit,
 	FGUICallback InShutdown,
 	FGUICallback InNewFrame,
@@ -66,12 +66,12 @@ void CRenderer::SetGUICallbacks(
 	}
 }
 
-void CRenderer::SetGUIUpdateCallback(FGUICallback InUpdate)
+void FRenderer::SetGUIUpdateCallback(FGUICallback InUpdate)
 {
 	GUIUpdate = std::move(InUpdate);
 }
 
-void CRenderer::ClearViewportCallbacks()
+void FRenderer::ClearViewportCallbacks()
 {
 	if (GUIShutdown)
 	{
@@ -87,7 +87,7 @@ void CRenderer::ClearViewportCallbacks()
 	PostRenderCallback = nullptr;
 }
 
-bool CRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
+bool FRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
 {
 	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
 	SwapChainDesc.BufferDesc.Width = Width;
@@ -122,7 +122,7 @@ bool CRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
 	return true;
 }
 
-bool CRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
+bool FRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
 {
 	ID3D11Texture2D* BackBuffer = nullptr;
 	HRESULT Hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer);
@@ -152,7 +152,7 @@ bool CRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
 	return SUCCEEDED(Hr);
 }
 
-bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
+bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 {
 	Hwnd = InHwnd;
 
@@ -166,12 +166,22 @@ bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 	Viewport.MinDepth = 0.f;
 	Viewport.MaxDepth = 1.f;
 
-	RenderStateManager = std::make_unique<CRenderStateManager>(Device, DeviceContext);
+	RenderStateManager = std::make_unique<FRenderStateManager>(Device, DeviceContext);
 	RenderStateManager->PrepareCommonStates();
 
 	if (!CreateConstantBuffers()) return false;
 	SetConstantBuffers();
-
+	{
+		D3D11_SAMPLER_DESC SamplerDesc = {};
+		SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		SamplerDesc.MinLOD = 0;
+		SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+		if (FAILED(Device->CreateSamplerState(&SamplerDesc, &NormalSampler))) return false;
+	}
 	std::wstring ShaderDirW = FPaths::ShaderDir();
 	std::wstring VSPath = ShaderDirW + L"VertexShader.hlsl";
 	std::wstring PSPath = ShaderDirW + L"PixelShader.hlsl";
@@ -263,13 +273,13 @@ bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 	return true;
 }
 
-void CRenderer::SetConstantBuffers()
+void FRenderer::SetConstantBuffers()
 {
 	ID3D11Buffer* CBs[2] = { FrameConstantBuffer, ObjectConstantBuffer };
 	DeviceContext->VSSetConstantBuffers(0, 2, CBs);
 }
 
-void CRenderer::BeginFrame()
+void FRenderer::BeginFrame()
 {
 	if (GUINewFrame) GUINewFrame();
 	if (GUIUpdate) GUIUpdate();
@@ -282,11 +292,11 @@ void CRenderer::BeginFrame()
 	ID3D11DepthStencilView* ActiveDSV = DepthStencilView;
 	D3D11_VIEWPORT ActiveVP = Viewport;
 
-	if (bUseSceneRenderTargetOverride)
+	if (bUseLevelRenderTargetOverride)
 	{
-		ActiveRTV = SceneRenderTargetView;
-		ActiveDSV = SceneDepthStencilView;
-		ActiveVP = SceneViewport;
+		ActiveRTV = LevelRenderTargetView;
+		ActiveDSV = LevelDepthStencilView;
+		ActiveVP = LevelViewport;
 		if (ActiveRTV && ActiveRTV != RenderTargetView) DeviceContext->ClearRenderTargetView(ActiveRTV, ClearColor);
 		if (ActiveDSV && ActiveDSV != DepthStencilView) DeviceContext->ClearDepthStencilView(ActiveDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
@@ -297,14 +307,14 @@ void CRenderer::BeginFrame()
 	ClearCommandList();
 }
 
-void CRenderer::ClearCommandList()
+void FRenderer::ClearCommandList()
 {
 	PrevCommandCount = CommandList.size();
 	CommandList.clear();
 	CommandList.reserve(PrevCommandCount);	
 }
 
-void CRenderer::EndFrame()
+void FRenderer::EndFrame()
 {
 	if (RenderTargetView)
 	{
@@ -321,7 +331,7 @@ void CRenderer::EndFrame()
 	if (GUIPostPresent) GUIPostPresent();
 }
 
-void CRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
+void FRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
 {
 	ViewMatrix = InQueue.ViewMatrix;
 	ProjectionMatrix = InQueue.ProjectionMatrix;
@@ -333,12 +343,12 @@ void CRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
 	}
 }
 
-void CRenderer::SetViewport(D3D11_VIEWPORT* Viewport)
+void FRenderer::SetViewport(D3D11_VIEWPORT* Viewport)
 {
 	DeviceContext->RSSetViewports(1, Viewport);
 }
 
-void CRenderer::AddCommand(const FRenderCommand& Command)
+void FRenderer::AddCommand(const FRenderCommand& Command)
 {
 	CommandList.push_back(Command);
 	FRenderCommand& Added = CommandList.back();
@@ -346,7 +356,7 @@ void CRenderer::AddCommand(const FRenderCommand& Command)
 	Added.SortKey = FRenderCommand::MakeSortKey(Added.Material, Added.MeshData);
 }
 
-void CRenderer::ExecuteCommands()
+void FRenderer::ExecuteCommands()
 {
 	std::sort(CommandList.begin(), CommandList.end(),
 		[](const FRenderCommand& A, const FRenderCommand& B) {
@@ -364,7 +374,7 @@ void CRenderer::ExecuteCommands()
 	if (PostRenderCallback) PostRenderCallback(this);
 }
 
-void CRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
+void FRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
 {
 	FMaterial* CurrentMaterial = nullptr;
 	FMeshData* CurrentMesh = nullptr;
@@ -430,25 +440,28 @@ void CRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
 		}
 
 		UpdateObjectConstantBuffer(Cmd.WorldMatrix);
-		
-		if (!Cmd.MeshData->Indices.empty())
+
+		if (Cmd.IndexCount > 0)
+			DeviceContext->DrawIndexed(Cmd.IndexCount, Cmd.FirstIndex, 0);
+		else if (!Cmd.MeshData->Indices.empty())
 			DeviceContext->DrawIndexed(static_cast<UINT>(Cmd.MeshData->Indices.size()), 0, 0);
 		else if (!Cmd.MeshData->Vertices.empty())
 			DeviceContext->Draw(static_cast<UINT>(Cmd.MeshData->Vertices.size()), 0);
+
 	}
 }
 
-void CRenderer::ClearDepthBuffer()
+void FRenderer::ClearDepthBuffer()
 {
-	if (SceneDepthStencilView) DeviceContext->ClearDepthStencilView(SceneDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	if (LevelDepthStencilView) DeviceContext->ClearDepthStencilView(LevelDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-FVector CRenderer::GetCameraPosition() const
+FVector FRenderer::GetCameraPosition() const
 {
 	return GetCameraWorldPositionFromViewMatrix(ViewMatrix);
 }
 
-bool CRenderer::CreateConstantBuffers()
+bool FRenderer::CreateConstantBuffers()
 {
 	D3D11_BUFFER_DESC Desc = {};
 	Desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -462,7 +475,7 @@ bool CRenderer::CreateConstantBuffers()
 	return SUCCEEDED(Device->CreateBuffer(&Desc, nullptr, &ObjectConstantBuffer));
 }
 
-void CRenderer::UpdateFrameConstantBuffer()
+void FRenderer::UpdateFrameConstantBuffer()
 {
 	FFrameConstantBuffer CBData;
 	CBData.View = ViewMatrix.GetTransposed();
@@ -475,7 +488,7 @@ void CRenderer::UpdateFrameConstantBuffer()
 	}
 }
 
-void CRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
+void FRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
 {
 	FObjectConstantBuffer CBData;
 	CBData.World = WorldMatrix.GetTransposed();
@@ -487,7 +500,7 @@ void CRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
 	}
 }
 
-bool CRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV)
+bool FRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV)
 {
 	int W, H, C;
 	unsigned char* Data = stbi_load(FilePath, &W, &H, &C, 4);
@@ -509,7 +522,7 @@ bool CRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath,
 	return SUCCEEDED(hr);
 }
 
-bool CRenderer::InitOutlineResources()
+bool FRenderer::InitOutlineResources()
 {
 	if (StencilWriteState && StencilTestState && OutlinePS) return true;
 
@@ -533,14 +546,14 @@ bool CRenderer::InitOutlineResources()
 	return OutlinePS != nullptr;
 }
 
-void CRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float OutlineScale)
+void FRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float OutlineScale)
 {
 	if (!Mesh || !InitOutlineResources()) return;
 	Mesh->UpdateVertexAndIndexBuffer(Device);
 	Mesh->Bind(DeviceContext);
 
-	ID3D11RenderTargetView* ActiveRTV = bUseSceneRenderTargetOverride ? SceneRenderTargetView : RenderTargetView;
-	ID3D11DepthStencilView* ActiveDSV = bUseSceneRenderTargetOverride ? SceneDepthStencilView : DepthStencilView;
+	ID3D11RenderTargetView* ActiveRTV = bUseLevelRenderTargetOverride ? LevelRenderTargetView : RenderTargetView;
+	ID3D11DepthStencilView* ActiveDSV = bUseLevelRenderTargetOverride ? LevelDepthStencilView : DepthStencilView;
 
 	DeviceContext->OMSetRenderTargets(0, nullptr, ActiveDSV);
 	DeviceContext->OMSetDepthStencilState(StencilWriteState, 1);
@@ -557,13 +570,13 @@ void CRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float
 	DeviceContext->OMSetDepthStencilState(nullptr, 0);
 }
 
-void CRenderer::DrawLine(const FVector& Start, const FVector& End, const FVector4& Color)
+void FRenderer::DrawLine(const FVector& Start, const FVector& End, const FVector4& Color)
 {
 	LineVertices.push_back({ Start, Color, FVector::ZeroVector });
 	LineVertices.push_back({ End, Color, FVector::ZeroVector });
 }
 
-void CRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const FVector4& Color)
+void FRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const FVector4& Color)
 {
 	FVector v[8] = {
 		Center + FVector(-BoxExtent.X, -BoxExtent.Y, -BoxExtent.Z), Center + FVector(-BoxExtent.X, -BoxExtent.Y, BoxExtent.Z),
@@ -576,7 +589,7 @@ void CRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const 
 	DrawLine(v[0], v[1], Color); DrawLine(v[4], v[5], Color); DrawLine(v[6], v[7], Color); DrawLine(v[2], v[3], Color);
 }
 
-void CRenderer::ExecuteLineCommands()
+void FRenderer::ExecuteLineCommands()
 {
 	if (LineVertices.empty()) return;
 	ShaderManager.Bind(DeviceContext);
@@ -604,9 +617,9 @@ void CRenderer::ExecuteLineCommands()
 	LineVertices.clear();
 }
 
-void CRenderer::Release()
+void FRenderer::Release()
 {
-	ClearViewportCallbacks(); ClearSceneRenderTarget();
+	ClearViewportCallbacks(); ClearLevelRenderTarget();
 	TextRenderer.Release(); SubUVRenderer.Release();
 	ShaderManager.Release(); FShaderMap::Get().Clear(); FMaterialManager::Get().Clear();
 	if (NormalSampler) NormalSampler->Release();
@@ -625,16 +638,16 @@ void CRenderer::Release()
 	if (Device) Device->Release();
 }
 
-bool CRenderer::IsOccluded()
+bool FRenderer::IsOccluded()
 {
 	if (bSwapChainOccluded && SwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) return true;
 	bSwapChainOccluded = false; return false;
 }
 
-void CRenderer::OnResize(int32 W, int32 H)
+void FRenderer::OnResize(int32 W, int32 H)
 {
 	if (W == 0 || H == 0) return;
-	ClearSceneRenderTarget();
+	ClearLevelRenderTarget();
 	DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
 	if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }

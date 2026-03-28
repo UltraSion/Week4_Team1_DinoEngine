@@ -2,13 +2,13 @@
 #include "Math/Vector.h"
 #include "imgui.h"
 #include <functional>
-class CCore;
+class FCore;
 using FPropertyChangedCallback = std::function<void(const FVector&, const FVector&, const FVector&)>;
 
-class CPropertyWindow
+class FPropertyWindow
 {
 public:
-	void Render(CCore* Core);
+	void Render(FCore* Core);
 	void SetTarget(const FVector& Location, const FVector& Rotation, const FVector& Scale,
 		const char* ActorName = nullptr);
 
@@ -27,5 +27,9 @@ private:
 	FVector EditRotation = { 0.0f, 0.0f, 0.0f };
 	FVector EditScale = { 1.0f, 1.0f, 1.0f };
 	char    ActorNameBuf[128] = "None";
+private:
+	int SelectedMeshIndex = -1;
+	int SelectedTextureIndex = -1;
+	int SelectedMaterialIndex = -1;
 	bool    bModified = false;
 };

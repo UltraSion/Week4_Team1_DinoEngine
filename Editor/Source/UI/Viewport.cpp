@@ -1,10 +1,9 @@
 #include "Viewport.h"
-#include "Viewport.h"
 
 #include "EditorViewportClient.h"
 #include "Core/Core.h"
 #include "Renderer/Renderer.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Camera/Camera.h"
 
 #include "imgui.h"
@@ -20,7 +19,7 @@ namespace
 		}
 	}
 
-	bool RenderGizmoModeButton(const char* Label, EGizmoMode Mode, CEditorViewportClient* ViewportClient)
+	bool RenderGizmoModeButton(const char* Label, EGizmoMode Mode, FEditorViewportClient* ViewportClient)
 	{
 		if (ViewportClient == nullptr)
 		{
@@ -48,17 +47,14 @@ namespace
 	}
 }
 
-CViewportLegacy::~CViewportLegacy()
+FViewport::~FViewport()
 {
-	ReleaseSceneView();
+	ReleaseLevelView();
 }
 
-void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 {
-	//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
-	//ImGui::PopStyleVar();
-
 	if (!bOpen)
 	{
 		bHovered = false;
@@ -66,7 +62,7 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 		bVisible = false;
 		if (Renderer)
 		{
-			Renderer->ClearSceneRenderTarget();
+			Renderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
@@ -74,38 +70,31 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 
 	if (ImGui::BeginMenuBar())
 	{
-		CEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<CEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
+		FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
 		if (EditorViewportClient)
 		{
-			// 도구 선택 버튼
 			ImGui::Separator();
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
 			if (RenderGizmoModeButton("T", EGizmoMode::Location, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Location);
 			}
-
 			if (RenderGizmoModeButton("R", EGizmoMode::Rotation, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Rotation);
 			}
-
 			if (RenderGizmoModeButton("S", EGizmoMode::Scale, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Scale);
 			}
 			ImGui::PopStyleVar();
-		
-			// RenderMode 선택
+
 			float RenderModeComboWidth = 120.0f;
-			// 오른쪽 정렬
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() - RenderModeComboWidth);
 			ImGui::SetNextItemWidth(RenderModeComboWidth);
-			{
-				ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
-				ImGui::Combo("", (int*) &RenderMode, "Lighting\0No Lighting\0Wireframe", 3);
-				EditorViewportClient->SetRenderMode(RenderMode);
-			}
+			ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
+			ImGui::Combo("", reinterpret_cast<int*>(&RenderMode), "Lighting\0No Lighting\0Wireframe", 3);
+			EditorViewportClient->SetRenderMode(RenderMode);
 		}
 		ImGui::EndMenuBar();
 	}
@@ -122,10 +111,7 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 
 	if (Hwnd)
 	{
-		POINT ClientPoint = {
-			static_cast<LONG>(ContentPos.x),
-			static_cast<LONG>(ContentPos.y)
-		};
+		POINT ClientPoint = { static_cast<LONG>(ContentPos.x), static_cast<LONG>(ContentPos.y) };
 		::ScreenToClient(Hwnd, &ClientPoint);
 		ClientPosX = ClientPoint.x;
 		ClientPosY = ClientPoint.y;
@@ -138,10 +124,10 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 
 	if (!bVisible)
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		if (Renderer)
 		{
-			Renderer->ClearSceneRenderTarget();
+			Renderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
@@ -149,29 +135,29 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 
 	if (Renderer)
 	{
-		ReadySceneView(Renderer->GetDevice(), NewWidth, NewHeight);
+		ReadyLevelView(Renderer->GetDevice(), NewWidth, NewHeight);
 
 		if (RenderTargetView && DepthStencilView)
 		{
-			D3D11_VIEWPORT SceneViewport = {};
-			SceneViewport.TopLeftX = 0.0f;
-			SceneViewport.TopLeftY = 0.0f;
-			SceneViewport.Width = static_cast<float>(NewWidth);
-			SceneViewport.Height = static_cast<float>(NewHeight);
-			SceneViewport.MinDepth = 0.0f;
-			SceneViewport.MaxDepth = 1.0f;
-			Renderer->SetSceneRenderTarget(RenderTargetView, DepthStencilView, SceneViewport);
+			D3D11_VIEWPORT LevelViewport = {};
+			LevelViewport.TopLeftX = 0.0f;
+			LevelViewport.TopLeftY = 0.0f;
+			LevelViewport.Width = static_cast<float>(NewWidth);
+			LevelViewport.Height = static_cast<float>(NewHeight);
+			LevelViewport.MinDepth = 0.0f;
+			LevelViewport.MaxDepth = 1.0f;
+			Renderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
 		}
 		else
 		{
-			Renderer->ClearSceneRenderTarget();
+			Renderer->ClearLevelRenderTarget();
 		}
 	}
 
-	//if (Core && Core->GetScene() && Core->GetScene()->GetCamera())
-	//{
-	//	Core->GetScene()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
-	//}
+	if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
+	{
+		Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
+	}
 
 	if (ShaderResourceView)
 	{
@@ -181,7 +167,7 @@ void CViewportLegacy::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
 	ImGui::End();
 }
 
-void CViewportLegacy::ReleaseSceneView()
+void FViewport::ReleaseLevelView()
 {
 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
 	ReleaseIfValid(Resource);
@@ -207,7 +193,7 @@ void CViewportLegacy::ReleaseSceneView()
 	OffscreenHeight = 0;
 }
 
-bool CViewportLegacy::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+bool FViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
 {
 	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
 	{
@@ -233,7 +219,7 @@ bool CViewportLegacy::GetMousePositionInViewport(int32 WindowMouseX, int32 Windo
 	return true;
 }
 
-void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height)
+void FViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
 {
 	if (Device == nullptr)
 	{
@@ -242,7 +228,7 @@ void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 
 
 	if (Width == 0 || Height == 0)
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 
@@ -252,7 +238,7 @@ void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 
 		return;
 	}
 
-	ReleaseSceneView();
+	ReleaseLevelView();
 
 	D3D11_TEXTURE2D_DESC ColorDesc = {};
 	ColorDesc.Width = Width;
@@ -266,19 +252,19 @@ void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 
 
 	if (FAILED(Device->CreateTexture2D(&ColorDesc, nullptr, &RenderTargetTexture)))
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 
 	if (FAILED(Device->CreateRenderTargetView(RenderTargetTexture, nullptr, &RenderTargetView)))
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 
 	if (FAILED(Device->CreateShaderResourceView(RenderTargetTexture, nullptr, &ShaderResourceView)))
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 
@@ -294,13 +280,13 @@ void CViewportLegacy::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 
 
 	if (FAILED(Device->CreateTexture2D(&DepthDesc, nullptr, &DepthStencilTexture)))
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 
 	if (FAILED(Device->CreateDepthStencilView(DepthStencilTexture, nullptr, &DepthStencilView)))
 	{
-		ReleaseSceneView();
+		ReleaseLevelView();
 		return;
 	}
 

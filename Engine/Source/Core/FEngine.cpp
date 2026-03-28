@@ -13,7 +13,7 @@ FEngine::~FEngine()
 
 bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width, int32 Height)
 {
-	App = &CWindowApplication::Get();
+	App = &FWindowApplication::Get();
 	if (!App->Create(hInstance))
 	{
 		return false;
@@ -34,13 +34,13 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 
 	PreInitialize();
 
-	Core = std::make_unique<CCore>();
-	if (!Core->Initialize(MainWindow->GetHwnd(), MainWindow->GetWidth(), MainWindow->GetHeight(), GetStartupSceneType()))
+	Core = std::make_unique<FCore>();
+	if (!Core->Initialize(MainWindow->GetHwnd(), MainWindow->GetWidth(), MainWindow->GetHeight(), GetStartupLevelType()))
 	{
 		return false;
 	}
 
-	MainViewportClient = CreateViewportClient();
+	ViewportClient = CreateViewportClient();
 
 	PostInitialize();
 
@@ -80,9 +80,9 @@ void FEngine::OnResize(int32 Width, int32 Height)
 	}
 }
 
-std::unique_ptr<IViewportClient> FEngine::CreateViewportClient()
+std::unique_ptr<FViewportClient> FEngine::CreateViewportClient()
 {
-	return std::make_unique<CGameViewportClient>(Core.get()->GetActiveWorld());
+	return std::make_unique<FGameViewportClient>();
 }
 
 void FEngine::Shutdown()
@@ -91,12 +91,12 @@ void FEngine::Shutdown()
 
 	if (Core)
 	{
-		Core->SetMainViewportClient(nullptr);
+		Core->SetViewportClient(nullptr);
 		Core->Release();
 		Core.reset();
 	}
 
-	MainViewportClient.reset();
+	ViewportClient.reset();
 
 	if (App)
 	{

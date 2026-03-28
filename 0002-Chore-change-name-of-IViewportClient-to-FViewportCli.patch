@@ -1,0 +1,304 @@
+From 95cb6f8074056f39db741ca2feef0fe98f577dab Mon Sep 17 00:00:00 2001
+From: jskim-research <wltnwkd21@gmail.com>
+Date: Fri, 27 Mar 2026 23:07:57 +0900
+Subject: [PATCH 2/2] Chore: change name of IViewportClient to FViewportClient
+
+---
+ Editor/Source/FEditorEngine.cpp            |  4 ++--
+ Editor/Source/FEditorEngine.h              |  2 +-
+ Editor/Source/UI/EditorUI.cpp              |  2 +-
+ Editor/Source/UI/EditorViewportClient.cpp  |  4 ++--
+ Editor/Source/UI/EditorViewportClient.h    |  2 +-
+ Editor/Source/UI/PreviewViewportClient.cpp |  2 +-
+ Editor/Source/UI/PreviewViewportClient.h   |  2 +-
+ Engine/Source/Core/Core.cpp                |  2 +-
+ Engine/Source/Core/Core.h                  |  8 ++++----
+ Engine/Source/Core/FEngine.cpp             |  2 +-
+ Engine/Source/Core/FEngine.h               |  4 ++--
+ Engine/Source/Core/ViewportClient.cpp      | 18 +++++++++---------
+ Engine/Source/Core/ViewportClient.h        |  6 +++---
+ 13 files changed, 29 insertions(+), 29 deletions(-)
+
+diff --git a/Editor/Source/FEditorEngine.cpp b/Editor/Source/FEditorEngine.cpp
+index 6ee4a53..6dbf752 100644
+--- a/Editor/Source/FEditorEngine.cpp
++++ b/Editor/Source/FEditorEngine.cpp
+@@ -161,7 +161,7 @@ void FEditorEngine::Tick(float DeltaTime)
+ 	SyncViewportClient();
+ }
+ 
+-std::unique_ptr<IViewportClient> FEditorEngine::CreateViewportClient()
++std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
+ {
+ 	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow);
+ }
+@@ -178,7 +178,7 @@ void FEditorEngine::SyncViewportClient()
+ 		return;
+ 	}
+ 
+-	IViewportClient* TargetViewportClient = ViewportClient.get();
++	FViewportClient* TargetViewportClient = ViewportClient.get();
+ 	const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
+ 	if (ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview && PreviewViewportClient)
+ 	{
+diff --git a/Editor/Source/FEditorEngine.h b/Editor/Source/FEditorEngine.h
+index 0b77cae..200226d 100644
+--- a/Editor/Source/FEditorEngine.h
++++ b/Editor/Source/FEditorEngine.h
+@@ -21,7 +21,7 @@ protected:
+ 	void PostInitialize() override;
+ 	void Tick(float DeltaTime) override;
+ 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
+-	std::unique_ptr<IViewportClient> CreateViewportClient() override;
++	std::unique_ptr<FViewportClient> CreateViewportClient() override;
+ 
+ 	FEditorViewportController* GetViewportController();
+ private:
+diff --git a/Editor/Source/UI/EditorUI.cpp b/Editor/Source/UI/EditorUI.cpp
+index 9467dc8..a17b2c6 100644
+--- a/Editor/Source/UI/EditorUI.cpp
++++ b/Editor/Source/UI/EditorUI.cpp
+@@ -620,7 +620,7 @@ void FEditorUI::Render()
+ 				auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+ 			
+ 
+-				IViewportClient* ViewportCli = Core->GetViewportClient();
++				FViewportClient* ViewportCli = Core->GetViewportClient();
+ 				if (!ViewportCli) { ImGui::End(); return; }
+ 
+ 				FShowFlags& ShowFlags = ViewportCli->GetShowFlags();
+diff --git a/Editor/Source/UI/EditorViewportClient.cpp b/Editor/Source/UI/EditorViewportClient.cpp
+index 3069c52..855bc33 100644
+--- a/Editor/Source/UI/EditorViewportClient.cpp
++++ b/Editor/Source/UI/EditorViewportClient.cpp
+@@ -129,7 +129,7 @@ void FEditorViewportClient::Tick(FCore* Core, float DeltaTime)
+ 		return;
+ 	}
+ 
+-	IViewportClient::Tick(Core, DeltaTime);
++	FViewportClient::Tick(Core, DeltaTime);
+ }
+ 
+ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+@@ -302,7 +302,7 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ void FEditorViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level,
+ 	const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+-	IViewportClient::BuildRenderCommands(Core, Level, Frustum, OutQueue);  // non-const 부모 호출
++	FViewportClient::BuildRenderCommands(Core, Level, Frustum, OutQueue);  // non-const 부모 호출
+ 
+ 	// RenderMode 처리
+ 	if (RenderMode == ERenderMode::Wireframe)
+diff --git a/Editor/Source/UI/EditorViewportClient.h b/Editor/Source/UI/EditorViewportClient.h
+index ace6d07..7aec1a9 100644
+--- a/Editor/Source/UI/EditorViewportClient.h
++++ b/Editor/Source/UI/EditorViewportClient.h
+@@ -17,7 +17,7 @@ enum class ERenderMode
+ 	Wireframe,
+ };
+ 
+-class FEditorViewportClient : public IViewportClient
++class FEditorViewportClient : public FViewportClient
+ {
+ public:
+ 	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow);
+diff --git a/Editor/Source/UI/PreviewViewportClient.cpp b/Editor/Source/UI/PreviewViewportClient.cpp
+index 6aebd79..6881f64 100644
+--- a/Editor/Source/UI/PreviewViewportClient.cpp
++++ b/Editor/Source/UI/PreviewViewportClient.cpp
+@@ -52,7 +52,7 @@ void FPreviewViewportClient::Tick(FCore* Core, float DeltaTime)
+ 		return;
+ 	}
+ 
+-	IViewportClient::Tick(Core, DeltaTime);
++	FViewportClient::Tick(Core, DeltaTime);
+ }
+ 
+ ULevel* FPreviewViewportClient::ResolveLevel(FCore* Core) const
+diff --git a/Editor/Source/UI/PreviewViewportClient.h b/Editor/Source/UI/PreviewViewportClient.h
+index b24973f..87a8653 100644
+--- a/Editor/Source/UI/PreviewViewportClient.h
++++ b/Editor/Source/UI/PreviewViewportClient.h
+@@ -6,7 +6,7 @@
+ class FEditorUI;
+ class FWindow;
+ 
+-class FPreviewViewportClient : public IViewportClient
++class FPreviewViewportClient : public FViewportClient
+ {
+ public:
+ 	FPreviewViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, FString InPreviewContextName);
+diff --git a/Engine/Source/Core/Core.cpp b/Engine/Source/Core/Core.cpp
+index 6b8147d..ec2aed0 100644
+--- a/Engine/Source/Core/Core.cpp
++++ b/Engine/Source/Core/Core.cpp
+@@ -63,7 +63,7 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
+ 
+ 
+ 
+-void FCore::SetViewportClient(IViewportClient* InViewportClient)
++void FCore::SetViewportClient(FViewportClient* InViewportClient)
+ {
+ 	if (ViewportClient == InViewportClient)
+ 	{
+diff --git a/Engine/Source/Core/Core.h b/Engine/Source/Core/Core.h
+index 2b76825..7528eed 100644
+--- a/Engine/Source/Core/Core.h
++++ b/Engine/Source/Core/Core.h
+@@ -16,7 +16,7 @@ class FInputManager;
+ class AActor;
+ class ULevel;
+ class ObjectManager;
+-class IViewportClient;
++class FViewportClient;
+ 
+ class ENGINE_API FCore
+ {
+@@ -38,11 +38,11 @@ public:
+ 	void ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+ 	FRenderer* GetRenderer() const { return Renderer.get(); }
+ 
+-	IViewportClient* GetViewportClient() const { return ViewportClient; }
++	FViewportClient* GetViewportClient() const { return ViewportClient; }
+ 	FInputManager* GetInputManager() const { return InputManager; }
+ 	const FTimer& GetTimer() const { return Timer; }
+ 
+-	void SetViewportClient(IViewportClient* InViewportClient);
++	void SetViewportClient(FViewportClient* InViewportClient);
+ 
+ 	void OnResize(int32 Width, int32 Height);
+ 	FEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
+@@ -84,7 +84,7 @@ private:
+ 	FEnhancedInputManager* EnhancedInput = nullptr;
+ 
+ 	ObjectManager* ObjManager = nullptr;
+-	IViewportClient* ViewportClient = nullptr;
++	FViewportClient* ViewportClient = nullptr;
+ 	std::unique_ptr<FLevelManager> LevelManager;
+ 
+ 	std::unique_ptr<FPhysicsManager> PhysicsManager;
+diff --git a/Engine/Source/Core/FEngine.cpp b/Engine/Source/Core/FEngine.cpp
+index 75db389..20f1de6 100644
+--- a/Engine/Source/Core/FEngine.cpp
++++ b/Engine/Source/Core/FEngine.cpp
+@@ -81,7 +81,7 @@ void FEngine::OnResize(int32 Width, int32 Height)
+ 	}
+ }
+ 
+-std::unique_ptr<IViewportClient> FEngine::CreateViewportClient()
++std::unique_ptr<FViewportClient> FEngine::CreateViewportClient()
+ {
+ 	return std::make_unique<FGameViewportClient>();
+ }
+diff --git a/Engine/Source/Core/FEngine.h b/Engine/Source/Core/FEngine.h
+index 8b8e0ca..0e2b24f 100644
+--- a/Engine/Source/Core/FEngine.h
++++ b/Engine/Source/Core/FEngine.h
+@@ -30,12 +30,12 @@ protected:
+ 	virtual void PostInitialize() {}
+ 	virtual void Tick(float DeltaTime) {}
+ 	virtual ELevelType GetStartupLevelType() const { return ELevelType::Game; }
+-	virtual std::unique_ptr<IViewportClient> CreateViewportClient();
++	virtual std::unique_ptr<FViewportClient> CreateViewportClient();
+ 
+ 	FWindowApplication* App = nullptr;
+ 	FWindow* MainWindow = nullptr;
+ 	std::unique_ptr<FCore> Core;
+-	std::unique_ptr<IViewportClient> ViewportClient;
++	std::unique_ptr<FViewportClient> ViewportClient;
+ 
+ private:
+ 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+diff --git a/Engine/Source/Core/ViewportClient.cpp b/Engine/Source/Core/ViewportClient.cpp
+index da9d3eb..1601a33 100644
+--- a/Engine/Source/Core/ViewportClient.cpp
++++ b/Engine/Source/Core/ViewportClient.cpp
+@@ -14,15 +14,15 @@
+ #include "Component/TextComponent.h"
+ 
+ 
+-void IViewportClient::Attach(FCore* Core, FRenderer* Renderer)
++void FViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+ {
+ }
+ 
+-void IViewportClient::Detach(FCore* Core, FRenderer* Renderer)
++void FViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+ {
+ }
+ 
+-void IViewportClient::Tick(FCore* Core, float DeltaTime)
++void FViewportClient::Tick(FCore* Core, float DeltaTime)
+ {
+ 	// instead Enhance input system controller
+ 	//if (!Core)
+@@ -58,21 +58,21 @@ void IViewportClient::Tick(FCore* Core, float DeltaTime)
+ 	//}
+ }
+ 
+-void IViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
++void FViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ {
+ }
+ 
+-ULevel* IViewportClient::ResolveLevel(FCore* Core) const
++ULevel* FViewportClient::ResolveLevel(FCore* Core) const
+ {
+ 	return Core ? Core->GetActiveLevel() : nullptr;
+ }
+ 
+-UWorld* IViewportClient::ResolveWorld(FCore* Core) const
++UWorld* FViewportClient::ResolveWorld(FCore* Core) const
+ {
+ 	return Core ? Core->GetActiveWorld() : nullptr;
+ }
+ 
+-void IViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
++void FViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+ 	UWorld* World = ResolveWorld(Core);
+ 	if (!World) return;
+@@ -82,12 +82,12 @@ void IViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level, const FFru
+ 	RenderCollector.CollectRenderCommands(AllActors, Frustum, ShowFlags, OutQueue);
+ }
+ 
+-void IViewportClient::HandleFileDoubleClick(const FString& FilePath)
++void FViewportClient::HandleFileDoubleClick(const FString& FilePath)
+ {
+ 
+ }
+ 
+-void IViewportClient::HandleFileDropOnViewport(const FString& FilePath)
++void FViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ {
+ 
+ }
+diff --git a/Engine/Source/Core/ViewportClient.h b/Engine/Source/Core/ViewportClient.h
+index cd8bc98..2193ae2 100644
+--- a/Engine/Source/Core/ViewportClient.h
++++ b/Engine/Source/Core/ViewportClient.h
+@@ -14,10 +14,10 @@ class FFrustum;
+ class UPrimitiveComponent;
+ struct FRenderCommandQueue;
+ class UWorld;
+-class ENGINE_API IViewportClient
++class ENGINE_API FViewportClient
+ {
+ public:
+-	virtual ~IViewportClient() = default;
++	virtual ~FViewportClient() = default;
+ 
+ 	virtual void Attach(FCore* Core, FRenderer* Renderer);
+ 	virtual void Detach(FCore* Core, FRenderer* Renderer);
+@@ -37,7 +37,7 @@ protected:
+ 	FLevelRenderCollector RenderCollector;
+ };
+ 
+-class ENGINE_API FGameViewportClient : public IViewportClient
++class ENGINE_API FGameViewportClient : public FViewportClient
+ {
+ public:
+ 	void Attach(FCore* Core, FRenderer* Renderer) override;
+-- 
+2.53.0.windows.1
+

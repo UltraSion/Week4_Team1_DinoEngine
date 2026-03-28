@@ -1,0 +1,2924 @@
+From 750d51057ce549cc0de87d314c4c3c486923ff82 Mon Sep 17 00:00:00 2001
+From: jskim-research <wltnwkd21@gmail.com>
+Date: Fri, 27 Mar 2026 22:12:40 +0900
+Subject: [PATCH] Chore: change name of UScene -> ULevel
+
+---
+ Editor/Source/FEditorEngine.cpp               | 26 +++----
+ Editor/Source/FEditorEngine.h                 |  2 +-
+ Editor/Source/Gizmo/Gizmo.cpp                 | 62 ++++++++--------
+ Editor/Source/Gizmo/Gizmo.h                   | 18 ++---
+ Editor/Source/Picking/Picker.cpp              | 10 +--
+ Editor/Source/Picking/Picker.h                |  4 +-
+ Editor/Source/UI/ControlPanelWindow.cpp       | 70 +++++++++---------
+ Editor/Source/UI/ControlPanelWindow.h         |  4 +-
+ Editor/Source/UI/EditorUI.cpp                 | 32 ++++-----
+ Editor/Source/UI/EditorViewportClient.cpp     | 36 +++++-----
+ Editor/Source/UI/EditorViewportClient.h       |  2 +-
+ Editor/Source/UI/OutlinerWindow.cpp           |  8 +--
+ Editor/Source/UI/PreviewViewportClient.cpp    |  8 +--
+ Editor/Source/UI/PreviewViewportClient.h      |  2 +-
+ Editor/Source/UI/Viewport.cpp                 | 52 +++++++-------
+ Editor/Source/UI/Viewport.h                   |  4 +-
+ Editor/ThirdParty/imgui/imgui.h               |  2 +-
+ Engine/Engine.vcxproj                         | 16 ++---
+ Engine/Engine.vcxproj.filters                 | 48 ++++++-------
+ Engine/Source/Actor/Actor.cpp                 | 10 +--
+ Engine/Source/Actor/Actor.h                   |  8 +--
+ Engine/Source/Actor/SkySphereActor.cpp        |  2 +-
+ Engine/Source/Core/Core.cpp                   | 32 ++++-----
+ Engine/Source/Core/Core.h                     | 38 +++++-----
+ Engine/Source/Core/FEngine.cpp                |  2 +-
+ Engine/Source/Core/FEngine.h                  |  4 +-
+ Engine/Source/Core/Paths.cpp                  |  4 +-
+ Engine/Source/Core/Paths.h                    |  2 +-
+ Engine/Source/Core/ViewportClient.cpp         | 14 ++--
+ Engine/Source/Core/ViewportClient.h           | 10 +--
+ Engine/Source/Physics/PhysicsManager.cpp      |  6 +-
+ Engine/Source/Physics/PhysicsManager.h        |  6 +-
+ Engine/Source/Renderer/Renderer.cpp           | 38 +++++-----
+ Engine/Source/Renderer/Renderer.h             | 14 ++--
+ Engine/Source/Scene/SceneContext.h            | 33 ---------
+ Engine/Source/Serializer/SceneSerializer.cpp  | 16 ++---
+ Engine/Source/Serializer/SceneSerializer.h    |  6 +-
+ .../{Scene/Scene.cpp => World/Level.cpp}      | 25 +++----
+ .../Source/{Scene/Scene.h => World/Level.h}   | 20 +++---
+ Engine/Source/World/LevelContext.h            | 33 +++++++++
+ .../LevelManager.cpp}                         | 72 +++++++++----------
+ .../SceneManager.h => World/LevelManager.h}   | 38 +++++-----
+ .../SceneTypes.h => World/LevelTypes.h}       |  2 +-
+ .../{Scene => World}/RenderCollector.cpp      |  4 +-
+ .../Source/{Scene => World}/RenderCollector.h |  4 +-
+ Engine/Source/World/World.cpp                 | 58 +++++++--------
+ Engine/Source/World/World.h                   | 31 ++++----
+ Engine/Source/World/WorldContext.h            |  6 +-
+ editor.ini                                    |  6 +-
+ 49 files changed, 471 insertions(+), 479 deletions(-)
+ delete mode 100644 Engine/Source/Scene/SceneContext.h
+ rename Engine/Source/{Scene/Scene.cpp => World/Level.cpp} (81%)
+ rename Engine/Source/{Scene/Scene.h => World/Level.h} (67%)
+ create mode 100644 Engine/Source/World/LevelContext.h
+ rename Engine/Source/{Scene/SceneManager.cpp => World/LevelManager.cpp} (72%)
+ rename Engine/Source/{Scene/SceneManager.h => World/LevelManager.h} (68%)
+ rename Engine/Source/{Scene/SceneTypes.h => World/LevelTypes.h} (66%)
+ rename Engine/Source/{Scene => World}/RenderCollector.cpp (97%)
+ rename Engine/Source/{Scene => World}/RenderCollector.h (92%)
+
+diff --git a/Editor/Source/FEditorEngine.cpp b/Editor/Source/FEditorEngine.cpp
+index 23fc8fd..4c76392 100644
+--- a/Editor/Source/FEditorEngine.cpp
++++ b/Editor/Source/FEditorEngine.cpp
+@@ -5,7 +5,7 @@
+ #include "UI/PreviewViewportClient.h"
+ #include "Core/Core.h"
+ #include "Core/ConsoleVariableManager.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ 
+ #include "Component/CameraComponent.h"
+@@ -20,15 +20,15 @@
+ #include "Actor/SkySphereActor.h"
+ namespace
+ {
+-	constexpr const char* PreviewSceneContextName = "PreviewScene";
++	constexpr const char* PreviewLevelContextName = "PreviewLevel";
+ 
+-	void InitializeDefaultPreviewScene(CCore* Core)
++	void InitializeDefaultPreviewLevel(CCore* Core)
+ 	{
+ 		if (Core == nullptr)
+ 		{
+ 			return;
+ 		}
+-		FEditorWorldContext* PreviewContext = Core->GetSceneManager()->CreatePreviewWorldContext(PreviewSceneContextName, 1280, 720);
++		FEditorWorldContext* PreviewContext = Core->GetLevelManager()->CreatePreviewWorldContext(PreviewLevelContextName, 1280, 720);
+ 		if (PreviewContext == nullptr || PreviewContext->World == nullptr)
+ 		{
+ 			return;
+@@ -78,7 +78,7 @@ void FEditorEngine::Shutdown()
+ 		Core->SetViewportClient(nullptr);
+ 	}
+ 
+-	// EditorPawn은 Scene 소속이 아니므로 직접 정리
++	// EditorPawn은 Level 소속이 아니므로 직접 정리
+ 	if (EditorPawn)
+ 	{
+ 		EditorPawn->Destroy();
+@@ -103,8 +103,8 @@ void FEditorEngine::PreInitialize()
+ 
+ void FEditorEngine::PostInitialize()
+ {
+-	InitializeDefaultPreviewScene(Core.get());
+-	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewSceneContextName);
++	InitializeDefaultPreviewLevel(Core.get());
++	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewLevelContextName);
+ 
+ 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
+ 
+@@ -129,7 +129,7 @@ void FEditorEngine::PostInitialize()
+ 				FEngineLog::Get().Log("[error] Unknown command: '%s'", CommandLine);
+ 			}
+ 		});
+-	// EditorPawn은 Scene에 등록하지 않음 — FEditorEngine이 직접 소유
++	// EditorPawn은 Level에 등록하지 않음 — FEditorEngine이 직접 소유
+ 	
+ 	EditorPawn = FObjectFactory::ConstructObject<AEditorCameraPawn>(nullptr, "EditorCameraPawn");
+ 	EditorPawn->Initialize();
+@@ -146,9 +146,9 @@ void FEditorEngine::PostInitialize()
+ 
+ void FEditorEngine::Tick(float DeltaTime)
+ {
+-	// Editor Scene에서는 EditorPawn 카메라가 항상 활성화되도록 보장
+-	// (ClearActors 후 SceneCameraComponent로 폴백된 경우 복원)
+-	if (EditorPawn && Core && Core->GetScene() && Core->GetScene()->IsEditorScene())
++	// Editor Level에서는 EditorPawn 카메라가 항상 활성화되도록 보장
++	// (ClearActors 후 LevelCameraComponent로 폴백된 경우 복원)
++	if (EditorPawn && Core && Core->GetLevel() && Core->GetLevel()->IsEditorLevel())
+ 	{
+ 		UCameraComponent* EditorCamera = EditorPawn->GetCameraComponent();
+ 		if (Core->GetActiveWorld()->GetActiveCameraComponent() != EditorCamera)
+@@ -179,8 +179,8 @@ void FEditorEngine::SyncViewportClient()
+ 	}
+ 
+ 	IViewportClient* TargetViewportClient = ViewportClient.get();
+-	const FWorldContext* ActiveSceneContext = Core->GetActiveWorldContext();
+-	if (ActiveSceneContext && ActiveSceneContext->WorldType == ESceneType::Preview && PreviewViewportClient)
++	const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
++	if (ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview && PreviewViewportClient)
+ 	{
+ 		TargetViewportClient = PreviewViewportClient.get();
+ 	}
+diff --git a/Editor/Source/FEditorEngine.h b/Editor/Source/FEditorEngine.h
+index af368d8..ea261c8 100644
+--- a/Editor/Source/FEditorEngine.h
++++ b/Editor/Source/FEditorEngine.h
+@@ -20,7 +20,7 @@ protected:
+ 	void PreInitialize() override;
+ 	void PostInitialize() override;
+ 	void Tick(float DeltaTime) override;
+-	ESceneType GetStartupSceneType() const override { return ESceneType::Editor; }
++	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
+ 	std::unique_ptr<IViewportClient> CreateViewportClient() override;
+ 
+ 	CEditorViewportController* GetViewportController();
+diff --git a/Editor/Source/Gizmo/Gizmo.cpp b/Editor/Source/Gizmo/Gizmo.cpp
+index 6c74149..57f4837 100644
+--- a/Editor/Source/Gizmo/Gizmo.cpp
++++ b/Editor/Source/Gizmo/Gizmo.cpp
+@@ -10,7 +10,7 @@
+ #include "Renderer/RenderCommand.h"
+ #include "Renderer/Material.h"
+ #include "Renderer/MaterialManager.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Math/MathUtility.h"
+ 
+ #include <algorithm>
+@@ -348,30 +348,30 @@ void CGizmo::BuildRenderCommands(AActor* SelectedActor, const CCamera* Camera, F
+ 	}
+ }
+ 
+-bool CGizmo::BeginDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::BeginDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy())
+ 	{
+ 		return false;
+ 	}
+ 
+-	const EGizmoAxis Axis = HitTestAxis(SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const EGizmoAxis Axis = HitTestAxis(SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 	if (Axis == EGizmoAxis::None)
+ 	{
+ 		return false;
+ 	}
+ 
+-	return BeginAxisDrag(Axis, SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	return BeginAxisDrag(Axis, SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ }
+ 
+-bool CGizmo::UpdateDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::UpdateDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+-	if (ActiveAxis == EGizmoAxis::None || !SelectedActor || SelectedActor->IsPendingDestroy() || !Scene || !Scene->GetCamera())
++	if (ActiveAxis == EGizmoAxis::None || !SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+ 		return false;
+ 	}
+ 
+-	const FRay Ray = Picker.ScreenToRay(Scene->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	FVector Intersection = FVector::ZeroVector;
+ 	if (!IntersectPlane(Ray, DragStartGizmoLocation, DragPlaneNormal, Intersection))
+@@ -421,7 +421,7 @@ bool CGizmo::UpdateDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Pic
+ 	if (Mode == EGizmoMode::Scale)
+ 	{
+ 		FVector NewScale = DragStartActorScale;
+-		const float GizmoScale = GetRenderGizmoScale(ComputeGizmoScale(DragStartGizmoLocation, Scene->GetCamera()));
++		const float GizmoScale = GetRenderGizmoScale(ComputeGizmoScale(DragStartGizmoLocation, Level->GetCamera()));
+ 		const float ScaleDenominator = (ScaleReferenceUnits * GizmoScale > ParallelTolerance)
+ 			? (ScaleReferenceUnits * GizmoScale)
+ 			: ScaleReferenceUnits;
+@@ -483,7 +483,7 @@ bool CGizmo::UpdateDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Pic
+ 	return false;
+ }
+ 
+-void CGizmo::UpdateHover(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++void CGizmo::UpdateHover(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (IsDragging())
+ 	{
+@@ -496,7 +496,7 @@ void CGizmo::UpdateHover(AActor* SelectedActor, UScene* Scene, const CPicker& Pi
+ 		return;
+ 	}
+ 
+-	HoveredAxis = HitTestAxis(SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	HoveredAxis = HitTestAxis(SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ }
+ 
+ void CGizmo::ClearHover()
+@@ -666,9 +666,9 @@ bool CGizmo::EnsureScaleMeshes() const
+ 		&& ScaleCenterMesh;
+ }
+ 
+-EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
++EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
+ {
+-	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Scene || !Scene->GetCamera())
++	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+ 		return EGizmoAxis::None;
+ 	}
+@@ -685,7 +685,7 @@ EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, UScene* Scene, const CPick
+ 	}
+ 	else if (Mode == EGizmoMode::Rotation)
+ 	{
+-		if (!EnsureRotationMeshes(Scene->GetCamera(), WorldLocation))
++		if (!EnsureRotationMeshes(Level->GetCamera(), WorldLocation))
+ 		{
+ 			return EGizmoAxis::None;
+ 		}
+@@ -705,8 +705,8 @@ EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, UScene* Scene, const CPick
+ 		return EGizmoAxis::None;
+ 	}
+ 
+-	const FRay Ray = Picker.ScreenToRay(Scene->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+-	const float GizmoScale = GetRenderGizmoScale(ComputeGizmoScale(WorldLocation, Scene->GetCamera()));
++	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const float GizmoScale = GetRenderGizmoScale(ComputeGizmoScale(WorldLocation, Level->GetCamera()));
+ 	const FQuat GizmoRotation = GetGizmoRotation(SelectedActor);
+ 	const FMatrix AxisGizmoWorld = FTransform(GizmoRotation, WorldLocation, FVector(GizmoScale, GizmoScale, GizmoScale)).ToMatrixWithScale();
+ 	const FMatrix ScreenGizmoWorld = FTransform(FQuat::Identity, WorldLocation, FVector(GizmoScale, GizmoScale, GizmoScale)).ToMatrixWithScale();
+@@ -775,38 +775,38 @@ EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, UScene* Scene, const CPick
+ 	return BestAxis;
+ }
+ 
+-bool CGizmo::BeginAxisDrag(EGizmoAxis AxisId, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::BeginAxisDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (Mode == EGizmoMode::Location)
+ 	{
+-		return BeginTranslationDrag(AxisId, SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++		return BeginTranslationDrag(AxisId, SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 	}
+ 
+ 	if (Mode == EGizmoMode::Rotation)
+ 	{
+-		return BeginRotationDrag(AxisId, SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++		return BeginRotationDrag(AxisId, SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 	}
+ 
+ 	if (Mode == EGizmoMode::Scale)
+ 	{
+-		return BeginScaleDrag(AxisId, SelectedActor, Scene, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++		return BeginScaleDrag(AxisId, SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 	}
+ 
+ 	return false;
+ }
+ 
+-bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+-	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Scene || !Scene->GetCamera())
++	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+ 		return false;
+ 	}
+ 
+-	const FRay Ray = Picker.ScreenToRay(Scene->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	const FVector GizmoLocation = GetActorWorldLocation(SelectedActor);
+ 	const FVector Axis = GetGizmoAxisVector(AxisId, SelectedActor);
+-	const CCamera* Camera = Scene->GetCamera();
++	const CCamera* Camera = Level->GetCamera();
+ 
+ 	FVector PlaneNormal = FVector::ZeroVector;
+ 	if (AxisId >= EGizmoAxis::X && AxisId <= EGizmoAxis::Z)
+@@ -854,17 +854,17 @@ bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, USce
+ 	return true;
+ }
+ 
+-bool CGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+-	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Scene || !Scene->GetCamera())
++	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+ 		return false;
+ 	}
+ 
+-	const FRay Ray = Picker.ScreenToRay(Scene->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	const FVector GizmoLocation = GetActorWorldLocation(SelectedActor);
+-	const FVector Axis = (AxisId == EGizmoAxis::Screen) ? Scene->GetCamera()->GetForward() : GetGizmoAxisVector(AxisId, SelectedActor);
++	const FVector Axis = (AxisId == EGizmoAxis::Screen) ? Level->GetCamera()->GetForward() : GetGizmoAxisVector(AxisId, SelectedActor);
+ 	FVector Intersection = FVector::ZeroVector;
+ 	if (!IntersectPlane(Ray, GizmoLocation, Axis, Intersection))
+ 	{
+@@ -887,17 +887,17 @@ bool CGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, UScene*
+ 	return true;
+ }
+ 
+-bool CGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool CGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+-	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Scene || !Scene->GetCamera())
++	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+ 		return false;
+ 	}
+ 
+-	const FRay Ray = Picker.ScreenToRay(Scene->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
++	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	const FVector GizmoLocation = GetActorWorldLocation(SelectedActor);
+-	const CCamera* Camera = Scene->GetCamera();
++	const CCamera* Camera = Level->GetCamera();
+ 
+ 	FVector PlaneNormal = FVector::ZeroVector;
+ 	if (AxisId >= EGizmoAxis::X && AxisId <= EGizmoAxis::Z)
+diff --git a/Editor/Source/Gizmo/Gizmo.h b/Editor/Source/Gizmo/Gizmo.h
+index 01fe368..005d035 100644
+--- a/Editor/Source/Gizmo/Gizmo.h
++++ b/Editor/Source/Gizmo/Gizmo.h
+@@ -8,7 +8,7 @@
+ class AActor;
+ class CCamera;
+ class CPicker;
+-class UScene;
++class ULevel;
+ class USceneComponent;
+ struct RotationDesc;
+ struct FMeshData;
+@@ -55,9 +55,9 @@ public:
+ 	void ToggleCoordinateSpace();
+ 
+ 	void BuildRenderCommands(AActor* SelectedActor, const CCamera* Camera, FRenderCommandQueue& OutQueue) const;
+-	bool BeginDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool UpdateDrag(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	void UpdateHover(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool UpdateDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	void UpdateHover(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+ 	void ClearHover();
+ 	void EndDrag();
+ 
+@@ -67,11 +67,11 @@ private:
+ 	bool EnsureTranslationMeshes() const;
+ 	bool EnsureRotationMeshes(const CCamera* Camera, const FVector& GizmoWorldLocation) const;
+ 	bool EnsureScaleMeshes() const;
+-	EGizmoAxis HitTestAxis(AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
+-	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, UScene* Scene, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	EGizmoAxis HitTestAxis(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
++	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+ 	EGizmoAxis GetDisplayAxis() const;
+ 	RotationDesc BuildRotationDesc(const CCamera* Camera, const FVector& GizmoWorldLocation) const;
+ 	FQuat GetGizmoRotation(const AActor* Actor) const;
+diff --git a/Editor/Source/Picking/Picker.cpp b/Editor/Source/Picking/Picker.cpp
+index d471847..900c78a 100644
+--- a/Editor/Source/Picking/Picker.cpp
++++ b/Editor/Source/Picking/Picker.cpp
+@@ -1,6 +1,6 @@
+ #include "Picker.h"
+ 
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ #include "Camera/Camera.h"
+ #include "Component/PrimitiveComponent.h"
+@@ -100,21 +100,21 @@ bool CPicker::RayTriangleIntersect(const FRay& Ray,
+ 	return false;
+ }
+ 
+-AActor* CPicker::PickActor(UScene* Scene, int32 ScreenX, int32 ScreenY,
++AActor* CPicker::PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
+ 						   int32 ScreenWidth, int32 ScreenHeight) const
+ {
+-	if (!Scene || !Scene->GetCamera())
++	if (!Level || !Level->GetCamera())
+ 	{
+ 		return nullptr;
+ 	}
+ 
+-	CCamera* Camera = Scene->GetCamera();
++	CCamera* Camera = Level->GetCamera();
+ 	const FRay Ray = ScreenToRay(Camera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	AActor* ClosestActor = nullptr;
+ 	float ClosestDistance = (std::numeric_limits<float>::max)();
+ 
+-	for (AActor* Actor : Scene->GetActors())
++	for (AActor* Actor : Level->GetActors())
+ 	{
+ 		if (!Actor || Actor->IsPendingDestroy())
+ 		{
+diff --git a/Editor/Source/Picking/Picker.h b/Editor/Source/Picking/Picker.h
+index a461d8b..65cb17a 100644
+--- a/Editor/Source/Picking/Picker.h
++++ b/Editor/Source/Picking/Picker.h
+@@ -4,7 +4,7 @@
+ #include "Math/Matrix.h"
+ 
+ class AActor;
+-class UScene;
++class ULevel;
+ class CCamera;
+ 
+ struct FRay
+@@ -25,6 +25,6 @@ public:
+                               float& OutDistance) const;
+ 
+     // 씬의 모든 Actor를 대상으로 피킹 (가장 가까운 Actor 반환)
+-    AActor* PickActor(UScene* Scene, int32 ScreenX, int32 ScreenY,
++    AActor* PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
+                       int32 ScreenWidth, int32 ScreenHeight) const;
+ };
+diff --git a/Editor/Source/UI/ControlPanelWindow.cpp b/Editor/Source/UI/ControlPanelWindow.cpp
+index 0a1e436..030e0ec 100644
+--- a/Editor/Source/UI/ControlPanelWindow.cpp
++++ b/Editor/Source/UI/ControlPanelWindow.cpp
+@@ -3,7 +3,7 @@
+ #include "imgui.h"
+ #include "Core/Core.h"
+ #include "Renderer/Renderer.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ #include "Actor/AttachTestActor.h"
+ #include "Actor/CubeActor.h"
+@@ -26,19 +26,19 @@
+ 
+ namespace
+ {
+-	const char* GetSceneTypeLabel(ESceneType SceneType)
++	const char* GetLevelTypeLabel(ELevelType LevelType)
+ 	{
+-		switch (SceneType)
++		switch (LevelType)
+ 		{
+-		case ESceneType::Game:
++		case ELevelType::Game:
+ 			return "Game";
+-		case ESceneType::Editor:
++		case ELevelType::Editor:
+ 			return "Editor";
+-		case ESceneType::PIE:
++		case ELevelType::PIE:
+ 			return "PIE";
+-		case ESceneType::Preview:
++		case ELevelType::Preview:
+ 			return "Preview";
+-		case ESceneType::Inactive:
++		case ELevelType::Inactive:
+ 			return "Inactive";
+ 		default:
+ 			return "Unknown";
+@@ -58,50 +58,50 @@ void CControlPanelWindow::Render(CCore* Core)
+ 		return;
+ 	}
+ 
+-	if (Core && Core->GetScene())
++	if (Core && Core->GetLevel())
+ 	{
+ 	
+-		const FWorldContext* ActiveSceneContext = Core->GetActiveWorldContext();
+-		const TArray<std::unique_ptr<FEditorWorldContext>>& PreviewSceneContexts = Core->GetSceneManager()->GetPreviewWorldContexts();
+-		const bool bPreviewActive = ActiveSceneContext && ActiveSceneContext->WorldType == ESceneType::Preview;
++		const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
++		const TArray<std::unique_ptr<FEditorWorldContext>>& PreviewLevelContexts = Core->GetLevelManager()->GetPreviewWorldContexts();
++		const bool bPreviewActive = ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview;
+ 
+ 		/*
+-			PreviewScene 등 아마 확장의 여지를 둔 것으로 보이나 아무 기능도 없어 주석 처리함		
++			PreviewLevel 등 아마 확장의 여지를 둔 것으로 보이나 아무 기능도 없어 주석 처리함		
+ 		*/
+ 		/*
+ 		ImGui::SeparatorText("World");
+ 
+-		if (ActiveSceneContext)
++		if (ActiveWorldContext)
+ 		{
+-			ImGui::Text("Active: %s", ActiveSceneContext->ContextName.c_str());
+-			ImGui::Text("Type: %s", GetSceneTypeLabel(ActiveSceneContext->WorldType));
++			ImGui::Text("Active: %s", ActiveWorldContext->ContextName.c_str());
++			ImGui::Text("Type: %s", GetLevelTypeLabel(ActiveWorldContext->WorldType));
+ 		}
+ 		*/
+ 
+ 		/*
+-		if (ImGui::Button("Editor Scene"))
++		if (ImGui::Button("Editor Level"))
+ 		{
+-			Core->ActivateEditorScene();
++			Core->ActivateEditorLevel();
+ 		}
+ 		*/
+ 
+ 		/*
+ 		ImGui::SameLine();
+ 
+-		if (PreviewSceneContexts.empty())
++		if (PreviewLevelContexts.empty())
+ 		{
+ 			ImGui::BeginDisabled();
+-			ImGui::Button("Preview Scene");
++			ImGui::Button("Preview Level");
+ 			ImGui::EndDisabled();
+ 		}
+-		else if (ImGui::Button("Preview Scene"))
++		else if (ImGui::Button("Preview Level"))
+ 		{
+-			Core->ActivatePreviewScene(PreviewSceneContexts.front()->ContextName);
++			Core->ActivatePreviewLevel(PreviewLevelContexts.front()->ContextName);
+ 		}
+ 
+ 		if (bPreviewActive)
+ 		{
+-			ImGui::TextUnformatted("Preview scene is editor-only. Scene save/load is disabled.");
++			ImGui::TextUnformatted("Preview Level is editor-only. Level save/load is disabled.");
+ 		}
+ 		*/
+ 
+@@ -111,7 +111,7 @@ void CControlPanelWindow::Render(CCore* Core)
+ 		/*
+ 		if (ImGui::Button("Spawn Test"))
+ 		{
+-			UScene* Scene = Core->GetScene();
++			ULevel* Level = Core->GetLevel();
+ 			AActor* NewActor = nullptr;
+ 
+ 			for (int i = 0; i < 1000; i++)
+@@ -124,13 +124,13 @@ void CControlPanelWindow::Render(CCore* Core)
+ 				std::uniform_real_distribution<float> dist(-10, 10);
+ 
+ 				FVector V{ 0, 0, 0 };
+-				NewActor = Scene->SpawnActor<ACubeActor>("Test");
++				NewActor = Level->SpawnActor<ACubeActor>("Test");
+ 				NewActor->SetActorLocation(V);
+ 			}
+ 		}
+ 		*/
+ 		
+-		if (CCamera* Camera = Core->GetScene()->GetCamera())
++		if (CCamera* Camera = Core->GetLevel()->GetCamera())
+ 		{
+ 		
+ 			float Sensitivity = Camera->GetMouseSensitivity();
+@@ -206,34 +206,34 @@ void CControlPanelWindow::Render(CCore* Core)
+ 
+ 		if (ImGui::Button("Spawn"))
+ 		{
+-			UScene* Scene = Core->GetScene();
++			ULevel* Level = Core->GetLevel();
+ 			static int32 SpawnCount = 0;
+ 			const FString Name = FString(SpawnTypes[SpawnTypeIndex]) + "_Spawned_" + std::to_string(SpawnCount++);
+ 
+ 			AActor* NewActor = nullptr;
+ 			if (SpawnTypeIndex == 0)
+ 			{
+-				NewActor = Scene->SpawnActor<ACubeActor>(Name);
++				NewActor = Level->SpawnActor<ACubeActor>(Name);
+ 			}
+ 			else if (SpawnTypeIndex == 1)
+ 			{
+-				NewActor = Scene->SpawnActor<ASphereActor>(Name);
++				NewActor = Level->SpawnActor<ASphereActor>(Name);
+ 			}
+ 			else if (SpawnTypeIndex == 2)
+ 			{
+-				NewActor = Scene->SpawnActor<APlaneActor>(Name);
++				NewActor = Level->SpawnActor<APlaneActor>(Name);
+ 			}
+ 			else if (SpawnTypeIndex == 3)
+ 			{
+-				NewActor = Scene->SpawnActor<AAttachTestActor>(Name);
++				NewActor = Level->SpawnActor<AAttachTestActor>(Name);
+ 			}
+ 			else if (SpawnTypeIndex == 4)
+ 			{
+-				NewActor = Scene->SpawnActor<ASubUVActor>(Name);
++				NewActor = Level->SpawnActor<ASubUVActor>(Name);
+ 			}
+ 			else if (SpawnTypeIndex == 5)
+ 			{
+-				NewActor = Scene->SpawnActor<ATextActor>(Name);
++				NewActor = Level->SpawnActor<ATextActor>(Name);
+ 
+ 				if (NewActor)
+ 				{
+@@ -253,7 +253,7 @@ void CControlPanelWindow::Render(CCore* Core)
+ 			}
+ 			else if (SpawnTypeIndex == 6)
+ 			{
+-				NewActor = Scene->SpawnActor<ASkySphereActor>(Name);
++				NewActor = Level->SpawnActor<ASkySphereActor>(Name);
+ 			}
+ 
+ 			if (NewActor && !NewActor->IsA<ASkySphereActor>())
+@@ -273,7 +273,7 @@ void CControlPanelWindow::Render(CCore* Core)
+ 		if (ImGui::Button("Delete"))
+ 		{
+ 			const FString Name = SelectedActor->GetName();
+-			Core->GetScene()->DestroyActor(SelectedActor);
++			Core->GetLevel()->DestroyActor(SelectedActor);
+ 			Core->SetSelectedActor(nullptr);
+ 			UE_LOG("Deleted actor: %s", Name.c_str());
+ 		}
+diff --git a/Editor/Source/UI/ControlPanelWindow.h b/Editor/Source/UI/ControlPanelWindow.h
+index cff211f..dfa9798 100644
+--- a/Editor/Source/UI/ControlPanelWindow.h
++++ b/Editor/Source/UI/ControlPanelWindow.h
+@@ -9,6 +9,6 @@ public:
+ 	void Render(CCore* Core);
+ 
+ private:
+-	TArray<FString> SceneFiles;
+-	int32 SelectedSceneIndex = -1;
++	TArray<FString> LevelFiles;
++	int32 SelectedLevelIndex = -1;
+ };
+diff --git a/Editor/Source/UI/EditorUI.cpp b/Editor/Source/UI/EditorUI.cpp
+index 39d5042..c82fbf3 100644
+--- a/Editor/Source/UI/EditorUI.cpp
++++ b/Editor/Source/UI/EditorUI.cpp
+@@ -2,7 +2,7 @@
+ 
+ #include "Core/Core.h"
+ #include "Object/Object.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ #include "Component/PrimitiveComponent.h"
+ #include "Component/SceneComponent.h"
+@@ -43,7 +43,7 @@ std::string GetFilePathUsingDialog(EFileDialogType Type)
+ 
+ 	OPENFILENAMEA Ofn = {};
+ 	Ofn.lStructSize = sizeof(OPENFILENAMEA);
+-	Ofn.lpstrFilter = "Scene Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
++	Ofn.lpstrFilter = "Level Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+ 	Ofn.lpstrFile = FileName;
+ 	Ofn.nMaxFile = MAX_PATH;
+ 	Ofn.lpstrDefExt = "json";
+@@ -317,11 +317,11 @@ void CEditorUI::DetachFromRenderer(CRenderer* InRenderer)
+ {
+ 	bViewportClientActive = false;
+ 	CurrentRenderer = nullptr;
+-	Viewport.ReleaseSceneView();
++	Viewport.ReleaseLevelView();
+ 
+ 	if (InRenderer)
+ 	{
+-		InRenderer->ClearSceneRenderTarget();
++		InRenderer->ClearLevelRenderTarget();
+ 		InRenderer->ClearViewportCallbacks();
+ 	}
+ }
+@@ -553,7 +553,7 @@ void CEditorUI::Render()
+ 	{
+ 		if (ImGui::BeginMenu("File"))
+ 		{
+-			if (ImGui::MenuItem("New Scene"))
++			if (ImGui::MenuItem("New Level"))
+ 			{
+ 				if (Core)
+ 				{
+@@ -564,32 +564,32 @@ void CEditorUI::Render()
+ 						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+ 						Cam->GetCamera()->SetRotation(0.f, 0.f);
+ 					}
+-					Core->GetScene()->ClearActors();
+-					UE_LOG("New scene created");
++					Core->GetLevel()->ClearActors();
++					UE_LOG("New Level created");
+ 				}
+ 			}
+ 
+-			if (ImGui::MenuItem("Open Scene"))
++			if (ImGui::MenuItem("Open Level"))
+ 			{
+-				if (Core && Core->GetActiveScene())
++				if (Core && Core->GetActiveLevel())
+ 				{
+ 					FString Path = GetFilePathUsingDialog(EFileDialogType::Open);
+ 
+ 					if (!Path.empty())
+ 					{
+ 						Core->SetSelectedActor(nullptr);
+-						Core->GetScene()->ClearActors();
++						Core->GetLevel()->ClearActors();
+ 
+-						bool bLoaded = FSceneSerializer::Load(Core->GetScene(), Path, Core->GetRenderer()->GetDevice());
++						bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), Path, Core->GetRenderer()->GetDevice());
+ 						if (bLoaded)
+ 						{
+-							UE_LOG("Scene loaded: %s", Path.c_str());
++							UE_LOG("Level loaded: %s", Path.c_str());
+ 						}
+ 						else
+ 						{
+ 							MessageBoxW(
+ 								nullptr,
+-								L"Scene 정보가 잘못되었습니다.",
++								L"Level 정보가 잘못되었습니다.",
+ 								L"Error",
+ 								MB_OK | MB_ICONWARNING
+ 							);
+@@ -598,15 +598,15 @@ void CEditorUI::Render()
+ 				}
+ 			}
+ 
+-			if (ImGui::MenuItem("Save Scene As..."))
++			if (ImGui::MenuItem("Save Level As..."))
+ 			{
+-				if (Core && Core->GetActiveScene())
++				if (Core && Core->GetActiveLevel())
+ 				{
+ 					FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
+ 
+ 					if (!Path.empty())
+ 					{
+-						FSceneSerializer::Save(Core->GetScene(),Path);
++						FSceneSerializer::Save(Core->GetLevel(),Path);
+ 					}
+ 				}
+ 			}
+diff --git a/Editor/Source/UI/EditorViewportClient.cpp b/Editor/Source/UI/EditorViewportClient.cpp
+index 3b98451..f3534e0 100644
+--- a/Editor/Source/UI/EditorViewportClient.cpp
++++ b/Editor/Source/UI/EditorViewportClient.cpp
+@@ -12,7 +12,7 @@
+ #include "Renderer/Materialmanager.h"
+ #include "Renderer/Material.h"
+ #include "Renderer/ShaderMap.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Serializer/SceneSerializer.h"
+ #include "Component/PrimitiveComponent.h"
+ #include "Core/Paths.h"
+@@ -144,9 +144,9 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 		return;
+ 	}
+ 
+-	UScene* Scene = ResolveScene(Core);
++	ULevel* Level = ResolveLevel(Core);
+ 	AActor* SelectedActor = Core->GetSelectedActor();
+-	if (!Scene)
++	if (!Level)
+ 	{
+ 		return;
+ 	}
+@@ -199,13 +199,13 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 			return;
+ 		}
+ 
+-		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
++		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, Level, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+ 		{
+ 			return;
+ 		}
+ 
+ 		{
+-			AActor* PickedActor = Picker.PickActor(Scene, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
++			AActor* PickedActor = Picker.PickActor(Level, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+ 			Core->SetSelectedActor(PickedActor);
+ 			EditorUI.SyncSelectedActorProperty();
+ 		}
+@@ -220,11 +220,11 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 
+ 		if (!Gizmo.IsDragging())
+ 		{
+-			Gizmo.UpdateHover(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
++			Gizmo.UpdateHover(SelectedActor, Level, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+ 			return;
+ 		}
+ 
+-		if (Gizmo.UpdateDrag(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
++		if (Gizmo.UpdateDrag(SelectedActor, Level, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight))
+ 		{
+ 			EditorUI.SyncSelectedActorProperty();
+ 		}
+@@ -236,7 +236,7 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 			Gizmo.EndDrag();
+ 			if (bHasViewportMouse)
+ 			{
+-				Gizmo.UpdateHover(SelectedActor, Scene, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
++				Gizmo.UpdateHover(SelectedActor, Level, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+ 			}
+ 			else
+ 			{
+@@ -260,18 +260,18 @@ void CEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
+ 		if (FilePath.ends_with(".json"))
+ 		{
+ 			Core->SetSelectedActor(nullptr);
+-			Core->GetScene()->ClearActors();
+-			bool bLoaded = FSceneSerializer::Load(Core->GetScene(), FilePath, Core->GetRenderer()->GetDevice());
++			Core->GetLevel()->ClearActors();
++			bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), FilePath, Core->GetRenderer()->GetDevice());
+ 
+ 			if (bLoaded)
+ 			{
+-				UE_LOG("Scene loaded: %s", FilePath.c_str());
++				UE_LOG("Level loaded: %s", FilePath.c_str());
+ 			}			
+ 			else
+ 			{
+ 				MessageBoxW(
+ 					nullptr,
+-					L"Scene 정보가 잘못되었습니다.",
++					L"Level 정보가 잘못되었습니다.",
+ 					L"Error",
+ 					MB_OK | MB_ICONWARNING
+ 				);
+@@ -288,9 +288,9 @@ void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ 	{
+ 		if (FilePath.ends_with(".obj"))
+ 		{
+-			const FRay Ray = Picker.ScreenToRay(Core->GetScene()->GetCamera(), ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
++			const FRay Ray = Picker.ScreenToRay(Core->GetLevel()->GetCamera(), ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
+ 
+-			AObjActor* NewActor = Core->GetScene()->SpawnActor<AObjActor>("ObjActor");
++			AObjActor* NewActor = Core->GetLevel()->SpawnActor<AObjActor>("ObjActor");
+ 			
+ 			NewActor->LoadObj(Core->GetRenderer()->GetDevice(), FPaths::ToRelativePath(FilePath));
+ 			FVector V = Ray.Origin + Ray.Direction * 5;
+@@ -299,10 +299,10 @@ void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ 	}
+ }
+ 
+-void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
++void CEditorViewportClient::BuildRenderCommands(CCore* Core, ULevel* Level,
+ 	const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+-	IViewportClient::BuildRenderCommands(Core, Scene, Frustum, OutQueue);  // non-const 부모 호출
++	IViewportClient::BuildRenderCommands(Core, Level, Frustum, OutQueue);  // non-const 부모 호출
+ 
+ 	// RenderMode 처리
+ 	if (RenderMode == ERenderMode::Wireframe)
+@@ -315,7 +315,7 @@ void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
+ 		}
+ 	}
+ 
+-	if (!Core || !Scene || !Scene->GetCamera())
++	if (!Core || !Level || !Level->GetCamera())
+ 	{
+ 		return;
+ 	}
+@@ -334,7 +334,7 @@ void CEditorViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene,
+ 	AActor* GizmoTarget = Core->GetSelectedActor();
+ 	if (GizmoTarget && !GizmoTarget->IsA<ASkySphereActor>())
+ 	{
+-		Gizmo.BuildRenderCommands(GizmoTarget, Scene->GetCamera(), OutQueue);
++		Gizmo.BuildRenderCommands(GizmoTarget, Level->GetCamera(), OutQueue);
+ 	}
+ }
+ 
+diff --git a/Editor/Source/UI/EditorViewportClient.h b/Editor/Source/UI/EditorViewportClient.h
+index 415a51e..7f5bd4f 100644
+--- a/Editor/Source/UI/EditorViewportClient.h
++++ b/Editor/Source/UI/EditorViewportClient.h
+@@ -33,7 +33,7 @@ public:
+ 
+ 	void HandleFileDoubleClick(const FString& FilePath) override;
+ 	void HandleFileDropOnViewport(const FString& FilePath) override;
+-	void BuildRenderCommands(CCore* Core, UScene* Scene,
++	void BuildRenderCommands(CCore* Core, ULevel* Level,
+ 		const FFrustum& Frustum, FRenderCommandQueue& OutQueue) override;
+ 	float GetGridSize() const { return GridSize; }
+ 	void SetGridSize(float InSize);
+diff --git a/Editor/Source/UI/OutlinerWindow.cpp b/Editor/Source/UI/OutlinerWindow.cpp
+index 207f472..0e55c2b 100644
+--- a/Editor/Source/UI/OutlinerWindow.cpp
++++ b/Editor/Source/UI/OutlinerWindow.cpp
+@@ -4,7 +4,7 @@
+ #include "Core/Core.h"
+ #include "Core/ShowFlags.h"
+ #include "Core/ViewportClient.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ #include "Component/SubUVComponent.h"
+ #include "Component/TextComponent.h"
+@@ -20,7 +20,7 @@ void COutlinerWindow::Render(CCore* Core)
+ 		ImGui::End();
+ 		return;
+ 	}
+-	if (!Core || !Core->GetScene())
++	if (!Core || !Core->GetLevel())
+ 	{
+ 		ImGui::End();
+ 		return;
+@@ -31,8 +31,8 @@ void COutlinerWindow::Render(CCore* Core)
+ 
+ 	ImGui::SeparatorText("Actors");
+ 
+-	UScene* Scene = Core->GetScene();
+-	const TArray<AActor*>& Actors = Scene->GetActors();
++	ULevel* Level = Core->GetLevel();
++	const TArray<AActor*>& Actors = Level->GetActors();
+ 	
+ 
+ 	for (AActor* Actor : Actors)
+diff --git a/Editor/Source/UI/PreviewViewportClient.cpp b/Editor/Source/UI/PreviewViewportClient.cpp
+index f276d53..080fa31 100644
+--- a/Editor/Source/UI/PreviewViewportClient.cpp
++++ b/Editor/Source/UI/PreviewViewportClient.cpp
+@@ -55,17 +55,17 @@ void CPreviewViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	IViewportClient::Tick(Core, DeltaTime);
+ }
+ 
+-UScene* CPreviewViewportClient::ResolveScene(CCore* Core) const
++ULevel* CPreviewViewportClient::ResolveLevel(CCore* Core) const
+ {
+ 	if (!Core)
+ 	{
+ 		return nullptr;
+ 	}
+ 
+-	if (UScene* PreviewScene = Core->GetSceneManager()->GetPreviewScene(PreviewContextName))
++	if (ULevel* PreviewLevel = Core->GetLevelManager()->GetPreviewLevel(PreviewContextName))
+ 	{
+-		return PreviewScene;
++		return PreviewLevel;
+ 	}
+ 
+-	return Core->GetActiveScene();
++	return Core->GetActiveLevel();
+ }
+diff --git a/Editor/Source/UI/PreviewViewportClient.h b/Editor/Source/UI/PreviewViewportClient.h
+index fc560db..5245e88 100644
+--- a/Editor/Source/UI/PreviewViewportClient.h
++++ b/Editor/Source/UI/PreviewViewportClient.h
+@@ -14,7 +14,7 @@ public:
+ 	void Attach(CCore* Core, CRenderer* Renderer) override;
+ 	void Detach(CCore* Core, CRenderer* Renderer) override;
+ 	void Tick(CCore* Core, float DeltaTime) override;
+-	UScene* ResolveScene(CCore* Core) const override;
++	ULevel* ResolveLevel(CCore* Core) const override;
+ 
+ private:
+ 	CEditorUI& EditorUI;
+diff --git a/Editor/Source/UI/Viewport.cpp b/Editor/Source/UI/Viewport.cpp
+index fe70967..c19d667 100644
+--- a/Editor/Source/UI/Viewport.cpp
++++ b/Editor/Source/UI/Viewport.cpp
+@@ -3,7 +3,7 @@
+ #include "EditorViewportClient.h"
+ #include "Core/Core.h"
+ #include "Renderer/Renderer.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Camera/Camera.h"
+ 
+ #include "imgui.h"
+@@ -49,7 +49,7 @@ namespace
+ 
+ CViewport::~CViewport()
+ {
+-	ReleaseSceneView();
++	ReleaseLevelView();
+ }
+ 
+ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+@@ -65,7 +65,7 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 		bVisible = false;
+ 		if (Renderer)
+ 		{
+-			Renderer->ClearSceneRenderTarget();
++			Renderer->ClearLevelRenderTarget();
+ 		}
+ 		ImGui::End();
+ 		return;
+@@ -137,10 +137,10 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 
+ 	if (!bVisible)
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		if (Renderer)
+ 		{
+-			Renderer->ClearSceneRenderTarget();
++			Renderer->ClearLevelRenderTarget();
+ 		}
+ 		ImGui::End();
+ 		return;
+@@ -148,28 +148,28 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 
+ 	if (Renderer)
+ 	{
+-		ReadySceneView(Renderer->GetDevice(), NewWidth, NewHeight);
++		ReadyLevelView(Renderer->GetDevice(), NewWidth, NewHeight);
+ 
+ 		if (RenderTargetView && DepthStencilView)
+ 		{
+-			D3D11_VIEWPORT SceneViewport = {};
+-			SceneViewport.TopLeftX = 0.0f;
+-			SceneViewport.TopLeftY = 0.0f;
+-			SceneViewport.Width = static_cast<float>(NewWidth);
+-			SceneViewport.Height = static_cast<float>(NewHeight);
+-			SceneViewport.MinDepth = 0.0f;
+-			SceneViewport.MaxDepth = 1.0f;
+-			Renderer->SetSceneRenderTarget(RenderTargetView, DepthStencilView, SceneViewport);
++			D3D11_VIEWPORT LevelViewport = {};
++			LevelViewport.TopLeftX = 0.0f;
++			LevelViewport.TopLeftY = 0.0f;
++			LevelViewport.Width = static_cast<float>(NewWidth);
++			LevelViewport.Height = static_cast<float>(NewHeight);
++			LevelViewport.MinDepth = 0.0f;
++			LevelViewport.MaxDepth = 1.0f;
++			Renderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
+ 		}
+ 		else
+ 		{
+-			Renderer->ClearSceneRenderTarget();
++			Renderer->ClearLevelRenderTarget();
+ 		}
+ 	}
+ 
+-	if (Core && Core->GetScene() && Core->GetScene()->GetCamera())
++	if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
+ 	{
+-		Core->GetScene()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
++		Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
+ 	}
+ 
+ 	if (ShaderResourceView)
+@@ -180,7 +180,7 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 	ImGui::End();
+ }
+ 
+-void CViewport::ReleaseSceneView()
++void CViewport::ReleaseLevelView()
+ {
+ 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
+ 	ReleaseIfValid(Resource);
+@@ -232,7 +232,7 @@ bool CViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouse
+ 	return true;
+ }
+ 
+-void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height)
++void CViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
+ {
+ 	if (Device == nullptr)
+ 	{
+@@ -241,7 +241,7 @@ void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height
+ 
+ 	if (Width == 0 || Height == 0)
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+@@ -251,7 +251,7 @@ void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height
+ 		return;
+ 	}
+ 
+-	ReleaseSceneView();
++	ReleaseLevelView();
+ 
+ 	D3D11_TEXTURE2D_DESC ColorDesc = {};
+ 	ColorDesc.Width = Width;
+@@ -265,19 +265,19 @@ void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height
+ 
+ 	if (FAILED(Device->CreateTexture2D(&ColorDesc, nullptr, &RenderTargetTexture)))
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+ 	if (FAILED(Device->CreateRenderTargetView(RenderTargetTexture, nullptr, &RenderTargetView)))
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+ 	if (FAILED(Device->CreateShaderResourceView(RenderTargetTexture, nullptr, &ShaderResourceView)))
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+@@ -293,13 +293,13 @@ void CViewport::ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height
+ 
+ 	if (FAILED(Device->CreateTexture2D(&DepthDesc, nullptr, &DepthStencilTexture)))
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+ 	if (FAILED(Device->CreateDepthStencilView(DepthStencilTexture, nullptr, &DepthStencilView)))
+ 	{
+-		ReleaseSceneView();
++		ReleaseLevelView();
+ 		return;
+ 	}
+ 
+diff --git a/Editor/Source/UI/Viewport.h b/Editor/Source/UI/Viewport.h
+index 25646a9..3663438 100644
+--- a/Editor/Source/UI/Viewport.h
++++ b/Editor/Source/UI/Viewport.h
+@@ -11,13 +11,13 @@ public:
+ 	~CViewport();
+ 
+ 	void Render(CCore* Core, CRenderer* Renderer, HWND Hwnd);
+-	void ReleaseSceneView();
++	void ReleaseLevelView();
+ 	bool GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+ 	bool IsHovered() const { return bHovered; }
+ 	bool IsFocused() const { return bFocused; }
+ 	bool IsVisible() const { return bVisible; }
+ 
+-	void ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height);
++	void ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height);
+ 
+ private:
+ 	ID3D11Texture2D* RenderTargetTexture = nullptr;
+diff --git a/Editor/ThirdParty/imgui/imgui.h b/Editor/ThirdParty/imgui/imgui.h
+index dfa272d..5341e22 100644
+--- a/Editor/ThirdParty/imgui/imgui.h
++++ b/Editor/ThirdParty/imgui/imgui.h
+@@ -3272,7 +3272,7 @@ typedef unsigned short ImDrawIdx;   // Default: 16-bit (for maximum compatibilit
+ // NB: You most likely do NOT need to use draw callbacks just to create your own widget or customized UI rendering,
+ // you can poke into the draw list for that! Draw callback may be useful for example to:
+ //  A) Change your GPU render state,
+-//  B) render a complex 3D scene inside a UI element without an intermediate texture/render target, etc.
++//  B) render a complex 3D Level inside a UI element without an intermediate texture/render target, etc.
+ // The expected behavior from your rendering function is 'if (cmd.UserCallback != NULL) { cmd.UserCallback(parent_list, cmd); } else { RenderTriangles() }'
+ // If you want to override the signature of ImDrawCallback, you can simply use e.g. '#define ImDrawCallback MyDrawCallback' (in imconfig.h) + update rendering backend accordingly.
+ #ifndef ImDrawCallback
+diff --git a/Engine/Engine.vcxproj b/Engine/Engine.vcxproj
+index fed6a5b..9f2fff2 100644
+--- a/Engine/Engine.vcxproj
++++ b/Engine/Engine.vcxproj
+@@ -106,11 +106,6 @@
+     <ClInclude Include="Source\Renderer\SubUVRenderer.h" />
+     <ClInclude Include="Source\Renderer\TextMeshBuilder.h" />
+     <ClInclude Include="Source\Renderer\TextureVertex.h" />
+-    <ClInclude Include="Source\Scene\RenderCollector.h" />
+-    <ClInclude Include="Source\Scene\Scene.h" />
+-    <ClInclude Include="Source\Scene\SceneContext.h" />
+-    <ClInclude Include="Source\Scene\SceneManager.h" />
+-    <ClInclude Include="Source\Scene\SceneTypes.h" />
+     <ClInclude Include="Source\Serializer\Archive.h" />
+     <ClInclude Include="Source\Serializer\SceneSerializer.h" />
+     <ClInclude Include="Source\Types\Array.h" />
+@@ -124,6 +119,11 @@
+     <ClInclude Include="Source\Types\Set.h" />
+     <ClInclude Include="Source\Types\StaticArray.h" />
+     <ClInclude Include="Source\Types\String.h" />
++    <ClInclude Include="Source\World\Level.h" />
++    <ClInclude Include="Source\World\LevelManager.h" />
++    <ClInclude Include="Source\World\RenderCollector.h" />
++    <ClInclude Include="Source\World\LevelContext.h" />
++    <ClInclude Include="Source\World\LevelTypes.h" />
+     <ClInclude Include="Source\World\World.h" />
+     <ClInclude Include="Source\World\WorldContext.h" />
+     <ClInclude Include="ThirdParty\stb_image.h" />
+@@ -204,12 +204,12 @@
+     <ClCompile Include="Source\Renderer\ShaderResource.cpp" />
+     <ClCompile Include="Source\Renderer\SubUVRenderer.cpp" />
+     <ClCompile Include="Source\Renderer\TextMeshBuilder.cpp" />
+-    <ClCompile Include="Source\Scene\RenderCollector.cpp" />
+-    <ClCompile Include="Source\Scene\Scene.cpp" />
+-    <ClCompile Include="Source\Scene\SceneManager.cpp" />
+     <ClCompile Include="Source\Serializer\Archive.cpp" />
+     <ClCompile Include="Source\Serializer\SceneSerializer.cpp" />
+     <ClCompile Include="Source\Types\Name.cpp" />
++    <ClCompile Include="Source\World\Level.cpp" />
++    <ClCompile Include="Source\World\RenderCollector.cpp" />
++    <ClCompile Include="Source\World\LevelManager.cpp" />
+     <ClCompile Include="Source\World\World.cpp" />
+   </ItemGroup>
+   <PropertyGroup Label="Globals">
+diff --git a/Engine/Engine.vcxproj.filters b/Engine/Engine.vcxproj.filters
+index d9682f8..fe0799e 100644
+--- a/Engine/Engine.vcxproj.filters
++++ b/Engine/Engine.vcxproj.filters
+@@ -276,15 +276,6 @@
+     <ClCompile Include="Source\Renderer\TextMeshBuilder.cpp">
+       <Filter>Source\Renderer</Filter>
+     </ClCompile>
+-    <ClCompile Include="Source\Scene\RenderCollector.cpp">
+-      <Filter>Source\Scene</Filter>
+-    </ClCompile>
+-    <ClCompile Include="Source\Scene\Scene.cpp">
+-      <Filter>Source\Scene</Filter>
+-    </ClCompile>
+-    <ClCompile Include="Source\Scene\SceneManager.cpp">
+-      <Filter>Source\Scene</Filter>
+-    </ClCompile>
+     <ClCompile Include="Source\Serializer\Archive.cpp">
+       <Filter>Source\Serializer</Filter>
+     </ClCompile>
+@@ -305,6 +296,15 @@
+       <Filter>Source\Actor</Filter>
+     </ClCompile>
+     <ClCompile Include="Source\Actor\SkySphereActor.cpp" />
++    <ClCompile Include="Source\World\Level.cpp">
++      <Filter>Source\World</Filter>
++    </ClCompile>
++    <ClCompile Include="Source\World\RenderCollector.cpp">
++      <Filter>Source\World</Filter>
++    </ClCompile>
++    <ClCompile Include="Source\World\LevelManager.cpp">
++      <Filter>Source\World</Filter>
++    </ClCompile>
+   </ItemGroup>
+   <ItemGroup>
+     <ClInclude Include="Source\CoreMinimal.h">
+@@ -559,21 +559,6 @@
+     <ClInclude Include="Source\Renderer\TextureVertex.h">
+       <Filter>Source\Renderer</Filter>
+     </ClInclude>
+-    <ClInclude Include="Source\Scene\RenderCollector.h">
+-      <Filter>Source\Scene</Filter>
+-    </ClInclude>
+-    <ClInclude Include="Source\Scene\Scene.h">
+-      <Filter>Source\Scene</Filter>
+-    </ClInclude>
+-    <ClInclude Include="Source\Scene\SceneContext.h">
+-      <Filter>Source\Scene</Filter>
+-    </ClInclude>
+-    <ClInclude Include="Source\Scene\SceneManager.h">
+-      <Filter>Source\Scene</Filter>
+-    </ClInclude>
+-    <ClInclude Include="Source\Scene\SceneTypes.h">
+-      <Filter>Source\Scene</Filter>
+-    </ClInclude>
+     <ClInclude Include="Source\Serializer\Archive.h">
+       <Filter>Source\Serializer</Filter>
+     </ClInclude>
+@@ -632,6 +617,21 @@
+     <ClInclude Include="Source\Actor\TextActor.h">
+       <Filter>Source\Actor</Filter>
+     </ClInclude>
++    <ClInclude Include="Source\World\Level.h">
++      <Filter>Source\World</Filter>
++    </ClInclude>
++    <ClInclude Include="Source\World\LevelManager.h">
++      <Filter>Source\World</Filter>
++    </ClInclude>
++    <ClInclude Include="Source\World\RenderCollector.h">
++      <Filter>Source\World</Filter>
++    </ClInclude>
++    <ClInclude Include="Source\World\LevelContext.h">
++      <Filter>Source\World</Filter>
++    </ClInclude>
++    <ClInclude Include="Source\World\LevelTypes.h">
++      <Filter>Source\World</Filter>
++    </ClInclude>
+   </ItemGroup>
+   <ItemGroup>
+     <None Include="packages.config" />
+diff --git a/Engine/Source/Actor/Actor.cpp b/Engine/Source/Actor/Actor.cpp
+index 32cac37..a5c5e86 100644
+--- a/Engine/Source/Actor/Actor.cpp
++++ b/Engine/Source/Actor/Actor.cpp
+@@ -6,20 +6,20 @@
+ #include "Component/TextComponent.h"
+ #include "Component/SceneComponent.h"
+ #include "Serializer/Archive.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ IMPLEMENT_RTTI(AActor, UObject)
+ 
+ namespace {
+ 	FVector GZeroVector{};
+ }
+ 
+-UScene* AActor::GetScene() const { return Scene; }
+-void AActor::SetScene(UScene* InScene) { Scene = InScene; }
++ULevel* AActor::GetLevel() const { return Level; }
++void AActor::SetLevel(ULevel* InLevel) { Level = InLevel; }
+ UWorld* AActor::GetWorld() const
+ {
+-	if (Scene)
++	if (Level)
+ 	{
+-		return Scene->GetTypedOuter<UWorld>();
++		return Level->GetTypedOuter<UWorld>();
+ 	}
+ 	return nullptr;
+ }
+diff --git a/Engine/Source/Actor/Actor.h b/Engine/Source/Actor/Actor.h
+index 8818151..0545346 100644
+--- a/Engine/Source/Actor/Actor.h
++++ b/Engine/Source/Actor/Actor.h
+@@ -5,7 +5,7 @@
+ 
+ class UActorComponent;
+ class USceneComponent;
+-class UScene;
++class ULevel;
+ 
+ class FArchive;
+ class ENGINE_API AActor : public UObject
+@@ -14,8 +14,8 @@ public:
+ 	DECLARE_RTTI(AActor, UObject)
+ 	~AActor() override = default;
+ 
+-	UScene* GetScene() const;
+-	void SetScene(UScene* InScene);
++	ULevel* GetLevel() const;
++	void SetLevel(ULevel* InLevel);
+ 	UWorld* GetWorld() const;
+ 	// ULevel* GetLevel() const { return Level;
+ 	// void SetLevel(ULevel* InLevel) { Level = InLevel; }
+@@ -61,7 +61,7 @@ public:
+ 	bool IsVisible() const { return bVisible; }
+ 	void SetVisible(bool bInVisible) { bVisible = bInVisible; }
+ protected:
+-	TObjectPtr<UScene> Scene;
++	TObjectPtr<ULevel> Level;
+ 	//ULevel* Level = nullptr;
+ 
+ 	USceneComponent* RootComponent = nullptr;
+diff --git a/Engine/Source/Actor/SkySphereActor.cpp b/Engine/Source/Actor/SkySphereActor.cpp
+index 6b575ed..b9d57cc 100644
+--- a/Engine/Source/Actor/SkySphereActor.cpp
++++ b/Engine/Source/Actor/SkySphereActor.cpp
+@@ -1,7 +1,7 @@
+ #include "SkySphereActor.h"
+ #include "Component/SkyComponent.h"
+ #include "Object/ObjectFactory.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Component/CameraComponent.h"
+ #include "Renderer/MaterialManager.h"
+ #include "Camera/Camera.h"
+diff --git a/Engine/Source/Core/Core.cpp b/Engine/Source/Core/Core.cpp
+index b7e85bf..0b39193 100644
+--- a/Engine/Source/Core/Core.cpp
++++ b/Engine/Source/Core/Core.cpp
+@@ -2,7 +2,7 @@
+ 
+ #include "Core/Paths.h"
+ #include "Core/ConsoleVariableManager.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Actor/Actor.h"
+ #include "Input/EnhancedInputManager.h"
+ #include "Component/CameraComponent.h"
+@@ -25,7 +25,7 @@ CCore::~CCore()
+ 	Release();
+ }
+ 
+-bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ESceneType StartupSceneType)
++bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType)
+ {
+ 	FPaths::Initialize();
+ 	WindowWidth = Width;
+@@ -51,9 +51,9 @@ bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ESceneType StartupS
+ 	// Timer
+ 	Timer.Initialize();
+ 	RegisterConsoleVariables();
+-	SceneManager = std::make_unique<FSceneManager>();
++	LevelManager = std::make_unique<FLevelManager>();
+ 	const float AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
+-	if (!SceneManager->Initialize(AspectRatio, StartupSceneType, Renderer.get()))
++	if (!LevelManager->Initialize(AspectRatio, StartupLevelType, Renderer.get()))
+ 	{
+ 		return false;
+ 	}
+@@ -103,13 +103,13 @@ void CCore::Release()
+ 		ViewportClient->Detach(this, Renderer.get());
+ 	}
+ 	ViewportClient = nullptr;
+-	if (SceneManager)
++	if (LevelManager)
+ 	{
+-		SceneManager->Release();
+-		SceneManager.reset();
++		LevelManager->Release();
++		LevelManager.reset();
+ 	}
+ 
+-	// Scene 해제 후 PendingKill 오브젝트를 GC로 정리
++	// Level 해제 후 PendingKill 오브젝트를 GC로 정리
+ 	if (ObjManager)
+ 	{
+ 		ObjManager->FlushKilledObjects();
+@@ -165,14 +165,14 @@ void CCore::Input(float DeltaTime)
+ 
+ void CCore::Physics(float DeltaTime)
+ {
+-	UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
++	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
+ 	
+-	if (Scene)
++	if (Level)
+ 	{
+ 		FVector LineStart(2, 2, 0), LineEnd(5, 5, 0);
+ 		FHitResult HitResult;
+ 
+-		bool bHit = PhysicsManager->Linetrace(Scene, LineStart, LineEnd, HitResult);
++		bool bHit = PhysicsManager->Linetrace(Level, LineStart, LineEnd, HitResult);
+ 
+ 		if (bHit)
+ 		{
+@@ -236,8 +236,8 @@ void CCore::LateUpdate(float DeltaTime)
+ 
+ void CCore::Render()
+ {
+-	UScene* Scene = ViewportClient ? ViewportClient->ResolveScene(this) : GetActiveScene();
+-	if (!Renderer || !Scene || Renderer->IsOccluded())
++	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
++	if (!Renderer || !Level || Renderer->IsOccluded())
+ 	{
+ 		return;
+ 	}
+@@ -268,11 +268,11 @@ void CCore::Render()
+ 
+ 	if (ViewportClient)
+ 	{
+-		ViewportClient->BuildRenderCommands(this, Scene, Frustum, CommandQueue);
++		ViewportClient->BuildRenderCommands(this, Level, Frustum, CommandQueue);
+ 	}
+ 	else
+ 	{
+-		// Scene->CollectRenderCommands(Frustum, CommandQueue);
++		// Level->CollectRenderCommands(Frustum, CommandQueue);
+ 	}
+ 
+ 	Renderer->SubmitCommands(CommandQueue);
+@@ -288,7 +288,7 @@ void CCore::OnResize(int32 Width, int32 Height)
+ 	WindowWidth = Width;
+ 	WindowHeight = Height;
+ 	if (Renderer) Renderer->OnResize(Width, Height);
+-	if (SceneManager) SceneManager->OnResize(Width, Height);
++	if (LevelManager) LevelManager->OnResize(Width, Height);
+ }
+ 
+ void CCore::RegisterConsoleVariables()
+diff --git a/Engine/Source/Core/Core.h b/Engine/Source/Core/Core.h
+index e61b752..b20ef0c 100644
+--- a/Engine/Source/Core/Core.h
++++ b/Engine/Source/Core/Core.h
+@@ -3,10 +3,10 @@
+ #include "CoreMinimal.h"
+ #include "Windows.h"
+ #include "Core/FTimer.h"
+-#include "Scene/SceneTypes.h"
++#include "World/LevelTypes.h"
+ #include "Renderer/Renderer.h"
+ #include "Physics/PhysicsManager.h"
+-#include "Scene/SceneManager.h"
++#include "World/LevelManager.h"
+ #include "World/WorldContext.h"
+ #include <memory>
+ #include "Debug/DebugDrawManager.h"
+@@ -14,7 +14,7 @@ class CEnhancedInputManager;
+ class CInputManager;
+ 
+ class AActor;
+-class UScene;
++class ULevel;
+ class ObjectManager;
+ class IViewportClient;
+ 
+@@ -29,7 +29,7 @@ public:
+ 	CCore& operator=(const CCore&) = delete;
+ 	CCore& operator=(CCore&&) = delete;
+ 
+-	bool Initialize(HWND Hwnd, int32 Width, int32 Height, ESceneType StartupSceneType = ESceneType::Game);
++	bool Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType = ELevelType::Game);
+ 	void Release();
+ 
+ 	void Tick();
+@@ -48,25 +48,25 @@ public:
+ 	CEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
+ 	float GetDeltaTime() const { return Timer.GetDeltaTime(); }
+ 
+-	FSceneManager* GetSceneManager() const { return SceneManager.get(); }
++	FLevelManager* GetLevelManager() const { return LevelManager.get(); }
+ 
+ 	// Getter
+-	UScene* GetScene() const { return SceneManager->GetActiveScene(); }
+-	UScene* GetActiveScene() const { return SceneManager->GetActiveScene(); }
+-	UScene* GetEditorScene() const { return SceneManager->GetEditorScene(); }
+-	UScene* GetGameScene() const { return SceneManager->GetGameScene(); }
++	ULevel* GetLevel() const { return LevelManager->GetActiveLevel(); }
++	ULevel* GetActiveLevel() const { return LevelManager->GetActiveLevel(); }
++	ULevel* GetEditorLevel() const { return LevelManager->GetEditorLevel(); }
++	ULevel* GetGameLevel() const { return LevelManager->GetGameLevel(); }
+ 
+-	void SetSelectedActor(AActor* A) { SceneManager->SetSelectedActor(A); }
+-	AActor* GetSelectedActor() const { return SceneManager->GetSelectedActor(); }
+-	void ActivateEditorScene() { SceneManager->ActivateEditorScene(); }
+-	void ActivateGameScene() { SceneManager->ActivateGameScene(); }
+-	bool ActivatePreviewScene(const FString& ContextName) { return SceneManager->ActivatePreviewScene(ContextName); }
++	void SetSelectedActor(AActor* A) { LevelManager->SetSelectedActor(A); }
++	AActor* GetSelectedActor() const { return LevelManager->GetSelectedActor(); }
++	void ActivateEditorLevel() { LevelManager->ActivateEditorLevel(); }
++	void ActivateGameLevel() { LevelManager->ActivateGameLevel(); }
++	bool ActivatePreviewLevel(const FString& ContextName) { return LevelManager->ActivatePreviewLevel(ContextName); }
+ 
+ 	// ===== World 접근자 =====
+-	UWorld* GetActiveWorld() const { return SceneManager->GetActiveWorld(); }
+-	UWorld* GetEditorWorld() const { return SceneManager->GetEditorWorld(); }
+-	UWorld* GetGameWorld() const { return SceneManager->GetGameWorld(); }
+-	const FWorldContext* GetActiveWorldContext() const { return SceneManager->GetActiveWorldContext(); }
++	UWorld* GetActiveWorld() const { return LevelManager->GetActiveWorld(); }
++	UWorld* GetEditorWorld() const { return LevelManager->GetEditorWorld(); }
++	UWorld* GetGameWorld() const { return LevelManager->GetGameWorld(); }
++	const FWorldContext* GetActiveWorldContext() const { return LevelManager->GetActiveWorldContext(); }
+ 
+ private:
+ 	void Input(float DeltaTime);
+@@ -85,7 +85,7 @@ private:
+ 
+ 	ObjectManager* ObjManager = nullptr;
+ 	IViewportClient* ViewportClient = nullptr;
+-	std::unique_ptr<FSceneManager> SceneManager;
++	std::unique_ptr<FLevelManager> LevelManager;
+ 
+ 	std::unique_ptr<CPhysicsManager> PhysicsManager;
+ 
+diff --git a/Engine/Source/Core/FEngine.cpp b/Engine/Source/Core/FEngine.cpp
+index 9a96610..ba678aa 100644
+--- a/Engine/Source/Core/FEngine.cpp
++++ b/Engine/Source/Core/FEngine.cpp
+@@ -35,7 +35,7 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
+ 	PreInitialize();
+ 
+ 	Core = std::make_unique<CCore>();
+-	if (!Core->Initialize(MainWindow->GetHwnd(), MainWindow->GetWidth(), MainWindow->GetHeight(), GetStartupSceneType()))
++	if (!Core->Initialize(MainWindow->GetHwnd(), MainWindow->GetWidth(), MainWindow->GetHeight(), GetStartupLevelType()))
+ 	{
+ 		return false;
+ 	}
+diff --git a/Engine/Source/Core/FEngine.h b/Engine/Source/Core/FEngine.h
+index 6376b3e..1e28cbb 100644
+--- a/Engine/Source/Core/FEngine.h
++++ b/Engine/Source/Core/FEngine.h
+@@ -1,6 +1,6 @@
+ #pragma once
+ #include "CoreMinimal.h"
+-#include "Scene/SceneTypes.h"
++#include "World/LevelTypes.h"
+ #include "Windows.h"
+ #include "Core/Core.h"
+ #include "ViewportClient.h"
+@@ -29,7 +29,7 @@ protected:
+ 	virtual void PreInitialize() {}
+ 	virtual void PostInitialize() {}
+ 	virtual void Tick(float DeltaTime) {}
+-	virtual ESceneType GetStartupSceneType() const { return ESceneType::Game; }
++	virtual ELevelType GetStartupLevelType() const { return ELevelType::Game; }
+ 	virtual std::unique_ptr<IViewportClient> CreateViewportClient();
+ 
+ 	CWindowApplication* App = nullptr;
+diff --git a/Engine/Source/Core/Paths.cpp b/Engine/Source/Core/Paths.cpp
+index 348eee1..e898a4e 100644
+--- a/Engine/Source/Core/Paths.cpp
++++ b/Engine/Source/Core/Paths.cpp
+@@ -109,9 +109,9 @@ std::filesystem::path FPaths::AssetDir()
+ 	return Root / "Assets/";
+ }
+ 
+-std::filesystem::path FPaths::SceneDir()
++std::filesystem::path FPaths::LevelDir()
+ {
+-	return Root / "Assets/Scenes/";
++	return Root / "Assets/Levels/";
+ }
+ 
+ std::filesystem::path FPaths::MaterialDir()
+diff --git a/Engine/Source/Core/Paths.h b/Engine/Source/Core/Paths.h
+index 7dba5e2..c0d1458 100644
+--- a/Engine/Source/Core/Paths.h
++++ b/Engine/Source/Core/Paths.h
+@@ -17,7 +17,7 @@ public:
+ 	static std::filesystem::path EngineDir();
+ 	static std::filesystem::path ShaderDir();
+ 	static std::filesystem::path AssetDir();
+-	static std::filesystem::path SceneDir();
++	static std::filesystem::path LevelDir();
+ 	static std::filesystem::path MaterialDir();
+ 	static std::filesystem::path MeshDir();
+ 	static std::filesystem::path ContentDir();
+diff --git a/Engine/Source/Core/ViewportClient.cpp b/Engine/Source/Core/ViewportClient.cpp
+index 4ead4df..357ff00 100644
+--- a/Engine/Source/Core/ViewportClient.cpp
++++ b/Engine/Source/Core/ViewportClient.cpp
+@@ -6,7 +6,7 @@
+ #include "Renderer/Renderer.h"
+ #include "Renderer/RenderCommand.h"
+ #include "Renderer/Material.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Debug/EngineLog.h"
+ #include "Component/UUIDBillboardComponent.h"
+ #include "Component/SubUVComponent.h"
+@@ -31,13 +31,13 @@ void IViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	//}
+ 
+ 	//CInputManager* InputManager = Core->GetInputManager();
+-	//UScene* Scene = ResolveScene(Core);
+-	//if (!InputManager || !Scene)
++	//ULevel* Level = ResolveLevel(Core);
++	//if (!InputManager || !Level)
+ 	//{
+ 	//	return;
+ 	//}
+ 
+-	//CCamera* Camera = Scene->GetCamera();
++	//CCamera* Camera = Level->GetCamera();
+ 	//if (!Camera)
+ 	//{
+ 	//	return;
+@@ -62,9 +62,9 @@ void IViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WPa
+ {
+ }
+ 
+-UScene* IViewportClient::ResolveScene(CCore* Core) const
++ULevel* IViewportClient::ResolveLevel(CCore* Core) const
+ {
+-	return Core ? Core->GetActiveScene() : nullptr;
++	return Core ? Core->GetActiveLevel() : nullptr;
+ }
+ 
+ UWorld* IViewportClient::ResolveWorld(CCore* Core) const
+@@ -72,7 +72,7 @@ UWorld* IViewportClient::ResolveWorld(CCore* Core) const
+ 	return Core ? Core->GetActiveWorld() : nullptr;
+ }
+ 
+-void IViewportClient::BuildRenderCommands(CCore* Core, UScene* Scene, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
++void IViewportClient::BuildRenderCommands(CCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+ 	UWorld* World = ResolveWorld(Core);
+ 	if (!World) return;
+diff --git a/Engine/Source/Core/ViewportClient.h b/Engine/Source/Core/ViewportClient.h
+index ec06b20..9c20f71 100644
+--- a/Engine/Source/Core/ViewportClient.h
++++ b/Engine/Source/Core/ViewportClient.h
+@@ -5,11 +5,11 @@
+ #include "Types/String.h"
+ #include "ShowFlags.h"
+ #include "Renderer/RenderCommand.h"
+-#include "Scene/RenderCollector.h"
++#include "World/RenderCollector.h"
+ 
+ class CCore;
+ class CRenderer;
+-class UScene;
++class ULevel;
+ class FFrustum;
+ class UPrimitiveComponent;
+ struct FRenderCommandQueue;
+@@ -23,18 +23,18 @@ public:
+ 	virtual void Detach(CCore* Core, CRenderer* Renderer);
+ 	virtual void Tick(CCore* Core, float DeltaTime);
+ 	virtual void HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+-	virtual UScene* ResolveScene(CCore* Core) const;
++	virtual ULevel* ResolveLevel(CCore* Core) const;
+ 	virtual UWorld* ResolveWorld(CCore* Core) const;
+ 	FShowFlags& GetShowFlags() { return ShowFlags; }
+ 	const FShowFlags& GetShowFlags() const { return ShowFlags; }
+-	virtual void BuildRenderCommands(CCore* Core, UScene* Scene,
++	virtual void BuildRenderCommands(CCore* Core, ULevel* Level,
+ 		const FFrustum& Frustum, FRenderCommandQueue& OutQueue);
+ 	/** 입력 처리는 원래 Viewport 에서 처리하는게 맞는데 구조상 여기다 넣음 */
+ 	virtual void HandleFileDoubleClick(const FString& FilePath);
+ 	virtual void HandleFileDropOnViewport(const FString& FilePath);
+ protected:
+ 	FShowFlags ShowFlags;
+-	FSceneRenderCollector RenderCollector;
++	FLevelRenderCollector RenderCollector;
+ };
+ 
+ class ENGINE_API CGameViewportClient : public IViewportClient
+diff --git a/Engine/Source/Physics/PhysicsManager.cpp b/Engine/Source/Physics/PhysicsManager.cpp
+index 80fc237..f0c6693 100644
+--- a/Engine/Source/Physics/PhysicsManager.cpp
++++ b/Engine/Source/Physics/PhysicsManager.cpp
+@@ -1,5 +1,5 @@
+ #include "PhysicsManager.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Math/Vector.h"
+ #include "Math/MathUtility.h"
+ #include "Actor/Actor.h"
+@@ -8,9 +8,9 @@
+ #include "Component/UUIDBillboardComponent.h"
+ #include "Component/TextComponent.h"
+ 
+-bool CPhysicsManager::Linetrace(const UScene* Scene, const FVector& Start, const FVector& End, FHitResult& OutHit)
++bool CPhysicsManager::Linetrace(const ULevel* Level, const FVector& Start, const FVector& End, FHitResult& OutHit)
+ {
+-	const TArray<AActor*>& Actors = Scene->GetActors();
++	const TArray<AActor*>& Actors = Level->GetActors();
+ 
+ 	FVector LineDirection = End - Start;
+ 	LineDirection.Normalize();
+diff --git a/Engine/Source/Physics/PhysicsManager.h b/Engine/Source/Physics/PhysicsManager.h
+index f867387..ce7bdad 100644
+--- a/Engine/Source/Physics/PhysicsManager.h
++++ b/Engine/Source/Physics/PhysicsManager.h
+@@ -2,7 +2,7 @@
+ #include "Math/Vector.h"
+ 
+ class AActor;
+-class UScene;
++class ULevel;
+ 
+ struct FHitResult
+ {
+@@ -16,12 +16,12 @@ public:
+ 	/**
+ 	 * 
+ 	 * 
+-	 * \param Scene: Actor 데이터 참조용
++	 * \param Level: Actor 데이터 참조용
+ 	 * \param Start: Line 시작점
+ 	 * \param End: Line 끝점
+ 	 * \param OutHit: 처음으로 Hit 된 대상에 대한 정보 (HitActor, HitLocation, ...)
+ 	 * \return 
+ 	 */
+-	bool Linetrace(const UScene* Scene, const FVector& Start, const FVector& End, FHitResult& OutHit);
++	bool Linetrace(const ULevel* Level, const FVector& Start, const FVector& End, FHitResult& OutHit);
+ private:
+ };
+diff --git a/Engine/Source/Renderer/Renderer.cpp b/Engine/Source/Renderer/Renderer.cpp
+index c1b67a0..dca5188 100644
+--- a/Engine/Source/Renderer/Renderer.cpp
++++ b/Engine/Source/Renderer/Renderer.cpp
+@@ -31,20 +31,20 @@ CRenderer::~CRenderer()
+ 	Release();
+ }
+ 
+-void CRenderer::SetSceneRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
++void CRenderer::SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
+ {
+-	SceneRenderTargetView = InRenderTargetView;
+-	SceneDepthStencilView = InDepthStencilView;
+-	SceneViewport = InViewport;
+-	bUseSceneRenderTargetOverride = (SceneRenderTargetView != nullptr && SceneDepthStencilView != nullptr);
++	LevelRenderTargetView = InRenderTargetView;
++	LevelDepthStencilView = InDepthStencilView;
++	LevelViewport = InViewport;
++	bUseLevelRenderTargetOverride = (LevelRenderTargetView != nullptr && LevelDepthStencilView != nullptr);
+ }
+ 
+-void CRenderer::ClearSceneRenderTarget()
++void CRenderer::ClearLevelRenderTarget()
+ {
+-	SceneRenderTargetView = nullptr;
+-	SceneDepthStencilView = nullptr;
+-	SceneViewport = {};
+-	bUseSceneRenderTargetOverride = false;
++	LevelRenderTargetView = nullptr;
++	LevelDepthStencilView = nullptr;
++	LevelViewport = {};
++	bUseLevelRenderTargetOverride = false;
+ }
+ 
+ void CRenderer::SetGUICallbacks(
+@@ -282,11 +282,11 @@ void CRenderer::BeginFrame()
+ 	ID3D11DepthStencilView* ActiveDSV = DepthStencilView;
+ 	D3D11_VIEWPORT ActiveVP = Viewport;
+ 
+-	if (bUseSceneRenderTargetOverride)
++	if (bUseLevelRenderTargetOverride)
+ 	{
+-		ActiveRTV = SceneRenderTargetView;
+-		ActiveDSV = SceneDepthStencilView;
+-		ActiveVP = SceneViewport;
++		ActiveRTV = LevelRenderTargetView;
++		ActiveDSV = LevelDepthStencilView;
++		ActiveVP = LevelViewport;
+ 		if (ActiveRTV && ActiveRTV != RenderTargetView) DeviceContext->ClearRenderTargetView(ActiveRTV, ClearColor);
+ 		if (ActiveDSV && ActiveDSV != DepthStencilView) DeviceContext->ClearDepthStencilView(ActiveDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+ 	}
+@@ -435,7 +435,7 @@ void CRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
+ 
+ void CRenderer::ClearDepthBuffer()
+ {
+-	if (SceneDepthStencilView) DeviceContext->ClearDepthStencilView(SceneDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
++	if (LevelDepthStencilView) DeviceContext->ClearDepthStencilView(LevelDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+ }
+ 
+ FVector CRenderer::GetCameraPosition() const
+@@ -534,8 +534,8 @@ void CRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float
+ 	Mesh->UpdateVertexAndIndexBuffer(Device);
+ 	Mesh->Bind(DeviceContext);
+ 
+-	ID3D11RenderTargetView* ActiveRTV = bUseSceneRenderTargetOverride ? SceneRenderTargetView : RenderTargetView;
+-	ID3D11DepthStencilView* ActiveDSV = bUseSceneRenderTargetOverride ? SceneDepthStencilView : DepthStencilView;
++	ID3D11RenderTargetView* ActiveRTV = bUseLevelRenderTargetOverride ? LevelRenderTargetView : RenderTargetView;
++	ID3D11DepthStencilView* ActiveDSV = bUseLevelRenderTargetOverride ? LevelDepthStencilView : DepthStencilView;
+ 
+ 	DeviceContext->OMSetRenderTargets(0, nullptr, ActiveDSV);
+ 	DeviceContext->OMSetDepthStencilState(StencilWriteState, 1);
+@@ -601,7 +601,7 @@ void CRenderer::ExecuteLineCommands()
+ 
+ void CRenderer::Release()
+ {
+-	ClearViewportCallbacks(); ClearSceneRenderTarget();
++	ClearViewportCallbacks(); ClearLevelRenderTarget();
+ 	TextRenderer.Release(); SubUVRenderer.Release();
+ 	ShaderManager.Release(); FShaderMap::Get().Clear(); FMaterialManager::Get().Clear();
+ 	if (NormalSampler) NormalSampler->Release();
+@@ -629,7 +629,7 @@ bool CRenderer::IsOccluded()
+ void CRenderer::OnResize(int32 W, int32 H)
+ {
+ 	if (W == 0 || H == 0) return;
+-	ClearSceneRenderTarget();
++	ClearLevelRenderTarget();
+ 	DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+ 	if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
+ 	if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
+diff --git a/Engine/Source/Renderer/Renderer.h b/Engine/Source/Renderer/Renderer.h
+index 2cf4004..24daee3 100644
+--- a/Engine/Source/Renderer/Renderer.h
++++ b/Engine/Source/Renderer/Renderer.h
+@@ -14,7 +14,7 @@
+ 
+ class FPixelShader;
+ class FMaterial;
+-class UScene;
++class ULevel;
+ 
+ using FGUICallback = std::function<void()>;
+ class CRenderer;
+@@ -49,8 +49,8 @@ public:
+ 	void OnResize(int32 NewWidth, int32 NewHeight);
+ 	
+ 	/** 씬 렌더 타겟 설정 (외부 오버라이드용) */
+-	void SetSceneRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport);
+-	void ClearSceneRenderTarget();
++	void SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport);
++	void ClearLevelRenderTarget();
+ 
+ 	void SetVSync(bool bEnable) { bVSyncEnabled = bEnable; }
+ 	bool IsVSyncEnabled() const { return bVSyncEnabled; }
+@@ -130,10 +130,10 @@ private:
+ 	FMatrix ProjectionMatrix;
+ 	D3D11_VIEWPORT Viewport = {};
+ 	
+-	ID3D11RenderTargetView* SceneRenderTargetView = nullptr;
+-	ID3D11DepthStencilView* SceneDepthStencilView = nullptr;
+-	D3D11_VIEWPORT SceneViewport = {};
+-	bool bUseSceneRenderTargetOverride = false;
++	ID3D11RenderTargetView* LevelRenderTargetView = nullptr;
++	ID3D11DepthStencilView* LevelDepthStencilView = nullptr;
++	D3D11_VIEWPORT LevelViewport = {};
++	bool bUseLevelRenderTargetOverride = false;
+ 	bool bVSyncEnabled = false;
+ 
+ 	/** 통합된 렌더링 명령 리스트 */
+diff --git a/Engine/Source/Scene/SceneContext.h b/Engine/Source/Scene/SceneContext.h
+deleted file mode 100644
+index 0a28730..0000000
+--- a/Engine/Source/Scene/SceneContext.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-#pragma once
+-
+-#include "CoreMinimal.h"
+-#include "Scene/SceneTypes.h"
+-
+-class AActor;
+-class UScene;
+-
+-struct ENGINE_API FSceneContext
+-{
+-	FString ContextName;
+-	ESceneType SceneType = ESceneType::Game;
+-	UScene* Scene = nullptr;
+-
+-	bool IsValid() const { return Scene != nullptr; }
+-	void Reset()
+-	{
+-		ContextName.clear();
+-		SceneType = ESceneType::Game;
+-		Scene = nullptr;
+-	}
+-};
+-
+-struct ENGINE_API FEditorSceneContext : public FSceneContext
+-{
+-	TObjectPtr<AActor> SelectedActor;
+-
+-	void Reset()
+-	{
+-		FSceneContext::Reset();
+-		SelectedActor = nullptr;
+-	}
+-};
+diff --git a/Engine/Source/Serializer/SceneSerializer.cpp b/Engine/Source/Serializer/SceneSerializer.cpp
+index ad64cdc..5aea149 100644
+--- a/Engine/Source/Serializer/SceneSerializer.cpp
++++ b/Engine/Source/Serializer/SceneSerializer.cpp
+@@ -11,17 +11,17 @@
+ #include "Actor/SphereActor.h"
+ #include "Actor/ObjActor.h"
+ #include "Component/PrimitiveComponent.h"
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Object/ObjectFactory.h" 
+ #include "Serializer/Archive.h"
+ #include "Object/Class.h"
+ #include <iomanip>
+ #include <filesystem>
+ #include <fstream>
+-void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
++void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
+ {
+ 	nlohmann::json Json;
+-	CCamera* Camera = Scene->GetCamera();
++	CCamera* Camera = Level->GetCamera();
+ 	if (Camera)
+ 	{
+ 		const FVector Position = Camera->GetPosition();
+@@ -47,7 +47,7 @@ void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
+ 	// Primitives
+ 	nlohmann::json Primitives;
+ 	int32 Index = 0;
+-	for (AActor* Actor : Scene->GetActors())
++	for (AActor* Actor : Level->GetActors())
+ 	{
+ 		if (!Actor || Actor->IsPendingDestroy())
+ 			continue;
+@@ -70,7 +70,7 @@ void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
+ 	}
+ }
+ 
+-bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device* Device)
++bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device)
+ {
+ 	std::ifstream File(FilePath);
+ 	if (!File.is_open())
+@@ -92,7 +92,7 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
+ 	if (!Json.contains("Primitives"))
+ 		return false;
+ 
+-	CCamera* Camera = Scene->GetCamera();
++	CCamera* Camera = Level->GetCamera();
+ 	if (Camera && Json.contains("Camera"))
+ 	{
+ 		auto& Cam = Json["Camera"];
+@@ -119,14 +119,14 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
+ 			continue;
+ 		}
+ 		const FString ActorName = ClassName + "_" + std::to_string(ActorIndex);
+-		AActor* Actor = static_cast<AActor*>(FObjectFactory::ConstructObject(ActorClass, Scene, ActorName));
++		AActor* Actor = static_cast<AActor*>(FObjectFactory::ConstructObject(ActorClass, Level, ActorName));
+ 		if (!Actor)
+ 		{
+ 			ActorIndex++;
+ 			continue;
+ 		}
+ 
+-		Scene->RegisterActor(Actor);
++		Level->RegisterActor(Actor);
+ 		Actor->PostSpawnInitialize();
+ 		FArchive Ar(false);// loading
+ 		*static_cast<nlohmann::json*>(Ar.GetRawJson()) = Value;
+diff --git a/Engine/Source/Serializer/SceneSerializer.h b/Engine/Source/Serializer/SceneSerializer.h
+index 046919e..5ddf82c 100644
+--- a/Engine/Source/Serializer/SceneSerializer.h
++++ b/Engine/Source/Serializer/SceneSerializer.h
+@@ -2,11 +2,11 @@
+ #include "../Types/String.h"
+ #include "EngineAPI.h"
+ #include <d3d11.h>
+-class UScene;
++class ULevel;
+ class ENGINE_API FSceneSerializer
+ {
+ public:
+ 
+-	static void Save(UScene* Scene, const FString& FilePath);
+-	static bool Load(UScene* Scene, const FString& FilePath, ID3D11Device* Device);
++	static void Save(ULevel* Level, const FString& FilePath);
++	static bool Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device);
+ };
+\ No newline at end of file
+diff --git a/Engine/Source/Scene/Scene.cpp b/Engine/Source/World/Level.cpp
+similarity index 81%
+rename from Engine/Source/Scene/Scene.cpp
+rename to Engine/Source/World/Level.cpp
+index dfc1788..d91d553 100644
+--- a/Engine/Source/Scene/Scene.cpp
++++ b/Engine/Source/World/Level.cpp
+@@ -1,5 +1,4 @@
+-#include "Scene.h"
+-
++#include "Level.h"
+ #include "Core/Paths.h"
+ #include "Actor/Actor.h"
+ #include "Actor/AttachTestActor.h"
+@@ -19,9 +18,9 @@
+ 
+ #include "Component/LineBatchComponent.h"
+ 
+-IMPLEMENT_RTTI(UScene, UObject)
++IMPLEMENT_RTTI(ULevel, UObject)
+ 
+-UScene::~UScene()
++ULevel::~ULevel()
+ {
+ 	for (AActor* Actor : Actors)
+ 	{
+@@ -31,12 +30,10 @@ UScene::~UScene()
+ 		}
+ 	}
+ 	Actors.clear();
+-
+-
+ }
+ 
+ 
+-CCamera* UScene::GetCamera() const
++CCamera* ULevel::GetCamera() const
+ {
+ 	UWorld* World = GetTypedOuter<UWorld>();
+ 	return World ? World->GetCamera() : nullptr;
+@@ -44,7 +41,7 @@ CCamera* UScene::GetCamera() const
+ 
+ 
+ 
+-void UScene::ClearActors()
++void ULevel::ClearActors()
+ {
+ 
+ 
+@@ -60,7 +57,7 @@ void UScene::ClearActors()
+ 	bBegunPlay = false;
+ }
+ 
+-void UScene::RegisterActor(AActor* InActor)
++void ULevel::RegisterActor(AActor* InActor)
+ {
+ 	if (!InActor)
+ 	{
+@@ -74,10 +71,10 @@ void UScene::RegisterActor(AActor* InActor)
+ 	}
+ 
+ 	Actors.push_back(InActor);
+-	InActor->SetScene(this);
++	InActor->SetLevel(this);
+ }
+ 
+-void UScene::DestroyActor(AActor* InActor)
++void ULevel::DestroyActor(AActor* InActor)
+ {
+ 	if (!InActor)
+ 	{
+@@ -88,7 +85,7 @@ void UScene::DestroyActor(AActor* InActor)
+ 	InActor->Destroy();
+ }
+ 
+-void UScene::CleanupDestroyedActors()
++void ULevel::CleanupDestroyedActors()
+ {
+ 	const auto NewEnd = std::ranges::remove_if(Actors,
+ 		[](const AActor* Actor)
+@@ -99,7 +96,7 @@ void UScene::CleanupDestroyedActors()
+ 	Actors.erase(NewEnd, Actors.end());
+ }
+ 
+-void UScene::BeginPlay()
++void ULevel::BeginPlay()
+ {
+ 	if (bBegunPlay)
+ 	{
+@@ -117,7 +114,7 @@ void UScene::BeginPlay()
+ 	}
+ }
+ 
+-void UScene::Tick(float DeltaTime)
++void ULevel::Tick(float DeltaTime)
+ {
+ 	if (!bBegunPlay)
+ 	{
+diff --git a/Engine/Source/Scene/Scene.h b/Engine/Source/World/Level.h
+similarity index 67%
+rename from Engine/Source/Scene/Scene.h
+rename to Engine/Source/World/Level.h
+index 5b93952..ca6423b 100644
+--- a/Engine/Source/Scene/Scene.h
++++ b/Engine/Source/World/Level.h
+@@ -3,9 +3,9 @@
+ #include "Object/Object.h"
+ #include "Object/ObjectFactory.h"
+ #include <d3d11.h>
+-#include "SceneTypes.h"
++#include "LevelTypes.h"
+ #include "Core/ShowFlags.h"
+-#include "RenderCollector.h"
++#include "World/RenderCollector.h"
+ class AActor;
+ class CCamera;
+ class FFrustum;
+@@ -13,11 +13,11 @@ class UCameraComponent;
+ class UPrimitiveComponent;
+ struct FRenderCommandQueue;
+ 
+-class ENGINE_API UScene : public UObject
++class ENGINE_API ULevel : public UObject
+ {
+ public:
+-	DECLARE_RTTI(UScene, UObject)
+-	~UScene();
++	DECLARE_RTTI(ULevel, UObject)
++	~ULevel();
+ 
+ 	template <typename T>
+ 	T* SpawnActor(const FString& InName)
+@@ -40,10 +40,10 @@ public:
+ 	void CleanupDestroyedActors();
+ 
+ 	const TArray<AActor*>& GetActors() const { return Actors; }
+-	void SetSceneType(ESceneType InSceneType) { SceneType = InSceneType; }
+-	ESceneType GetSceneType() const { return SceneType; }
+-	bool IsEditorScene() const { return SceneType == ESceneType::Editor; }
+-	bool IsGameScene() const { return SceneType == ESceneType::Game || SceneType == ESceneType::PIE; }
++	void SetLevelType(ELevelType InLevelType) { LevelType = InLevelType; }
++	ELevelType GetLevelType() const { return LevelType; }
++	bool IsEditorLevel() const { return LevelType == ELevelType::Editor; }
++	bool IsGameLevel() const { return LevelType == ELevelType::Game || LevelType == ELevelType::PIE; }
+ 
+   
+ 	CCamera* GetCamera() const;
+@@ -59,7 +59,7 @@ public:
+ private:
+ 	TArray<AActor*> Actors;
+ 	bool bBegunPlay = false;
+-	ESceneType SceneType = ESceneType::Game;
++	ELevelType LevelType = ELevelType::Game;
+ 
+ 
+ };
+diff --git a/Engine/Source/World/LevelContext.h b/Engine/Source/World/LevelContext.h
+new file mode 100644
+index 0000000..2bd5fa5
+--- /dev/null
++++ b/Engine/Source/World/LevelContext.h
+@@ -0,0 +1,33 @@
++#pragma once
++
++#include "CoreMinimal.h"
++#include "LevelTypes.h"
++
++class AActor;
++class ULevel;
++
++struct ENGINE_API FLevelContext
++{
++	FString ContextName;
++	ELevelType LevelType = ELevelType::Game;
++	ULevel* Level = nullptr;
++
++	bool IsValid() const { return Level != nullptr; }
++	void Reset()
++	{
++		ContextName.clear();
++		LevelType = ELevelType::Game;
++		Level = nullptr;
++	}
++};
++
++struct ENGINE_API FEditorLevelContext : public FLevelContext
++{
++	TObjectPtr<AActor> SelectedActor;
++
++	void Reset()
++	{
++		FLevelContext::Reset();
++		SelectedActor = nullptr;
++	}
++};
+diff --git a/Engine/Source/Scene/SceneManager.cpp b/Engine/Source/World/LevelManager.cpp
+similarity index 72%
+rename from Engine/Source/Scene/SceneManager.cpp
+rename to Engine/Source/World/LevelManager.cpp
+index 964e512..5a30e69 100644
+--- a/Engine/Source/Scene/SceneManager.cpp
++++ b/Engine/Source/World/LevelManager.cpp
+@@ -1,30 +1,30 @@
+-#include "SceneManager.h"
+-#include "Scene/Scene.h"
++#include "LevelManager.h"
++#include "World/Level.h"
+ #include "World/World.h"
+ #include "Object/ObjectFactory.h"
+ #include "Renderer/Renderer.h"
+ #include "Component/CameraComponent.h"
+ #include "Camera/Camera.h"
+ 
+-FSceneManager::~FSceneManager()
++FLevelManager::~FLevelManager()
+ {
+ 	Release();
+ }
+ 
+-bool FSceneManager::Initialize(float AspectRatio, ESceneType StartupSceneType, CRenderer* InRenderer)
++bool FLevelManager::Initialize(float AspectRatio, ELevelType StartupLevelType, CRenderer* InRenderer)
+ {
+ 	Renderer = InRenderer;
+ 
+ 	FWorldContext* StartupContext = &GameWorldContext;
+-	FString ContextName = "GameScene";
++	FString ContextName = "GameLevel";
+ 
+-	if (StartupSceneType == ESceneType::Editor)
++	if (StartupLevelType == ELevelType::Editor)
+ 	{
+ 		StartupContext = &EditorWorldContext;
+-		ContextName = "EditorScene";
++		ContextName = "EditorLevel";
+ 	}
+ 
+-	if (!CreateWorldContext(*StartupContext, ContextName, StartupSceneType, AspectRatio))
++	if (!CreateWorldContext(*StartupContext, ContextName, StartupLevelType, AspectRatio))
+ 	{
+ 		return false;
+ 	}
+@@ -33,7 +33,7 @@ bool FSceneManager::Initialize(float AspectRatio, ESceneType StartupSceneType, C
+ 	return true;
+ }
+ 
+-void FSceneManager::Release()
++void FLevelManager::Release()
+ {
+ 	ActiveWorldContext = nullptr;
+ 
+@@ -53,8 +53,8 @@ void FSceneManager::Release()
+ 
+ // ===== World Context 생성/파괴 =====
+ 
+-bool FSceneManager::CreateWorldContext(FWorldContext& OutContext, const FString& ContextName,
+-	ESceneType WorldType, float AspectRatio, bool bDefaultScene)
++bool FLevelManager::CreateWorldContext(FWorldContext& OutContext, const FString& ContextName,
++	ELevelType WorldType, float AspectRatio, bool bDefaultLevel)
+ {
+ 	OutContext.ContextName = ContextName;
+ 	OutContext.WorldType = WorldType;
+@@ -67,7 +67,7 @@ bool FSceneManager::CreateWorldContext(FWorldContext& OutContext, const FString&
+ 
+ 	OutContext.World->SetWorldType(WorldType);
+ 
+-	if (bDefaultScene)
++	if (bDefaultLevel)
+ 	{
+ 		OutContext.World->InitializeWorld(AspectRatio, Renderer ? Renderer->GetDevice() : nullptr);
+ 	}
+@@ -79,7 +79,7 @@ bool FSceneManager::CreateWorldContext(FWorldContext& OutContext, const FString&
+ 	return true;
+ }
+ 
+-void FSceneManager::DestroyWorldContext(FWorldContext& Context)
++void FLevelManager::DestroyWorldContext(FWorldContext& Context)
+ {
+ 	if (Context.World)
+ 	{
+@@ -89,7 +89,7 @@ void FSceneManager::DestroyWorldContext(FWorldContext& Context)
+ 	Context.Reset();
+ }
+ 
+-void FSceneManager::DestroyWorldContext(FEditorWorldContext& Context)
++void FLevelManager::DestroyWorldContext(FEditorWorldContext& Context)
+ {
+ 	if (Context.World)
+ 	{
+@@ -99,37 +99,37 @@ void FSceneManager::DestroyWorldContext(FEditorWorldContext& Context)
+ 	Context.Reset();
+ }
+ 
+-// ===== 하위 호환 Scene 접근자 =====
++// ===== 하위 호환 Level 접근자 =====
+ 
+-UScene* FSceneManager::GetActiveScene() const
++ULevel* FLevelManager::GetActiveLevel() const
+ {
+ 	UWorld* World = GetActiveWorld();
+-	return World ? World->GetScene() : nullptr;
++	return World ? World->GetLevel() : nullptr;
+ }
+ 
+-UScene* FSceneManager::GetEditorScene() const
++ULevel* FLevelManager::GetEditorLevel() const
+ {
+-	return EditorWorldContext.World ? EditorWorldContext.World->GetScene() : nullptr;
++	return EditorWorldContext.World ? EditorWorldContext.World->GetLevel() : nullptr;
+ }
+ 
+-UScene* FSceneManager::GetGameScene() const
++ULevel* FLevelManager::GetGameLevel() const
+ {
+-	return GameWorldContext.World ? GameWorldContext.World->GetScene() : nullptr;
++	return GameWorldContext.World ? GameWorldContext.World->GetLevel() : nullptr;
+ }
+ 
+-UScene* FSceneManager::GetPreviewScene(const FString& ContextName) const
++ULevel* FLevelManager::GetPreviewLevel(const FString& ContextName) const
+ {
+ 	const FEditorWorldContext* Context = FindPreviewWorld(ContextName);
+ 	if (Context && Context->World)
+ 	{
+-		return Context->World->GetScene();
++		return Context->World->GetLevel();
+ 	}
+ 	return nullptr;
+ }
+ 
+ // ===== Activate =====
+ 
+-bool FSceneManager::ActivatePreviewScene(const FString& ContextName)
++bool FLevelManager::ActivatePreviewLevel(const FString& ContextName)
+ {
+ 	FEditorWorldContext* PreviewContext = FindPreviewWorld(ContextName);
+ 	if (PreviewContext == nullptr)
+@@ -143,7 +143,7 @@ bool FSceneManager::ActivatePreviewScene(const FString& ContextName)
+ 
+ // ===== Selected Actor =====
+ 
+-FEditorWorldContext* FSceneManager::GetActiveEditorContext()
++FEditorWorldContext* FLevelManager::GetActiveEditorContext()
+ {
+ 	if (ActiveWorldContext == &EditorWorldContext)
+ 	{
+@@ -161,7 +161,7 @@ FEditorWorldContext* FSceneManager::GetActiveEditorContext()
+ 	return nullptr;
+ }
+ 
+-const FEditorWorldContext* FSceneManager::GetActiveEditorContext() const
++const FEditorWorldContext* FLevelManager::GetActiveEditorContext() const
+ {
+ 	if (ActiveWorldContext == &EditorWorldContext)
+ 	{
+@@ -179,7 +179,7 @@ const FEditorWorldContext* FSceneManager::GetActiveEditorContext() const
+ 	return nullptr;
+ }
+ 
+-void FSceneManager::SetSelectedActor(AActor* InActor)
++void FLevelManager::SetSelectedActor(AActor* InActor)
+ {
+ 	FEditorWorldContext* ActiveEditorContext = GetActiveEditorContext();
+ 	if (ActiveEditorContext)
+@@ -191,7 +191,7 @@ void FSceneManager::SetSelectedActor(AActor* InActor)
+ 	EditorWorldContext.SelectedActor = InActor;
+ }
+ 
+-AActor* FSceneManager::GetSelectedActor() const
++AActor* FLevelManager::GetSelectedActor() const
+ {
+ 	const FEditorWorldContext* ActiveEditorContext = GetActiveEditorContext();
+ 	if (ActiveEditorContext)
+@@ -204,7 +204,7 @@ AActor* FSceneManager::GetSelectedActor() const
+ 
+ // ===== Preview =====
+ 
+-FEditorWorldContext* FSceneManager::FindPreviewWorld(const FString& ContextName)
++FEditorWorldContext* FLevelManager::FindPreviewWorld(const FString& ContextName)
+ {
+ 	for (const std::unique_ptr<FEditorWorldContext>& Context : PreviewWorldContexts)
+ 	{
+@@ -216,7 +216,7 @@ FEditorWorldContext* FSceneManager::FindPreviewWorld(const FString& ContextName)
+ 	return nullptr;
+ }
+ 
+-const FEditorWorldContext* FSceneManager::FindPreviewWorld(const FString& ContextName) const
++const FEditorWorldContext* FLevelManager::FindPreviewWorld(const FString& ContextName) const
+ {
+ 	for (const std::unique_ptr<FEditorWorldContext>& Context : PreviewWorldContexts)
+ 	{
+@@ -228,7 +228,7 @@ const FEditorWorldContext* FSceneManager::FindPreviewWorld(const FString& Contex
+ 	return nullptr;
+ }
+ 
+-FEditorWorldContext* FSceneManager::CreatePreviewWorldContext(const FString& ContextName, int32 WindowWidth, int32 WindowHeight)
++FEditorWorldContext* FLevelManager::CreatePreviewWorldContext(const FString& ContextName, int32 WindowWidth, int32 WindowHeight)
+ {
+ 	if (ContextName.empty())
+ 	{
+@@ -245,7 +245,7 @@ FEditorWorldContext* FSceneManager::CreatePreviewWorldContext(const FString& Con
+ 		? (static_cast<float>(WindowWidth) / static_cast<float>(WindowHeight))
+ 		: 1.0f;
+ 
+-	if (!CreateWorldContext(*PreviewContext, ContextName, ESceneType::Preview, AspectRatio, false))
++	if (!CreateWorldContext(*PreviewContext, ContextName, ELevelType::Preview, AspectRatio, false))
+ 	{
+ 		return nullptr;
+ 	}
+@@ -255,7 +255,7 @@ FEditorWorldContext* FSceneManager::CreatePreviewWorldContext(const FString& Con
+ 	return CreatedContext;
+ }
+ 
+-bool FSceneManager::DestroyPreviewWorld(const FString& ContextName)
++bool FLevelManager::DestroyPreviewWorld(const FString& ContextName)
+ {
+ 	for (auto It = PreviewWorldContexts.begin(); It != PreviewWorldContexts.end(); ++It)
+ 	{
+@@ -263,10 +263,10 @@ bool FSceneManager::DestroyPreviewWorld(const FString& ContextName)
+ 		{
+ 			if (ActiveWorldContext == It->get())
+ 			{
+-				ActivateEditorScene();
++				ActivateEditorLevel();
+ 				if (ActiveWorldContext == nullptr)
+ 				{
+-					ActivateGameScene();
++					ActivateGameLevel();
+ 				}
+ 			}
+ 
+@@ -281,7 +281,7 @@ bool FSceneManager::DestroyPreviewWorld(const FString& ContextName)
+ 
+ // ===== Resize =====
+ 
+-void FSceneManager::OnResize(int32 Width, int32 Height)
++void FLevelManager::OnResize(int32 Width, int32 Height)
+ {
+ 	if (Width == 0 || Height == 0)
+ 	{
+diff --git a/Engine/Source/Scene/SceneManager.h b/Engine/Source/World/LevelManager.h
+similarity index 68%
+rename from Engine/Source/Scene/SceneManager.h
+rename to Engine/Source/World/LevelManager.h
+index 6a6c8e4..7dcd661 100644
+--- a/Engine/Source/Scene/SceneManager.h
++++ b/Engine/Source/World/LevelManager.h
+@@ -1,32 +1,32 @@
+ #pragma once
+ #include "CoreMinimal.h"
+ #include "World/WorldContext.h"
+-#include "Scene/SceneTypes.h"
++#include "World/LevelTypes.h"
+ #include <memory>
+ 
+-class UScene;
++class ULevel;
+ class UWorld;
+ class AActor;
+ class CRenderer;
+ 
+-class ENGINE_API FSceneManager
++class ENGINE_API FLevelManager
+ {
+ public:
+-	FSceneManager() = default;
+-	~FSceneManager();
+-	FSceneManager(const FSceneManager&) = delete;
+-	FSceneManager& operator=(const FSceneManager&) = delete;
+-	FSceneManager(FSceneManager&&) = delete;
+-	FSceneManager& operator=(FSceneManager&&) = delete;
++	FLevelManager() = default;
++	~FLevelManager();
++	FLevelManager(const FLevelManager&) = delete;
++	FLevelManager& operator=(const FLevelManager&) = delete;
++	FLevelManager(FLevelManager&&) = delete;
++	FLevelManager& operator=(FLevelManager&&) = delete;
+ 
+ 	// 초기화
+-	bool Initialize(float AspectRatio, ESceneType StartupSceneType, CRenderer* InRenderer);
++	bool Initialize(float AspectRatio, ELevelType StartupLevelType, CRenderer* InRenderer);
+ 	void Release();
+ 
+ 	// World 전환
+-	void ActivateEditorScene() { ActiveWorldContext = EditorWorldContext.World ? &EditorWorldContext : nullptr; }
+-	void ActivateGameScene() { ActiveWorldContext = GameWorldContext.World ? &GameWorldContext : nullptr; }
+-	bool ActivatePreviewScene(const FString& ContextName);
++	void ActivateEditorLevel() { ActiveWorldContext = EditorWorldContext.World ? &EditorWorldContext : nullptr; }
++	void ActivateGameLevel() { ActiveWorldContext = GameWorldContext.World ? &GameWorldContext : nullptr; }
++	bool ActivatePreviewLevel(const FString& ContextName);
+ 
+ 	// Preview 관리
+ 	FEditorWorldContext* CreatePreviewWorldContext(const FString& ContextName, int32 WindowWidth, int32 WindowHeight);
+@@ -40,11 +40,11 @@ public:
+ 	const FWorldContext* GetActiveWorldContext() const { return ActiveWorldContext; }
+ 	const TArray<std::unique_ptr<FEditorWorldContext>>& GetPreviewWorldContexts() const { return PreviewWorldContexts; }
+ 
+-	// 하위 호환 — World 경유로 Scene 반환
+-	UScene* GetActiveScene() const;
+-	UScene* GetEditorScene() const;
+-	UScene* GetGameScene() const;
+-	UScene* GetPreviewScene(const FString& ContextName) const;
++	// 하위 호환 — World 경유로 Level 반환
++	ULevel* GetActiveLevel() const;
++	ULevel* GetEditorLevel() const;
++	ULevel* GetGameLevel() const;
++	ULevel* GetPreviewLevel(const FString& ContextName) const;
+ 
+ 	// 선택 Actor
+ 	void SetSelectedActor(AActor* InActor);
+@@ -55,7 +55,7 @@ public:
+ 
+ private:
+ 	bool CreateWorldContext(FWorldContext& OutContext, const FString& ContextName,
+-		ESceneType WorldType, float AspectRatio, bool bDefaultScene = true);
++		ELevelType WorldType, float AspectRatio, bool bDefaultLevel = true);
+ 	void DestroyWorldContext(FWorldContext& Context);
+ 	void DestroyWorldContext(FEditorWorldContext& Context);
+ 
+diff --git a/Engine/Source/Scene/SceneTypes.h b/Engine/Source/World/LevelTypes.h
+similarity index 66%
+rename from Engine/Source/Scene/SceneTypes.h
+rename to Engine/Source/World/LevelTypes.h
+index d45e859..193b942 100644
+--- a/Engine/Source/Scene/SceneTypes.h
++++ b/Engine/Source/World/LevelTypes.h
+@@ -1,6 +1,6 @@
+ #pragma once
+ 
+-enum class ESceneType : unsigned char
++enum class ELevelType : unsigned char
+ {
+     Game,
+     Editor,
+diff --git a/Engine/Source/Scene/RenderCollector.cpp b/Engine/Source/World/RenderCollector.cpp
+similarity index 97%
+rename from Engine/Source/Scene/RenderCollector.cpp
+rename to Engine/Source/World/RenderCollector.cpp
+index d73c28a..f8ced1a 100644
+--- a/Engine/Source/Scene/RenderCollector.cpp
++++ b/Engine/Source/World/RenderCollector.cpp
+@@ -10,7 +10,7 @@
+ #include "Renderer/SubUVRenderer.h"
+ #include "Renderer/Material.h"
+ 
+-void FSceneRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
++void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+ 	const FShowFlags& ShowFlags, FRenderCommandQueue& OutQueue)
+ {
+ 	TArray<UPrimitiveComponent*> VisiblePrimitives;
+@@ -127,7 +127,7 @@ void FSceneRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
+ 	}
+ }
+ 
+-void FSceneRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FFrustum& Frustum,
++void FLevelRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+ 	const FShowFlags& ShowFlags, TArray<UPrimitiveComponent*>& OutVisible)
+ {
+ 	for (AActor* Actor : Actors)
+diff --git a/Engine/Source/Scene/RenderCollector.h b/Engine/Source/World/RenderCollector.h
+similarity index 92%
+rename from Engine/Source/Scene/RenderCollector.h
+rename to Engine/Source/World/RenderCollector.h
+index 5c40bfa..a994065 100644
+--- a/Engine/Source/Scene/RenderCollector.h
++++ b/Engine/Source/World/RenderCollector.h
+@@ -7,13 +7,11 @@ class AActor;
+ class FFrustum;
+ struct FRenderCommandQueue;
+ class UPrimitiveComponent;
+-class ENGINE_API FSceneRenderCollector
++class ENGINE_API FLevelRenderCollector
+ {
+ public:
+ 	void CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+ 		const FShowFlags& ShowFlags, FRenderCommandQueue& OutQueue);
+ 	void FrustrumCull(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+ 		const FShowFlags& ShowFlags, TArray<UPrimitiveComponent*>& OutVisible);
+-
+-
+ };
+\ No newline at end of file
+diff --git a/Engine/Source/World/World.cpp b/Engine/Source/World/World.cpp
+index 7b716bd..2a76707 100644
+--- a/Engine/Source/World/World.cpp
++++ b/Engine/Source/World/World.cpp
+@@ -1,6 +1,6 @@
+ #include "World.h"
+ #include "Object/Class.h"  
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ #include "Object/ObjectFactory.h"
+ #include "Component/CameraComponent.h"
+ #include "Camera/Camera.h"
+@@ -16,30 +16,30 @@ UWorld::~UWorld()
+ 
+ void UWorld::InitializeWorld(float AspectRatio, ID3D11Device* Device)
+ {
+-	PersistentLevel = FObjectFactory::ConstructObject<UScene>(this, "PersistentLevel");
++	PersistentLevel = FObjectFactory::ConstructObject<ULevel>(this, "PersistentLevel");
+ 	if (!PersistentLevel)
+ 	{
+ 		return;
+ 	}
+ 
+-	PersistentLevel->SetSceneType(WorldType);
++	PersistentLevel->SetLevelType(WorldType);
+ 
+-	if (!SceneCameraComponent)
++	if (!LevelCameraComponent)
+ 	{
+-		SceneCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "SceneCamera");
++		LevelCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "LevelCamera");
+ 	}
+ 	if (!ActiveCameraComponent)
+ 	{
+-		ActiveCameraComponent = SceneCameraComponent;
++		ActiveCameraComponent = LevelCameraComponent;
+ 	}
+-	if (SceneCameraComponent->GetCamera())
++	if (LevelCameraComponent->GetCamera())
+ 	{
+-		SceneCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
++		LevelCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
+ 	}
+ 
+ 	if (Device)
+ 	{
+-		FSceneSerializer::Load(PersistentLevel, (FPaths::SceneDir() / "DefaultScene.json").string(), Device);
++		FSceneSerializer::Load(PersistentLevel, (FPaths::LevelDir() / "DefaultLevel.json").string(), Device);
+ 	}
+ }
+ 
+@@ -51,7 +51,7 @@ void UWorld::BeginPlay()
+ 	{
+ 		PersistentLevel->BeginPlay();
+ 	}
+-	for (UScene* Level : StreamingLevels)
++	for (ULevel* Level : StreamingLevels)
+ 	{
+ 		if (Level) Level->BeginPlay();
+ 	}
+@@ -66,7 +66,7 @@ void UWorld::Tick(float InDeltaTime)
+ 	{
+ 		PersistentLevel->Tick(InDeltaTime);
+ 	}
+-	for (UScene* Level : StreamingLevels)
++	for (ULevel* Level : StreamingLevels)
+ 	{
+ 		if (Level)
+ 		{
+@@ -77,7 +77,7 @@ void UWorld::Tick(float InDeltaTime)
+ 
+ void UWorld::CleanupWorld()
+ {
+-	for (UScene* Level : StreamingLevels)
++	for (ULevel* Level : StreamingLevels)
+ 	{
+ 		if (Level)
+ 		{
+@@ -91,15 +91,15 @@ void UWorld::CleanupWorld()
+ 		PersistentLevel->MarkPendingKill();
+ 		PersistentLevel = nullptr;
+ 	}
+-	if (SceneCameraComponent)
++	if (LevelCameraComponent)
+ 	{
+-		SceneCameraComponent->MarkPendingKill();
++		LevelCameraComponent->MarkPendingKill();
+ 	}
+-	if (ActiveCameraComponent == SceneCameraComponent)
++	if (ActiveCameraComponent == LevelCameraComponent)
+ 	{
+ 		ActiveCameraComponent = nullptr;
+ 	}
+-	SceneCameraComponent = nullptr;
++	LevelCameraComponent = nullptr;
+ 	WorldTime = 0.f;
+ 	DeltaSeconds = 0.f;
+ }
+@@ -109,13 +109,13 @@ void UWorld::DestroyActor(AActor* InActor)
+ 	if (!InActor || !PersistentLevel) return;
+ 
+ 
+-	if (ActiveCameraComponent && ActiveCameraComponent != SceneCameraComponent)
++	if (ActiveCameraComponent && ActiveCameraComponent != LevelCameraComponent)
+ 	{
+ 		for (UActorComponent* Component : InActor->GetComponents())
+ 		{
+ 			if (Component == ActiveCameraComponent)
+ 			{
+-				ActiveCameraComponent = SceneCameraComponent;
++				ActiveCameraComponent = LevelCameraComponent;
+ 				break;
+ 			}
+ 		}
+@@ -124,20 +124,20 @@ void UWorld::DestroyActor(AActor* InActor)
+ 	PersistentLevel->DestroyActor(InActor);
+ }
+ 
+-UScene* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device)
++ULevel* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device)
+ {
+ 	// 이미 로드됐는지 확인
+-	if (UScene* Existing = FindStreamingLevel(LevelName))
++	if (ULevel* Existing = FindStreamingLevel(LevelName))
+ 	{
+ 		return Existing;
+ 	}
+-	UScene* NewLevel = FObjectFactory::ConstructObject<UScene>(this, LevelName);
++	ULevel* NewLevel = FObjectFactory::ConstructObject<ULevel>(this, LevelName);
+ 	if (!NewLevel) return nullptr;
+-	NewLevel->SetSceneType(WorldType);
++	NewLevel->SetLevelType(WorldType);
+ 
+ 	if (Device)
+ 	{
+-		FSceneSerializer::Load(NewLevel, (FPaths::SceneDir() / (LevelName + ".json")).string(), Device);
++		FSceneSerializer::Load(NewLevel, (FPaths::LevelDir() / (LevelName + ".json")).string(), Device);
+ 	}
+ 	StreamingLevels.push_back(NewLevel);
+ 
+@@ -152,7 +152,7 @@ UScene* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Devic
+ void UWorld::UnloadStreamingLevel(const FString& LevelName)
+ {
+ 	auto It = std::find_if(StreamingLevels.begin(), StreamingLevels.end(),
+-		[&](UScene* Level) { return Level->GetName() == LevelName; });
++		[&](ULevel* Level) { return Level->GetName() == LevelName; });
+ 	if (It != StreamingLevels.end())
+ 	{
+ 		(*It)->ClearActors();
+@@ -161,9 +161,9 @@ void UWorld::UnloadStreamingLevel(const FString& LevelName)
+ 	}
+ }
+ 
+-UScene* UWorld::FindStreamingLevel(const FString& LevelName) const
++ULevel* UWorld::FindStreamingLevel(const FString& LevelName) const
+ {
+-	for (UScene* Level : StreamingLevels)
++	for (ULevel* Level : StreamingLevels)
+ 	{
+ 		if (Level && Level->GetName() == LevelName)
+ 		{
+@@ -181,7 +181,7 @@ TArray<AActor*> UWorld::GetAllActors() const
+ 		const auto& PersistentActors = PersistentLevel->GetActors();
+ 		AllActors.insert(AllActors.end(), PersistentActors.begin(), PersistentActors.end());
+ 	}
+-	for (UScene* Level : StreamingLevels)
++	for (ULevel* Level : StreamingLevels)
+ 	{
+ 		if (Level)
+ 		{
+@@ -204,12 +204,12 @@ const TArray<AActor*>& UWorld::GetActors() const
+ 
+ void UWorld::SetActiveCameraComponent(UCameraComponent* InCamera)
+ {
+-	ActiveCameraComponent = InCamera ? InCamera : SceneCameraComponent;
++	ActiveCameraComponent = InCamera ? InCamera : LevelCameraComponent;
+ }
+ 
+ UCameraComponent* UWorld::GetActiveCameraComponent() const
+ {
+-	return ActiveCameraComponent ? ActiveCameraComponent.Get() : SceneCameraComponent;
++	return ActiveCameraComponent ? ActiveCameraComponent.Get() : LevelCameraComponent;
+ }
+ 
+ CCamera* UWorld::GetCamera() const
+diff --git a/Engine/Source/World/World.h b/Engine/Source/World/World.h
+index 370c1a7..5a9ee45 100644
+--- a/Engine/Source/World/World.h
++++ b/Engine/Source/World/World.h
+@@ -1,10 +1,10 @@
+ #pragma once
+ #include "CoreMinimal.h"
+ #include "Object/Object.h"
+-#include "Scene/SceneTypes.h"
++#include "World/LevelTypes.h"
+ 
+ // Forward declarations — include 최소화
+-class UScene;
++class ULevel;
+ class AActor;
+ class UCameraComponent;
+ class CCamera;
+@@ -23,49 +23,46 @@ public:
+ 	void DestroyActor(AActor* InActor);
+ 
+ 	// ── Persistent Level ──
+-	UScene* GetPersistentLevel() const { return PersistentLevel; }
++	ULevel* GetPersistentLevel() const { return PersistentLevel; }
+ 	// ── Streaming Levels ──
+-	UScene* LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device = nullptr);
++	ULevel* LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device = nullptr);
+ 	void UnloadStreamingLevel(const FString& LevelName);
+-	UScene* FindStreamingLevel(const FString& LevelName) const;
+-	const TArray<UScene*>& GetStreamingLevels() const { return StreamingLevels; }
++	ULevel* FindStreamingLevel(const FString& LevelName) const;
++	const TArray<ULevel*>& GetStreamingLevels() const { return StreamingLevels; }
+ 
+ 	// ── 전체 액터 조회 (Persistent + Streaming 합산) ──
+ 	TArray<AActor*> GetAllActors() const;
+ 	const TArray<AActor*>& GetActors() const;  // PersistentLevel만
+ 
+-	UScene* GetScene() const { return PersistentLevel; }
++	ULevel* GetLevel() const { return PersistentLevel; }
+ 	// 카메라
+ 	void SetActiveCameraComponent(UCameraComponent* InCamera);
+ 	UCameraComponent* GetActiveCameraComponent() const;
+ 	CCamera* GetCamera() const;
+ 
+-
+ 	// 라이프사이클
+ 	void InitializeWorld(float AspectRatio, ID3D11Device* Device = nullptr);
+ 	void BeginPlay();
+ 	void Tick(float InDeltaTime);
+ 	void CleanupWorld();
+ 	
+-
+-
+-	ESceneType GetWorldType() const { return WorldType; }
+-	void SetWorldType(ESceneType InType) { WorldType = InType; }
++	ELevelType GetWorldType() const { return WorldType; }
++	void SetWorldType(ELevelType InType) { WorldType = InType; }
+ 	float GetWorldTime() const { return WorldTime; }
+ 	float GetDeltaTime() const { return DeltaSeconds; }
+ 
+ private:
+-	UScene* PersistentLevel = nullptr;      
+-	TArray<UScene*> StreamingLevels;
++	ULevel* PersistentLevel = nullptr;      
++	TArray<ULevel*> StreamingLevels;
+ 
+ 	bool bBegunPlay = false;
+ 	float WorldTime = 0.f;
+ 	float DeltaSeconds = 0.f;
+-	ESceneType WorldType = ESceneType::Game;
+-	UCameraComponent* SceneCameraComponent = nullptr;    
++	ELevelType WorldType = ELevelType::Game;
++	UCameraComponent* LevelCameraComponent = nullptr;    
+ 	TObjectPtr<UCameraComponent> ActiveCameraComponent;
+ };
+-#include "Scene/Scene.h"
++#include "World/Level.h"
+ 
+ template <typename T>
+ T* UWorld::SpawnActor(const FString& InName)
+diff --git a/Engine/Source/World/WorldContext.h b/Engine/Source/World/WorldContext.h
+index 07c3575..6d7313c 100644
+--- a/Engine/Source/World/WorldContext.h
++++ b/Engine/Source/World/WorldContext.h
+@@ -1,6 +1,6 @@
+ #pragma once
+ #include "CoreMinimal.h"
+-#include "Scene/SceneTypes.h"
++#include "World/LevelTypes.h"
+ 
+ class AActor;
+ class UWorld;
+@@ -8,14 +8,14 @@ class UWorld;
+ struct ENGINE_API FWorldContext
+ {
+ 	FString ContextName;
+-	ESceneType WorldType = ESceneType::Game;
++	ELevelType WorldType = ELevelType::Game;
+ 	UWorld* World = nullptr;
+ 
+ 	bool IsValid() const { return World != nullptr; }
+ 	void Reset()
+ 	{
+ 		ContextName.clear();
+-		WorldType = ESceneType::Game;
++		WorldType = ELevelType::Game;
+ 		World = nullptr;
+ 	}
+ };
+diff --git a/editor.ini b/editor.ini
+index 22b87d2..6baac44 100644
+--- a/editor.ini
++++ b/editor.ini
+@@ -4,7 +4,7 @@ LineThickness=0.81
+ ShowGrid=1
+ [ShowFlags]
+ Primitives=1
+-UUID=1
+-DebugDraw=1
++UUID=0
++DebugDraw=0
+ WorldAxis=1
+-Collision=1
++Collision=0
+-- 
+2.53.0.windows.1
+

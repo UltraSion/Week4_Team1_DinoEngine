@@ -5,102 +5,69 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderCommand.h"
 #include "Renderer/Material.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Debug/EngineLog.h"
 #include "Component/UUIDBillboardComponent.h"
 #include "Component/SubUVComponent.h"
 #include "Core/FEngine.h"
 #include "Component/TextComponent.h"
 
-void IViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+void FViewportClient::Attach(FCore* Core, FRenderer* Renderer)
 {
 }
 
-void IViewportClient::Detach(CCore* Core, CRenderer* Renderer)
+void FViewportClient::Detach(FCore* Core, FRenderer* Renderer)
 {
 }
 
-void IViewportClient::Tick(CCore* Core, float DeltaTime)
+void FViewportClient::Tick(FCore* Core, float DeltaTime)
 {
-	// instead Enhance input system controller
-	//if (!Core)
-	//{
-	//	return;
-	//}
-
-	//CInputManager* InputManager = Core->GetInputManager();
-	//UScene* Scene = ResolveScene(Core);
-	//if (!InputManager || !Scene)
-	//{
-	//	return;
-	//}
-
-	//CCamera* Camera = Scene->GetCamera();
-	//if (!Camera)
-	//{
-	//	return;
-	//}
-
-	//if (InputManager->IsKeyDown('W')) Camera->MoveForward(DeltaTime);
-	//if (InputManager->IsKeyDown('S')) Camera->MoveForward(-DeltaTime);
-	//if (InputManager->IsKeyDown('D')) Camera->MoveRight(DeltaTime);
-	//if (InputManager->IsKeyDown('A')) Camera->MoveRight(-DeltaTime);
-	//if (InputManager->IsKeyDown('E')) Camera->MoveUp(DeltaTime);
-	//if (InputManager->IsKeyDown('Q')) Camera->MoveUp(-DeltaTime);
-
-	//if (InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
-	//{
-	//	const float DeltaX = InputManager->GetMouseDeltaX();
-	//	const float DeltaY = InputManager->GetMouseDeltaY();
-	//	Camera->Rotate(DeltaX * 0.2f, -DeltaY * 0.2f);
-	//}
 	Tick(DeltaTime);
 }
 
-void IViewportClient::Initialize(CInputManager* InInput, CEnhancedInputManager* InEnhancedInput)
+void FViewportClient::Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput)
 {
 	InputManager = InInput;
 	EnhancedInput = InEnhancedInput;
 	SetupInputBindings();
 }
 
-void IViewportClient::Cleanup()
+void FViewportClient::Cleanup()
 {
 	if (EnhancedInput && CameraContext)
+	{
 		EnhancedInput->RemoveMappingContext(CameraContext);
+	}
 	delete CameraContext;
 	CameraContext = nullptr;
 	EnhancedInput = nullptr;
 }
 
-void IViewportClient::Tick(float DeltaTime)
+void FViewportClient::Tick(float DeltaTime)
 {
 	CurrentDeltaTime = DeltaTime;
 }
 
-void IViewportClient::SetupInputBindings()
+void FViewportClient::SetupInputBindings()
 {
 }
 
-
-void IViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+void FViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
 }
 
-UScene* IViewportClient::ResolveScene(CCore* Core) const
+ULevel* FViewportClient::ResolveLevel(FCore* Core) const
 {
-	return Core ? Core->GetActiveScene() : nullptr;
+	return Core ? Core->GetActiveLevel() : nullptr;
 }
 
-UWorld* IViewportClient::ResolveWorld(CCore* Core) const
+UWorld* FViewportClient::ResolveWorld(FCore* Core) const
 {
 	return Core ? Core->GetActiveWorld() : nullptr;
 }
 
-void IViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
+void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
 {
-
-	// Persistent + Streaming 전체 액터를 렌더
 	FFrustum Frustum;
 	const FMatrix ViewProjection = CameraTransform.GetViewMatrix() * CameraTransform.GetProjectionMatrix();
 	Frustum.ExtractFromVP(ViewProjection);
@@ -110,17 +77,15 @@ void IViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderComm
 	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, OutQueue);
 }
 
-void IViewportClient::HandleFileDoubleClick(const FString& FilePath)
+void FViewportClient::HandleFileDoubleClick(const FString& FilePath)
 {
-
 }
 
-void IViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+void FViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
-
 }
 
-void CGameViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+void FGameViewportClient::Attach(FCore* Core, FRenderer* Renderer)
 {
 	if (Renderer)
 	{
@@ -128,7 +93,7 @@ void CGameViewportClient::Attach(CCore* Core, CRenderer* Renderer)
 	}
 }
 
-void CGameViewportClient::Detach(CCore* Core, CRenderer* Renderer)
+void FGameViewportClient::Detach(FCore* Core, FRenderer* Renderer)
 {
 	if (Renderer)
 	{

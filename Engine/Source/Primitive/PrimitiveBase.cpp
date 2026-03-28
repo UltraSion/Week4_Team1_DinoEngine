@@ -63,7 +63,7 @@ bool FMeshData::CreateVertexAndIndexBuffer(ID3D11Device* Device)
 		VertexBuffer = nullptr;
 		return false;
 	}
-
+	bIsDirty = false;
 	return true;
 }
 
@@ -74,7 +74,7 @@ void FMeshData::Bind(ID3D11DeviceContext* Context)
 	Context->IASetVertexBuffers(0, 1, &VertexBuffer, &Stride, &Offset);
 	Context->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 }
-
+ 
 void FMeshData::Release()
 {
 	if (IndexBuffer)
@@ -99,7 +99,6 @@ void FMeshData::UpdateLocalBound()
 	}
 	else
 	{
-		// TODO: Ritter's Algorithm으로 개선
 		for (const FPrimitiveVertex& Vertex : Vertices)
 		{
 			if (Vertex.Position.X < MinCoord.X) MinCoord.X = Vertex.Position.X;

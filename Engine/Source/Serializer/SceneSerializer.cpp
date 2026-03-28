@@ -11,25 +11,27 @@
 #include "Actor/SphereActor.h"
 #include "Actor/ObjActor.h"
 #include "Component/PrimitiveComponent.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Object/ObjectFactory.h" 
 #include "Serializer/Archive.h"
 #include "Object/Class.h"
+#include "Actor/StaticMeshActor.h"
+#include "Component/StaticMeshComponent.h"
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
-void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
+void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 {
 	nlohmann::json Json;
-	//CCamera* Camera = Scene->GetCamera();
-	//if (Camera)
-	//{
-	//	const FVector Position = Camera->GetPosition();
-	//	Json["Camera"]["Position"] = { Position.X, Position.Y, Position.Z };
-	//	Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
-	//}
+	FCamera* Camera = Level->GetCamera();
+	if (Camera)
+	{
+		const FVector Position = Camera->GetPosition();
+		Json["Camera"]["Position"] = { Position.X, Position.Y, Position.Z };
+		Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
+	}
 
-	// Materials (ë¡œë“œëœ Material íŒŒì¼ ê²½ë¡œë¥¼ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œë¡œ ì €ì¥)
+	// Materials (·ÎµåµÈ Material ÆÄÀÏ °æ·Î¸¦ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î·Î ÀúÀå)
 	TArray<FString> LoadedPaths = FMaterialManager::Get().GetLoadedPaths();
 	if (!LoadedPaths.empty())
 	{
@@ -37,7 +39,7 @@ void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
 		FString Root = FPaths::ProjectRoot().string();
 		for (const FString& AbsPath : LoadedPaths)
 		{
-			// ì ˆëŒ€ ê²½ë¡œ â†’ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œ
+			// Àı´ë °æ·Î ¡æ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î
 			std::filesystem::path Rel = std::filesystem::relative(AbsPath, Root);
 			Materials.push_back(Rel.generic_string());
 		}
@@ -47,7 +49,7 @@ void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
 	// Primitives
 	nlohmann::json Primitives;
 	int32 Index = 0;
-	for (AActor* Actor : Scene->GetActors())
+	for (AActor* Actor : Level->GetActors())
 	{
 		if (!Actor || Actor->IsPendingDestroy())
 			continue;
@@ -70,7 +72,7 @@ void FSceneSerializer::Save(UScene* Scene, const FString& FilePath)
 	}
 }
 
-bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device* Device)
+bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device)
 {
 	std::ifstream File(FilePath);
 	if (!File.is_open())
@@ -92,21 +94,21 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
 	if (!Json.contains("Primitives"))
 		return false;
 
-	//CCamera* Camera = Scene->GetCamera();
-	//if (Camera && Json.contains("Camera"))
-	//{
-	//	auto& Cam = Json["Camera"];
-	//	if (Cam.contains("Position"))
-	//	{
-	//		auto& P = Cam["Position"];
-	//		Camera->SetPosition({ P[0].get<float>(), P[1].get<float>(), P[2].get<float>() });
-	//	}
-	//	if (Cam.contains("Rotation"))
-	//	{
-	//		auto& R = Cam["Rotation"];
-	//		Camera->SetRotation(R[0].get<float>(), R[1].get<float>());
-	//	}
-	//}
+	FCamera* Camera = Level->GetCamera();
+	if (Camera && Json.contains("Camera"))
+	{
+		auto& Cam = Json["Camera"];
+		if (Cam.contains("Position"))
+		{
+			auto& P = Cam["Position"];
+			Camera->SetPosition({ P[0].get<float>(), P[1].get<float>(), P[2].get<float>() });
+		}
+		if (Cam.contains("Rotation"))
+		{
+			auto& R = Cam["Rotation"];
+			Camera->SetRotation(R[0].get<float>(), R[1].get<float>());
+		}
+	}
 
 	int32 ActorIndex = 0;
 	for (auto& [Key, Value] : Json["Primitives"].items())
@@ -119,14 +121,14 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
 			continue;
 		}
 		const FString ActorName = ClassName + "_" + std::to_string(ActorIndex);
-		AActor* Actor = static_cast<AActor*>(FObjectFactory::ConstructObject(ActorClass, Scene, ActorName));
+		AActor* Actor = static_cast<AActor*>(FObjectFactory::ConstructObject(ActorClass, Level, ActorName));
 		if (!Actor)
 		{
 			ActorIndex++;
 			continue;
 		}
 
-		Scene->RegisterActor(Actor);
+		Level->RegisterActor(Actor);
 		Actor->PostSpawnInitialize();
 		FArchive Ar(false);// loading
 		*static_cast<nlohmann::json*>(Ar.GetRawJson()) = Value;
@@ -158,7 +160,18 @@ bool FSceneSerializer::Load(UScene* Scene, const FString& FilePath, ID3D11Device
 				}
 			}
 		}
-
+		if (Value.contains("ObjStaticMeshAsset"))
+		{
+			if (Actor->IsA(AStaticMeshActor::StaticClass()))
+			{
+				const FString MeshAsset = Value["ObjStaticMeshAsset"].get<FString>();
+				if (!MeshAsset.empty())
+				{
+					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(Actor);
+					SMActor->LoadStaticMesh(Device, MeshAsset);
+				}
+			}
+		}
 		++ActorIndex;
 
 	}

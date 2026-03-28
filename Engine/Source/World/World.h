@@ -1,13 +1,13 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Object/Object.h"
-#include "Scene/SceneTypes.h"
+#include "World/LevelTypes.h"
 
-// Forward declarations ‚Äî include ÏµúÏÜåÌôî
-class UScene;
+// Forward declarations ? include √÷º“»≠
+class ULevel;
 class AActor;
-//class UCameraComponent;
-//class CCamera;
+class UCameraComponent;
+class FCamera;
 class FFrustum;
 struct FRenderCommandQueue;
 struct ID3D11Device;
@@ -22,50 +22,47 @@ public:
 	T* SpawnActor(const FString& InName);
 	void DestroyActor(AActor* InActor);
 
-	// ‚îÄ‚îÄ Persistent Level ‚îÄ‚îÄ
-	UScene* GetPersistentLevel() const { return PersistentLevel; }
-	// ‚îÄ‚îÄ Streaming Levels ‚îÄ‚îÄ
-	UScene* LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device = nullptr);
+	// ¶°¶° Persistent Level ¶°¶°
+	ULevel* GetPersistentLevel() const { return PersistentLevel; }
+	// ¶°¶° Streaming Levels ¶°¶°
+	ULevel* LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device = nullptr);
 	void UnloadStreamingLevel(const FString& LevelName);
-	UScene* FindStreamingLevel(const FString& LevelName) const;
-	const TArray<UScene*>& GetStreamingLevels() const { return StreamingLevels; }
+	ULevel* FindStreamingLevel(const FString& LevelName) const;
+	const TArray<ULevel*>& GetStreamingLevels() const { return StreamingLevels; }
 
-	// ‚îÄ‚îÄ Ï†ÑÏ≤¥ Ïï°ÌÑ∞ Ï°∞Ìöå (Persistent + Streaming Ìï©ÏÇ∞) ‚îÄ‚îÄ
+	// ¶°¶° ¿¸√º æ◊≈Õ ¡∂»∏ (Persistent + Streaming «’ªÍ) ¶°¶°
 	TArray<AActor*> GetAllActors() const;
-	const TArray<AActor*>& GetActors() const;  // PersistentLevelÎßå
+	const TArray<AActor*>& GetActors() const;  // PersistentLevel∏∏
 
-	UScene* GetScene() const { return PersistentLevel; }
-	// Ïπ¥Î©îÎùº
-	//void SetActiveCameraComponent(UCameraComponent* InCamera);
-	//UCameraComponent* GetActiveCameraComponent() const;
-	//CCamera* GetCamera() const;
+	ULevel* GetLevel() const { return PersistentLevel; }
+	// ƒ´∏ﬁ∂Û
+	void SetActiveCameraComponent(UCameraComponent* InCamera);
+	UCameraComponent* GetActiveCameraComponent() const;
+	FCamera* GetCamera() const;
 
-
-	// ÎùºÏù¥ÌîÑÏÇ¨Ïù¥ÌÅ¥
+	// ∂Û¿Ã«¡ªÁ¿Ã≈¨
 	void InitializeWorld(float AspectRatio, ID3D11Device* Device = nullptr);
 	void BeginPlay();
 	void Tick(float InDeltaTime);
 	void CleanupWorld();
 	
-
-
-	ESceneType GetWorldType() const { return WorldType; }
-	void SetWorldType(ESceneType InType) { WorldType = InType; }
+	ELevelType GetWorldType() const { return WorldType; }
+	void SetWorldType(ELevelType InType) { WorldType = InType; }
 	float GetWorldTime() const { return WorldTime; }
 	float GetDeltaTime() const { return DeltaSeconds; }
 
 private:
-	UScene* PersistentLevel = nullptr;      
-	TArray<UScene*> StreamingLevels;
+	ULevel* PersistentLevel = nullptr;      
+	TArray<ULevel*> StreamingLevels;
 
 	bool bBegunPlay = false;
 	float WorldTime = 0.f;
 	float DeltaSeconds = 0.f;
-	ESceneType WorldType = ESceneType::Game;
-	//UCameraComponent* SceneCameraComponent = nullptr;    
-	//TObjectPtr<UCameraComponent> ActiveCameraComponent;
+	ELevelType WorldType = ELevelType::Game;
+	UCameraComponent* LevelCameraComponent = nullptr;    
+	TObjectPtr<UCameraComponent> ActiveCameraComponent;
 };
-#include "Scene/Scene.h"
+#include "World/Level.h"
 
 template <typename T>
 T* UWorld::SpawnActor(const FString& InName)

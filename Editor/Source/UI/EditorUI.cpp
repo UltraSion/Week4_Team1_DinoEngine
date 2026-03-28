@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 #include "Object/Object.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Actor/Actor.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/SceneComponent.h"
@@ -43,7 +43,7 @@ std::string GetFilePathUsingDialog(EFileDialogType Type)
 
 	OPENFILENAMEA Ofn = {};
 	Ofn.lStructSize = sizeof(OPENFILENAMEA);
-	Ofn.lpstrFilter = "Scene Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+	Ofn.lpstrFilter = "Level Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
 	Ofn.lpstrFile = FileName;
 	Ofn.nMaxFile = MAX_PATH;
 	Ofn.lpstrDefExt = "json";
@@ -69,7 +69,7 @@ std::string GetFilePathUsingDialog(EFileDialogType Type)
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
-void CEditorUI::Initialize(CCore* InCore)
+void FEditorUI::Initialize(FCore* InCore)
 {
 	Core = InCore;
 
@@ -164,7 +164,7 @@ void CEditorUI::Initialize(CCore* InCore)
 		};
 }
 
-void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
+void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
 {
 	if (!Core || !InRenderer)
 	{
@@ -277,7 +277,7 @@ void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
 
 	InRenderer->SetGUIUpdateCallback([this]() { Render(); });
 
-	InRenderer->SetPostRenderCallback([this](CRenderer* Renderer)
+	InRenderer->SetPostRenderCallback([this](FRenderer* Renderer)
 		{
 			if (!Core)
 			{
@@ -313,20 +313,20 @@ void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
 	LoadEditorSettings();
 }
 
-void CEditorUI::DetachFromRenderer(CRenderer* InRenderer)
+void FEditorUI::DetachFromRenderer(FRenderer* InRenderer)
 {
 	bViewportClientActive = false;
 	CurrentRenderer = nullptr;
-	Viewport.ReleaseSceneView();
+	Viewport.ReleaseLevelView();
 
 	if (InRenderer)
 	{
-		InRenderer->ClearSceneRenderTarget();
+		InRenderer->ClearLevelRenderTarget();
 		InRenderer->ClearViewportCallbacks();
 	}
 }
 
-void CEditorUI::SetupWindow(CWindow* InWindow)
+void FEditorUI::SetupWindow(FWindow* InWindow)
 {
 	MainWindow = InWindow;
 	if (bWindowSetup || MainWindow == nullptr)
@@ -383,7 +383,7 @@ void CEditorUI::SetupWindow(CWindow* InWindow)
 		});
 }
 
-void CEditorUI::BuildDefaultLayout(uint32 DockID)
+void FEditorUI::BuildDefaultLayout(uint32 DockID)
 {
 	ImGui::DockBuilderRemoveNode(DockID);
 	ImGui::DockBuilderAddNode(DockID, ImGuiDockNodeFlags_DockSpace);
@@ -415,7 +415,7 @@ void CEditorUI::BuildDefaultLayout(uint32 DockID)
 	ImGui::DockBuilderFinish(DockID);
 }
 
-void CEditorUI::LoadEditorSettings()
+void FEditorUI::LoadEditorSettings()
 {
 	std::wstring Path = GetEditorIniPathW();
 	wchar_t Buf[64];
@@ -431,7 +431,7 @@ void CEditorUI::LoadEditorSettings()
 
 	if (Core && Core->GetViewportClient())
 	{
-		auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
+		auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
 		VPC->SetGridSize(GridSize);
 		VPC->SetLineThickness(Thickness);
 		VPC->SetGridVisible(bShowGrid);
@@ -456,11 +456,11 @@ void CEditorUI::LoadEditorSettings()
 
 }
 
-void CEditorUI::SaveEditorSettings()
+void FEditorUI::SaveEditorSettings()
 {
 	std::wstring Path = GetEditorIniPathW();
 	if (!Core || !Core->GetViewportClient()) return;
-	auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
+	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
 
 	wchar_t Buf[64];
 	swprintf(Buf, 64, L"%.2f", VPC->GetGridSize());
@@ -479,13 +479,13 @@ void CEditorUI::SaveEditorSettings()
 
 }
 
-std::wstring CEditorUI::GetEditorIniPathW() const
+std::wstring FEditorUI::GetEditorIniPathW() const
 {
 	return (FPaths::ProjectRoot() / "editor.ini").wstring();
 }
 
 
-void CEditorUI::Render()
+void FEditorUI::Render()
 {
 	static bool bOpenAboutPopup = false;
 
@@ -553,43 +553,42 @@ void CEditorUI::Render()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("New Scene"))
+			if (ImGui::MenuItem("New Level"))
 			{
 				if (Core)
 				{
 					Core->SetSelectedActor(nullptr);
-
-					//if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
-					//{
-					//	Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
-					//	Cam->GetCamera()->SetRotation(0.f, 0.f);
-					//}
-					Core->GetScene()->ClearActors();
-					UE_LOG("New scene created");
+					if (UCameraComponent* Cam = Core->GetActiveWorld()->GetActiveCameraComponent())
+					{
+						Cam->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+						Cam->GetCamera()->SetRotation(0.f, 0.f);
+					}
+					Core->GetLevel()->ClearActors();
+					UE_LOG("New Level created");
 				}
 			}
 
-			if (ImGui::MenuItem("Open Scene"))
+			if (ImGui::MenuItem("Open Level"))
 			{
-				if (Core && Core->GetActiveScene())
+				if (Core && Core->GetActiveLevel())
 				{
 					FString Path = GetFilePathUsingDialog(EFileDialogType::Open);
 
 					if (!Path.empty())
 					{
 						Core->SetSelectedActor(nullptr);
-						Core->GetScene()->ClearActors();
+						Core->GetLevel()->ClearActors();
 
-						bool bLoaded = FSceneSerializer::Load(Core->GetScene(), Path, Core->GetRenderer()->GetDevice());
+						bool bLoaded = FSceneSerializer::Load(Core->GetLevel(), Path, Core->GetRenderer()->GetDevice());
 						if (bLoaded)
 						{
-							UE_LOG("Scene loaded: %s", Path.c_str());
+							UE_LOG("Level loaded: %s", Path.c_str());
 						}
 						else
 						{
 							MessageBoxW(
 								nullptr,
-								L"Scene 정보가 잘못되었습니다.",
+								L"Level 정보가 잘못되었습니다.",
 								L"Error",
 								MB_OK | MB_ICONWARNING
 							);
@@ -598,15 +597,15 @@ void CEditorUI::Render()
 				}
 			}
 
-			if (ImGui::MenuItem("Save Scene As..."))
+			if (ImGui::MenuItem("Save Level As..."))
 			{
-				if (Core && Core->GetActiveScene())
+				if (Core && Core->GetActiveLevel())
 				{
 					FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
 
 					if (!Path.empty())
 					{
-						FSceneSerializer::Save(Core->GetScene(),Path);
+						FSceneSerializer::Save(Core->GetLevel(),Path);
 					}
 				}
 			}
@@ -617,10 +616,10 @@ void CEditorUI::Render()
 		{
 			if (Core && Core->GetViewportClient())
 			{
-				auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
+				auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
 			
 
-				IViewportClient* ViewportCli = Core->GetViewportClient();
+				FViewportClient* ViewportCli = Core->GetViewportClient();
 				if (!ViewportCli) { ImGui::End(); return; }
 
 				FShowFlags& ShowFlags = ViewportCli->GetShowFlags();
@@ -761,12 +760,12 @@ void CEditorUI::Render()
 	ContentBrowser.Render();
 }
 
-bool CEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+bool FEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
 {
 	return Viewport.GetMousePositionInViewport(WindowMouseX, WindowMouseY, OutViewportX, OutViewportY, OutWidth, OutHeight);
 }
 
-void CEditorUI::SyncSelectedActorProperty()
+void FEditorUI::SyncSelectedActorProperty()
 {
 	if (!Core)
 	{
@@ -795,7 +794,7 @@ void CEditorUI::SyncSelectedActorProperty()
 	CachedSelectedActor = Selected;
 }
 
-bool CEditorUI::IsViewportInteractive() const
+bool FEditorUI::IsViewportInteractive() const
 {
 	return Viewport.IsVisible() && (Viewport.IsHovered() || Viewport.IsFocused());
 }

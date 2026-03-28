@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "Material.h"
 struct FMeshData;
 class FMaterial;
 
@@ -17,7 +17,8 @@ struct ENGINE_API FRenderCommand
 	FMatrix WorldMatrix;
 	FMaterial* Material = nullptr;
 	uint64 SortKey = 0;
-
+	uint32 FirstIndex = 0;
+	uint32 IndexCount = 0;
 	ERenderLayer RenderLayer = ERenderLayer::Default;
 	bool bDisableDepthTest = false;
 	bool bDisableDepthWrite = false;

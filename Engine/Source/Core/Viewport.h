@@ -26,8 +26,8 @@ private:
 	bool bFocused = false;
 	bool bVisible = false;
 
-	CInputManager* InputManager = nullptr;
-	CEnhancedInputManager* EnhancedInput = nullptr;
+	FInputManager* InputManager = nullptr;
+	FEnhancedInputManager* EnhancedInput = nullptr;
 	FInputMappingContext* CameraContext = nullptr; // 소멸자에서 정리
 
 	FInputAction MoveForwardAction{ "MoveForward", EInputActionValueType::Float };

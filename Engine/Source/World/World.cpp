@@ -1,6 +1,6 @@
 #include "World.h"
 #include "Object/Class.h"  
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Object/ObjectFactory.h"
 #include "Component/CameraComponent.h"
 #include "Camera/Camera.h"
@@ -16,30 +16,30 @@ UWorld::~UWorld()
 
 void UWorld::InitializeWorld(float AspectRatio, ID3D11Device* Device)
 {
-	PersistentLevel = FObjectFactory::ConstructObject<UScene>(this, "PersistentLevel");
+	PersistentLevel = FObjectFactory::ConstructObject<ULevel>(this, "PersistentLevel");
 	if (!PersistentLevel)
 	{
 		return;
 	}
 
-	PersistentLevel->SetSceneType(WorldType);
+	PersistentLevel->SetLevelType(WorldType);
 
-	//if (!SceneCameraComponent)
-	//{
-	//	SceneCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "SceneCamera");
-	//}
-	//if (!ActiveCameraComponent)
-	//{
-	//	ActiveCameraComponent = SceneCameraComponent;
-	//}
-	//if (SceneCameraComponent->GetCamera())
-	//{
-	//	SceneCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
-	//}
+	if (!LevelCameraComponent)
+	{
+		LevelCameraComponent = FObjectFactory::ConstructObject<UCameraComponent>(this, "LevelCamera");
+	}
+	if (!ActiveCameraComponent)
+	{
+		ActiveCameraComponent = LevelCameraComponent;
+	}
+	if (LevelCameraComponent->GetCamera())
+	{
+		LevelCameraComponent->GetCamera()->SetAspectRatio(AspectRatio);
+	}
 
 	if (Device)
 	{
-		FSceneSerializer::Load(PersistentLevel, (FPaths::SceneDir() / "DefaultScene.json").string(), Device);
+		FSceneSerializer::Load(PersistentLevel, (FPaths::LevelDir() / "DefaultLevel.json").string(), Device);
 	}
 }
 
@@ -51,7 +51,7 @@ void UWorld::BeginPlay()
 	{
 		PersistentLevel->BeginPlay();
 	}
-	for (UScene* Level : StreamingLevels)
+	for (ULevel* Level : StreamingLevels)
 	{
 		if (Level) Level->BeginPlay();
 	}
@@ -66,7 +66,7 @@ void UWorld::Tick(float InDeltaTime)
 	{
 		PersistentLevel->Tick(InDeltaTime);
 	}
-	for (UScene* Level : StreamingLevels)
+	for (ULevel* Level : StreamingLevels)
 	{
 		if (Level)
 		{
@@ -77,7 +77,7 @@ void UWorld::Tick(float InDeltaTime)
 
 void UWorld::CleanupWorld()
 {
-	for (UScene* Level : StreamingLevels)
+	for (ULevel* Level : StreamingLevels)
 	{
 		if (Level)
 		{
@@ -91,15 +91,15 @@ void UWorld::CleanupWorld()
 		PersistentLevel->MarkPendingKill();
 		PersistentLevel = nullptr;
 	}
-	//if (SceneCameraComponent)
-	//{
-	//	SceneCameraComponent->MarkPendingKill();
-	//}
-	//if (ActiveCameraComponent == SceneCameraComponent)
-	//{
-	//	ActiveCameraComponent = nullptr;
-	//}
-	//SceneCameraComponent = nullptr;
+	if (LevelCameraComponent)
+	{
+		LevelCameraComponent->MarkPendingKill();
+	}
+	if (ActiveCameraComponent == LevelCameraComponent)
+	{
+		ActiveCameraComponent = nullptr;
+	}
+	LevelCameraComponent = nullptr;
 	WorldTime = 0.f;
 	DeltaSeconds = 0.f;
 }
@@ -109,39 +109,39 @@ void UWorld::DestroyActor(AActor* InActor)
 	if (!InActor || !PersistentLevel) return;
 
 
-	//if (ActiveCameraComponent && ActiveCameraComponent != SceneCameraComponent)
-	//{
-	//	for (UActorComponent* Component : InActor->GetComponents())
-	//	{
-	//		if (Component == ActiveCameraComponent)
-	//		{
-	//			ActiveCameraComponent = SceneCameraComponent;
-	//			break;
-	//		}
-	//	}
-	//}
+	if (ActiveCameraComponent && ActiveCameraComponent != LevelCameraComponent)
+	{
+		for (UActorComponent* Component : InActor->GetComponents())
+		{
+			if (Component == ActiveCameraComponent)
+			{
+				ActiveCameraComponent = LevelCameraComponent;
+				break;
+			}
+		}
+	}
 
 	PersistentLevel->DestroyActor(InActor);
 }
 
-UScene* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device)
+ULevel* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device)
 {
-	// Ïù¥ÎØ∏ Î°úÎìúÎêêÎäîÏßÄ ÌôïÏù∏
-	if (UScene* Existing = FindStreamingLevel(LevelName))
+	// ¿ÃπÃ ∑ŒµÂµ∆¥¬¡ˆ »Æ¿Œ
+	if (ULevel* Existing = FindStreamingLevel(LevelName))
 	{
 		return Existing;
 	}
-	UScene* NewLevel = FObjectFactory::ConstructObject<UScene>(this, LevelName);
+	ULevel* NewLevel = FObjectFactory::ConstructObject<ULevel>(this, LevelName);
 	if (!NewLevel) return nullptr;
-	NewLevel->SetSceneType(WorldType);
+	NewLevel->SetLevelType(WorldType);
 
 	if (Device)
 	{
-		FSceneSerializer::Load(NewLevel, (FPaths::SceneDir() / (LevelName + ".json")).string(), Device);
+		FSceneSerializer::Load(NewLevel, (FPaths::LevelDir() / (LevelName + ".json")).string(), Device);
 	}
 	StreamingLevels.push_back(NewLevel);
 
-	// Ïù¥ÎØ∏ Í≤åÏûÑ ÏßÑÌñâ Ï§ëÏù¥Î©¥ BeginPlay Ìò∏Ï∂ú
+	// ¿ÃπÃ ∞‘¿” ¡¯«‡ ¡ﬂ¿Ã∏È BeginPlay »£√‚
 	if (bBegunPlay)
 	{
 		NewLevel->BeginPlay();
@@ -152,7 +152,7 @@ UScene* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Devic
 void UWorld::UnloadStreamingLevel(const FString& LevelName)
 {
 	auto It = std::find_if(StreamingLevels.begin(), StreamingLevels.end(),
-		[&](UScene* Level) { return Level->GetName() == LevelName; });
+		[&](ULevel* Level) { return Level->GetName() == LevelName; });
 	if (It != StreamingLevels.end())
 	{
 		(*It)->ClearActors();
@@ -161,9 +161,9 @@ void UWorld::UnloadStreamingLevel(const FString& LevelName)
 	}
 }
 
-UScene* UWorld::FindStreamingLevel(const FString& LevelName) const
+ULevel* UWorld::FindStreamingLevel(const FString& LevelName) const
 {
-	for (UScene* Level : StreamingLevels)
+	for (ULevel* Level : StreamingLevels)
 	{
 		if (Level && Level->GetName() == LevelName)
 		{
@@ -181,7 +181,7 @@ TArray<AActor*> UWorld::GetAllActors() const
 		const auto& PersistentActors = PersistentLevel->GetActors();
 		AllActors.insert(AllActors.end(), PersistentActors.begin(), PersistentActors.end());
 	}
-	for (UScene* Level : StreamingLevels)
+	for (ULevel* Level : StreamingLevels)
 	{
 		if (Level)
 		{
@@ -202,19 +202,19 @@ const TArray<AActor*>& UWorld::GetActors() const
 	return EmptyArray;
 }
 
-//void UWorld::SetActiveCameraComponent(UCameraComponent* InCamera)
-//{
-//	ActiveCameraComponent = InCamera ? InCamera : SceneCameraComponent;
-//}
-//
-//UCameraComponent* UWorld::GetActiveCameraComponent() const
-//{
-//	return ActiveCameraComponent ? ActiveCameraComponent.Get() : SceneCameraComponent;
-//}
-//
-//CCamera* UWorld::GetCamera() const
-//{
-//	UCameraComponent* Cam = GetActiveCameraComponent();
-//	return Cam ? Cam->GetCamera() : nullptr;
-//}
+void UWorld::SetActiveCameraComponent(UCameraComponent* InCamera)
+{
+	ActiveCameraComponent = InCamera ? InCamera : LevelCameraComponent;
+}
+
+UCameraComponent* UWorld::GetActiveCameraComponent() const
+{
+	return ActiveCameraComponent ? ActiveCameraComponent.Get() : LevelCameraComponent;
+}
+
+FCamera* UWorld::GetCamera() const
+{
+	UCameraComponent* Cam = GetActiveCameraComponent();
+	return Cam ? Cam->GetCamera() : nullptr;
+}
 

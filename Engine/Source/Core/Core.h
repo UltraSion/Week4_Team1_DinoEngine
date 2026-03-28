@@ -3,72 +3,70 @@
 #include "CoreMinimal.h"
 #include "Windows.h"
 #include "Core/FTimer.h"
-#include "Scene/SceneTypes.h"
+#include "World/LevelTypes.h"
 #include "Renderer/Renderer.h"
 #include "Physics/PhysicsManager.h"
-#include "Scene/SceneManager.h"
+#include "World/LevelManager.h"
 #include "World/WorldContext.h"
 #include <memory>
 #include "Debug/DebugDrawManager.h"
 
-class CEnhancedInputManager;
-class CInputManager;
+class FEnhancedInputManager;
+class FInputManager;
 
 class AActor;
-class UScene;
+class ULevel;
 class ObjectManager;
-class IViewportClient;
+class FViewportClient;
 
-class ENGINE_API CCore
+class ENGINE_API FCore
 {
 public:
-	CCore() = default;
-	~CCore();
+	FCore() = default;
+	~FCore();
 
-	CCore(const CCore&) = delete;
-	CCore(CCore&&) = delete;
-	CCore& operator=(const CCore&) = delete;
-	CCore& operator=(CCore&&) = delete;
+	FCore(const FCore&) = delete;
+	FCore(FCore&&) = delete;
+	FCore& operator=(const FCore&) = delete;
+	FCore& operator=(FCore&&) = delete;
 
-	bool Initialize(HWND Hwnd, int32 Width, int32 Height, ESceneType StartupSceneType = ESceneType::Game);
+	bool Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType = ELevelType::Game);
 	void Release();
 
 	void Tick();
 	void Tick(float DeltaTime);
 
 	void ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
-	CRenderer* GetRenderer() const { return Renderer.get(); }
+	FRenderer* GetRenderer() const { return Renderer.get(); }
 
-	IViewportClient* GetViewportClient() const { return MainViewportClient; }
-	CInputManager* GetInputManager() const { return InputManager; }
+	FViewportClient* GetViewportClient() const { return MainViewportClient; }
+	FInputManager* GetInputManager() const { return InputManager; }
 	const FTimer& GetTimer() const { return Timer; }
 
-	void SetMainViewportClient(IViewportClient* InViewportClient);
-	void AddViewportClient(IViewportClient* InViewportClient);
+	void SetViewportClient(FViewportClient* InViewportClient);
+	void AddViewportClient(FViewportClient* InViewportClient);
 
 	void OnResize(int32 Width, int32 Height);
-	CEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
+	FEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
 	float GetDeltaTime() const { return Timer.GetDeltaTime(); }
 
-	FSceneManager* GetSceneManager() const { return SceneManager.get(); }
+	FLevelManager* GetLevelManager() const { return LevelManager.get(); }
 
-	// Getter
-	UScene* GetScene() const { return SceneManager->GetActiveScene(); }
-	UScene* GetActiveScene() const { return SceneManager->GetActiveScene(); }
-	UScene* GetEditorScene() const { return SceneManager->GetEditorScene(); }
-	UScene* GetGameScene() const { return SceneManager->GetGameScene(); }
+	ULevel* GetLevel() const { return LevelManager->GetActiveLevel(); }
+	ULevel* GetActiveLevel() const { return LevelManager->GetActiveLevel(); }
+	ULevel* GetEditorLevel() const { return LevelManager->GetEditorLevel(); }
+	ULevel* GetGameLevel() const { return LevelManager->GetGameLevel(); }
 
-	void SetSelectedActor(AActor* A) { SceneManager->SetSelectedActor(A); }
-	AActor* GetSelectedActor() const { return SceneManager->GetSelectedActor(); }
-	void ActivateEditorScene() { SceneManager->ActivateEditorScene(); }
-	void ActivateGameScene() { SceneManager->ActivateGameScene(); }
-	bool ActivatePreviewScene(const FString& ContextName) { return SceneManager->ActivatePreviewScene(ContextName); }
+	void SetSelectedActor(AActor* A) { LevelManager->SetSelectedActor(A); }
+	AActor* GetSelectedActor() const { return LevelManager->GetSelectedActor(); }
+	void ActivateEditorLevel() { LevelManager->ActivateEditorLevel(); }
+	void ActivateGameLevel() { LevelManager->ActivateGameLevel(); }
+	bool ActivatePreviewLevel(const FString& ContextName) { return LevelManager->ActivatePreviewLevel(ContextName); }
 
-	// ===== World 접근자 =====
-	UWorld* GetActiveWorld() const { return SceneManager->GetActiveWorld(); }
-	UWorld* GetEditorWorld() const { return SceneManager->GetEditorWorld(); }
-	UWorld* GetGameWorld() const { return SceneManager->GetGameWorld(); }
-	const FWorldContext* GetActiveWorldContext() const { return SceneManager->GetActiveWorldContext(); }
+	UWorld* GetActiveWorld() const { return LevelManager->GetActiveWorld(); }
+	UWorld* GetEditorWorld() const { return LevelManager->GetEditorWorld(); }
+	UWorld* GetGameWorld() const { return LevelManager->GetGameWorld(); }
+	const FWorldContext* GetActiveWorldContext() const { return LevelManager->GetActiveWorldContext(); }
 
 private:
 	void Input(float DeltaTime);
@@ -81,16 +79,16 @@ private:
 
 private:
 	FDebugDrawManager DebugDrawManager;
-	std::unique_ptr<CRenderer> Renderer;
-	CInputManager* InputManager = nullptr;
-	CEnhancedInputManager* EnhancedInput = nullptr;
+	std::unique_ptr<FRenderer> Renderer;
+	FInputManager* InputManager = nullptr;
+	FEnhancedInputManager* EnhancedInput = nullptr;
 
 	ObjectManager* ObjManager = nullptr;
-	IViewportClient* MainViewportClient = nullptr;
-	TArray< IViewportClient*> ViewportClients;
-	std::unique_ptr<FSceneManager> SceneManager;
+	FViewportClient* MainViewportClient = nullptr;
+	TArray<FViewportClient*> ViewportClients;
+	std::unique_ptr<FLevelManager> LevelManager;
 
-	std::unique_ptr<CPhysicsManager> PhysicsManager;
+	std::unique_ptr<FPhysicsManager> PhysicsManager;
 
 	FTimer Timer;
 	double LastGCTime = 0.0;

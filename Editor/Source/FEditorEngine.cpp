@@ -5,34 +5,31 @@
 #include "UI/PreviewViewportClient.h"
 #include "Core/Core.h"
 #include "Core/ConsoleVariableManager.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Actor/Actor.h"
-
-#include "Component/CameraComponent.h"
-
 #include "Component/CubeComponent.h"
 #include "Object/ObjectFactory.h"
 #include "Debug/EngineLog.h"
 #include "World/World.h"
 #include "imgui_impl_win32.h"
-#include "Pawn/EditorCameraPawn.h"
-#include "Camera/Camera.h"
-#include "Actor/SkySphereActor.h"
+
 namespace
 {
-	constexpr const char* PreviewSceneContextName = "PreviewScene";
+	constexpr const char* PreviewLevelContextName = "PreviewLevel";
 
-	void InitializeDefaultPreviewScene(CCore* Core)
+	void InitializeDefaultPreviewLevel(FCore* Core)
 	{
 		if (Core == nullptr)
 		{
 			return;
 		}
-		FEditorWorldContext* PreviewContext = Core->GetSceneManager()->CreatePreviewWorldContext(PreviewSceneContextName, 1280, 720);
+
+		FEditorWorldContext* PreviewContext = Core->GetLevelManager()->CreatePreviewWorldContext(PreviewLevelContextName, 1280, 720);
 		if (PreviewContext == nullptr || PreviewContext->World == nullptr)
 		{
 			return;
 		}
+
 		UWorld* PreviewWorld = PreviewContext->World;
 		if (PreviewWorld->GetActors().empty())
 		{
@@ -44,13 +41,6 @@ namespace
 				PreviewActor->SetActorLocation({ 0.0f, 0.0f, 0.0f });
 			}
 		}
-
-		//if (UCameraComponent* PreviewCamera = PreviewWorld->GetActiveCameraComponent())
-		//{
-		//	PreviewCamera->GetCamera()->SetPosition({ -8.0f, -8.0f, 6.0f });
-		//	PreviewCamera->GetCamera()->SetRotation(45.0f, -20.0f);
-		//	PreviewCamera->SetFov(50.0f);
-		//}
 	}
 }
 
@@ -63,16 +53,14 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		return false;
 	}
 
+	ViewportClient->TopLeftX = 0;
+	ViewportClient->TopLeftY = 0;
+	ViewportClient->Width = 500;
+	ViewportClient->Height = 500;
+	ViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
+	Core->AddViewportClient(ViewportClient.get());
 
-	MainViewportClient->TopLeftX = 0;
-	MainViewportClient->TopLeftY = 0;
-	MainViewportClient->Width = 500;
-	MainViewportClient->Height = 500;
-	MainViewportClient->Initialize(Core->GetInputManager(), Core->GetEnhancedInputManager());
-	Core->AddViewportClient(MainViewportClient.get());
-	//AdditionalViewportClients.push_back(std::move(MainViewportClient));
-
-	std::unique_ptr<IViewportClient> Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	std::unique_ptr<FViewportClient> Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
 	Client->TopLeftX = 500;
 	Client->TopLeftY = 0;
 	Client->Width = 500;
@@ -81,7 +69,7 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 	Core->AddViewportClient(Client.get());
 	AdditionalViewportClients.push_back(std::move(Client));
 
-	Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
 	Client->TopLeftX = 0;
 	Client->TopLeftY = 500;
 	Client->Width = 500;
@@ -90,7 +78,7 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 	Core->AddViewportClient(Client.get());
 	AdditionalViewportClients.push_back(std::move(Client));
 
-	Client = std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	Client = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
 	Client->TopLeftX = 500;
 	Client->TopLeftY = 500;
 	Client->Width = 500;
@@ -104,18 +92,18 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 
 FEditorEngine::~FEditorEngine()
 {
-	//Shutdown();
 }
 
 void FEditorEngine::Shutdown()
 {
 	if (Core && Core->GetViewportClient() == PreviewViewportClient.get())
 	{
-		Core->SetMainViewportClient(nullptr);
+		Core->SetViewportClient(nullptr);
 	}
 
 	PreviewViewportClient.reset();
-	for (std::unique_ptr<IViewportClient>& Client : AdditionalViewportClients)
+
+	for (std::unique_ptr<FViewportClient>& Client : AdditionalViewportClients)
 	{
 		if (Client)
 		{
@@ -123,8 +111,6 @@ void FEditorEngine::Shutdown()
 		}
 	}
 	AdditionalViewportClients.clear();
-
-	//ViewportController.Cleanup();
 
 	FEngine::Shutdown();
 }
@@ -139,15 +125,10 @@ void FEditorEngine::PreInitialize()
 
 void FEditorEngine::PostInitialize()
 {
-	InitializeDefaultPreviewScene(Core.get());
-	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewSceneContextName, Core.get()->GetEditorWorld());
+	InitializeDefaultPreviewLevel(Core.get());
+	PreviewViewportClient = std::make_unique<FPreviewViewportClient>(EditorUI, MainWindow, PreviewLevelContextName);
 
 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
-
-	// TArray<FString> VariableNames; 삭제
-	// CVM.GetAllNames(VariableNames); 삭제
-
-	// 이렇게 람다로 바로 받아서 등록하도록 변경합니다.
 	CVM.GetAllNames([this](const FString& Name)
 	{
 		EditorUI.GetConsole().RegisterCommand(Name.c_str());
@@ -172,24 +153,28 @@ void FEditorEngine::PostInitialize()
 
 void FEditorEngine::Tick(float DeltaTime)
 {
-	MainViewportClient->Tick(DeltaTime);
-	for (std::unique_ptr<IViewportClient>& Client : AdditionalViewportClients)
+	if (ViewportClient)
+	{
+		ViewportClient->Tick(DeltaTime);
+	}
+
+	for (std::unique_ptr<FViewportClient>& Client : AdditionalViewportClients)
 	{
 		if (Client)
 		{
 			Client->Tick(DeltaTime);
 		}
 	}
-	//ViewportController.Tick(DeltaTime);
+
 	SyncViewportClient();
 }
 
-std::unique_ptr<IViewportClient> FEditorEngine::CreateViewportClient()
+std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 {
-	return std::make_unique<CEditorViewportClient>(EditorUI, MainWindow, SeletedActors, Core.get()->GetEditorWorld());
+	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors);
 }
 
-CEditorViewportController* FEditorEngine::GetViewportController()
+FEditorViewportController* FEditorEngine::GetViewportController()
 {
 	return &ViewportController;
 }
@@ -201,15 +186,15 @@ void FEditorEngine::SyncViewportClient()
 		return;
 	}
 
-	IViewportClient* TargetViewportClient = MainViewportClient.get();
-	const FWorldContext* ActiveSceneContext = Core->GetActiveWorldContext();
-	if (ActiveSceneContext && ActiveSceneContext->WorldType == ESceneType::Preview && PreviewViewportClient)
+	FViewportClient* TargetViewportClient = ViewportClient.get();
+	const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
+	if (ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview && PreviewViewportClient)
 	{
 		TargetViewportClient = PreviewViewportClient.get();
 	}
 
 	if (Core->GetViewportClient() != TargetViewportClient)
 	{
-		Core->SetMainViewportClient(TargetViewportClient);
+		Core->SetViewportClient(TargetViewportClient);
 	}
 }

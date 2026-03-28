@@ -7,15 +7,14 @@
 
 #include "imgui.h"
 
-CPreviewViewportClient::CPreviewViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, FString InPreviewContextName, UWorld* World) : IViewportClient(World)
-	, EditorUI(InEditorUI)
+FPreviewViewportClient::FPreviewViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, FString InPreviewContextName)
+	: EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
 	, PreviewContextName(std::move(InPreviewContextName))
 {
 }
 
-
-void CPreviewViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+void FPreviewViewportClient::Attach(FCore* Core, FRenderer* Renderer)
 {
 	if (!Core || !Renderer || !MainWindow)
 	{
@@ -27,12 +26,12 @@ void CPreviewViewportClient::Attach(CCore* Core, CRenderer* Renderer)
 	EditorUI.AttachToRenderer(Renderer);
 }
 
-void CPreviewViewportClient::Detach(CCore* Core, CRenderer* Renderer)
+void FPreviewViewportClient::Detach(FCore* Core, FRenderer* Renderer)
 {
 	EditorUI.DetachFromRenderer(Renderer);
 }
 
-void CPreviewViewportClient::Tick(CCore* Core, float DeltaTime)
+void FPreviewViewportClient::Tick(FCore* Core, float DeltaTime)
 {
 	if (!Core)
 	{
@@ -53,20 +52,20 @@ void CPreviewViewportClient::Tick(CCore* Core, float DeltaTime)
 		return;
 	}
 
-	IViewportClient::Tick(Core, DeltaTime);
+	FViewportClient::Tick(Core, DeltaTime);
 }
 
-UScene* CPreviewViewportClient::ResolveScene(CCore* Core) const
+ULevel* FPreviewViewportClient::ResolveLevel(FCore* Core) const
 {
 	if (!Core)
 	{
 		return nullptr;
 	}
 
-	if (UScene* PreviewScene = Core->GetSceneManager()->GetPreviewScene(PreviewContextName))
+	if (ULevel* PreviewLevel = Core->GetLevelManager()->GetPreviewLevel(PreviewContextName))
 	{
-		return PreviewScene;
+		return PreviewLevel;
 	}
 
-	return Core->GetActiveScene();
+	return Core->GetActiveLevel();
 }

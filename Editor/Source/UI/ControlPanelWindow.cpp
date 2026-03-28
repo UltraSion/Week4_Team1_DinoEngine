@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "Core/Core.h"
 #include "Renderer/Renderer.h"
-#include "Scene/Scene.h"
+#include "World/Level.h"
 #include "Actor/Actor.h"
 #include "Actor/AttachTestActor.h"
 #include "Actor/CubeActor.h"
@@ -20,25 +20,26 @@
 #include "Actor/SkySphereActor.h"
 #include "Controller/EditorViewportController.h"
 #include "Serializer/SceneSerializer.h"
+#include "Actor/StaticMeshActor.h"
 #include <filesystem>
 #include <random>
 #include <chrono>
 
 namespace
 {
-	const char* GetSceneTypeLabel(ESceneType SceneType)
+	const char* GetLevelTypeLabel(ELevelType LevelType)
 	{
-		switch (SceneType)
+		switch (LevelType)
 		{
-		case ESceneType::Game:
+		case ELevelType::Game:
 			return "Game";
-		case ESceneType::Editor:
+		case ELevelType::Editor:
 			return "Editor";
-		case ESceneType::PIE:
+		case ELevelType::PIE:
 			return "PIE";
-		case ESceneType::Preview:
+		case ELevelType::Preview:
 			return "Preview";
-		case ESceneType::Inactive:
+		case ELevelType::Inactive:
 			return "Inactive";
 		default:
 			return "Unknown";
@@ -46,7 +47,7 @@ namespace
 	}
 }
 
-void CControlPanelWindow::Render(CCore* Core)
+void FControlPanelWindow::Render(FCore* Core)
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 	const bool bOpen = ImGui::Begin("Control Panel");
@@ -58,50 +59,50 @@ void CControlPanelWindow::Render(CCore* Core)
 		return;
 	}
 
-	if (Core && Core->GetScene())
+	if (Core && Core->GetLevel())
 	{
 	
-		const FWorldContext* ActiveSceneContext = Core->GetActiveWorldContext();
-		const TArray<std::unique_ptr<FEditorWorldContext>>& PreviewSceneContexts = Core->GetSceneManager()->GetPreviewWorldContexts();
-		const bool bPreviewActive = ActiveSceneContext && ActiveSceneContext->WorldType == ESceneType::Preview;
+		const FWorldContext* ActiveWorldContext = Core->GetActiveWorldContext();
+		const TArray<std::unique_ptr<FEditorWorldContext>>& PreviewLevelContexts = Core->GetLevelManager()->GetPreviewWorldContexts();
+		const bool bPreviewActive = ActiveWorldContext && ActiveWorldContext->WorldType == ELevelType::Preview;
 
 		/*
-			PreviewScene 등 아마 확장의 여지를 둔 것으로 보이나 아무 기능도 없어 주석 처리함		
+			PreviewLevel 등 아마 확장의 여지를 둔 것으로 보이나 아무 기능도 없어 주석 처리함		
 		*/
 		/*
 		ImGui::SeparatorText("World");
 
-		if (ActiveSceneContext)
+		if (ActiveWorldContext)
 		{
-			ImGui::Text("Active: %s", ActiveSceneContext->ContextName.c_str());
-			ImGui::Text("Type: %s", GetSceneTypeLabel(ActiveSceneContext->WorldType));
+			ImGui::Text("Active: %s", ActiveWorldContext->ContextName.c_str());
+			ImGui::Text("Type: %s", GetLevelTypeLabel(ActiveWorldContext->WorldType));
 		}
 		*/
 
 		/*
-		if (ImGui::Button("Editor Scene"))
+		if (ImGui::Button("Editor Level"))
 		{
-			Core->ActivateEditorScene();
+			Core->ActivateEditorLevel();
 		}
 		*/
 
 		/*
 		ImGui::SameLine();
 
-		if (PreviewSceneContexts.empty())
+		if (PreviewLevelContexts.empty())
 		{
 			ImGui::BeginDisabled();
-			ImGui::Button("Preview Scene");
+			ImGui::Button("Preview Level");
 			ImGui::EndDisabled();
 		}
-		else if (ImGui::Button("Preview Scene"))
+		else if (ImGui::Button("Preview Level"))
 		{
-			Core->ActivatePreviewScene(PreviewSceneContexts.front()->ContextName);
+			Core->ActivatePreviewLevel(PreviewLevelContexts.front()->ContextName);
 		}
 
 		if (bPreviewActive)
 		{
-			ImGui::TextUnformatted("Preview scene is editor-only. Scene save/load is disabled.");
+			ImGui::TextUnformatted("Preview Level is editor-only. Level save/load is disabled.");
 		}
 		*/
 
@@ -111,7 +112,7 @@ void CControlPanelWindow::Render(CCore* Core)
 		/*
 		if (ImGui::Button("Spawn Test"))
 		{
-			UScene* Scene = Core->GetScene();
+			ULevel* Level = Core->GetLevel();
 			AActor* NewActor = nullptr;
 
 			for (int i = 0; i < 1000; i++)
@@ -124,13 +125,15 @@ void CControlPanelWindow::Render(CCore* Core)
 				std::uniform_real_distribution<float> dist(-10, 10);
 
 				FVector V{ 0, 0, 0 };
-				NewActor = Scene->SpawnActor<ACubeActor>("Test");
+				NewActor = Level->SpawnActor<ACubeActor>("Test");
 				NewActor->SetActorLocation(V);
 			}
 		}
 		*/
 		
-		/*if (CCamera* Camera = Core->GetScene()->GetCamera())
+		if (FCamera* Camera = Core->GetLevel()->GetCamera())
+		/*
+		if (FCamera* Camera = Core->GetLevel()->GetCamera())
 		{
 		
 			float Sensitivity = Camera->GetMouseSensitivity();
@@ -187,12 +190,14 @@ void CControlPanelWindow::Render(CCore* Core)
 					Camera->SetFOV(CameraFOV);
 				}
 			}
-		}*/
+		}
+		*/
 
 		ImGui::SeparatorText("Spawn");
 
 		static int32 SpawnTypeIndex = 0;
-		const char* SpawnTypes[] = { "Cube", "Sphere", "Plane", "AttachTest", "SubUV", "Text", "SkySphere" };
+		const char* SpawnTypes[] = { "Cube", "Sphere", "Plane", "AttachTest", "SubUV", "Text", "SkySphere", "StaticMesh" };
+
 
 		ImGui::Combo("Type", &SpawnTypeIndex, SpawnTypes, IM_ARRAYSIZE(SpawnTypes));
 
@@ -206,34 +211,34 @@ void CControlPanelWindow::Render(CCore* Core)
 
 		if (ImGui::Button("Spawn"))
 		{
-			UScene* Scene = Core->GetScene();
+			ULevel* Level = Core->GetLevel();
 			static int32 SpawnCount = 0;
 			const FString Name = FString(SpawnTypes[SpawnTypeIndex]) + "_Spawned_" + std::to_string(SpawnCount++);
 
 			AActor* NewActor = nullptr;
 			if (SpawnTypeIndex == 0)
 			{
-				NewActor = Scene->SpawnActor<ACubeActor>(Name);
+				NewActor = Level->SpawnActor<ACubeActor>(Name);
 			}
 			else if (SpawnTypeIndex == 1)
 			{
-				NewActor = Scene->SpawnActor<ASphereActor>(Name);
+				NewActor = Level->SpawnActor<ASphereActor>(Name);
 			}
 			else if (SpawnTypeIndex == 2)
 			{
-				NewActor = Scene->SpawnActor<APlaneActor>(Name);
+				NewActor = Level->SpawnActor<APlaneActor>(Name);
 			}
 			else if (SpawnTypeIndex == 3)
 			{
-				NewActor = Scene->SpawnActor<AAttachTestActor>(Name);
+				NewActor = Level->SpawnActor<AAttachTestActor>(Name);
 			}
 			else if (SpawnTypeIndex == 4)
 			{
-				NewActor = Scene->SpawnActor<ASubUVActor>(Name);
+				NewActor = Level->SpawnActor<ASubUVActor>(Name);
 			}
 			else if (SpawnTypeIndex == 5)
 			{
-				NewActor = Scene->SpawnActor<ATextActor>(Name);
+				NewActor = Level->SpawnActor<ATextActor>(Name);
 
 				if (NewActor)
 				{
@@ -253,9 +258,12 @@ void CControlPanelWindow::Render(CCore* Core)
 			}
 			else if (SpawnTypeIndex == 6)
 			{
-				NewActor = Scene->SpawnActor<ASkySphereActor>(Name);
+				NewActor = Level->SpawnActor<ASkySphereActor>(Name);
 			}
-
+			else if (SpawnTypeIndex == 7)
+			{
+				NewActor = Level->SpawnActor<AStaticMeshActor>(Name);
+			}
 			if (NewActor && !NewActor->IsA<ASkySphereActor>())
 			{
 				Core->SetSelectedActor(NewActor);
@@ -273,7 +281,7 @@ void CControlPanelWindow::Render(CCore* Core)
 		if (ImGui::Button("Delete"))
 		{
 			const FString Name = SelectedActor->GetName();
-			Core->GetScene()->DestroyActor(SelectedActor);
+			Core->GetLevel()->DestroyActor(SelectedActor);
 			Core->SetSelectedActor(nullptr);
 			UE_LOG("Deleted actor: %s", Name.c_str());
 		}

@@ -2,22 +2,22 @@
 #include <d3d11.h>
 #include <CoreMinimal.h>
 
-class CCore;
-class CRenderer;
+class FCore;
+class FRenderer;
 
-class CViewportLegacy
+class FViewport
 {
 public:
-	~CViewportLegacy();
+	~FViewport();
 
-	void Render(CCore* Core, CRenderer* Renderer, HWND Hwnd);
-	void ReleaseSceneView();
+	void Render(FCore* Core, FRenderer* Renderer, HWND Hwnd);
+	void ReleaseLevelView();
 	bool GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
 	bool IsHovered() const { return bHovered; }
 	bool IsFocused() const { return bFocused; }
 	bool IsVisible() const { return bVisible; }
 
-	void ReadySceneView(ID3D11Device* Device, uint32 Width, uint32 Height);
+	void ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height);
 
 private:
 	ID3D11Texture2D* RenderTargetTexture = nullptr;
@@ -34,4 +34,3 @@ private:
 	bool bFocused = false;
 	bool bVisible = false;
 };
-

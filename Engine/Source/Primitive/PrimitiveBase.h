@@ -15,6 +15,13 @@ enum class EMeshTopology
 	EMT_TriangleStrip = 5, // = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP
 };
 
+// Section: IndexBuffer 내 범위 + MaterialIndex
+struct ENGINE_API FMeshSection
+{
+	uint32 FirstIndex = 0;
+	uint32 IndexCount = 0;
+	uint32 MaterialIndex = 0;
+};
 struct ENGINE_API FMeshData
 {
 	FMeshData() : SortId(NextSortId++) {}
@@ -34,8 +41,8 @@ struct ENGINE_API FMeshData
 	// CPU 데이터
 	TArray<FPrimitiveVertex> Vertices;
 	TArray<uint32> Indices;
-	TArray<FVector2> UVs;
-
+	//TArray<FVector2> UVs;
+	TArray<FMeshSection> Sections;
 	// GPU 버퍼
 	ID3D11Buffer* VertexBuffer = nullptr;
 	ID3D11Buffer* IndexBuffer = nullptr;
@@ -43,6 +50,7 @@ struct ENGINE_API FMeshData
 	/** AABB Box Extent 및 Local Bound Radius 갱신 */
 	void UpdateLocalBound();
 	float GetLocalBoundRadius() const { return LocalBoundRadius; }
+
 
 	FVector GetMinCoord() const { return MinCoord; }
 	FVector GetMaxCoord() const { return MaxCoord; }

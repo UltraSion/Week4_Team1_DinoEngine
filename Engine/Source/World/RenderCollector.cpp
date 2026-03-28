@@ -9,18 +9,19 @@
 #include "Renderer/TextMeshBuilder.h"
 #include "Renderer/SubUVRenderer.h"
 #include "Renderer/Material.h"
-
-void FSceneRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+#include "Component/StaticMeshComponent.h"
+#include "Mesh/Mesh.h"
+void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
 	const FShowFlags& ShowFlags, FRenderCommandQueue& OutQueue)
 {
 	TArray<UPrimitiveComponent*> VisiblePrimitives;
 	FrustrumCull(Actors, Frustum, ShowFlags, VisiblePrimitives);
 
-	CRenderer* Renderer = GEngine->GetCore()->GetRenderer();
+	FRenderer* Renderer = GEngine->GetCore()->GetRenderer();
 	if (!Renderer) return;
 
-	CTextMeshBuilder& TextRenderer = Renderer->GetTextRenderer();
-	CSubUVRenderer& SubUVRenderer = Renderer->GetSubUVRenderer();
+	FTextMeshBuilder& TextRenderer = Renderer->GetTextRenderer();
+	FSubUVRenderer& SubUVRenderer = Renderer->GetSubUVRenderer();
 
 	for (UPrimitiveComponent* PrimitiveComponent : VisiblePrimitives)
 	{
@@ -112,7 +113,27 @@ void FSceneRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 			}
 			continue;
 		}
+		if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
+		{
+			UMeshComponent* MeshComp = static_cast<UMeshComponent*>(PrimitiveComponent);
+			std::shared_ptr<FMesh> MeshAsset = MeshComp->GetMesh();
+			if (!MeshAsset || !MeshAsset->GetMeshData()) continue;
 
+			FMeshData* Data = MeshAsset->GetMeshData();
+			const TArray<FMeshSection>& Sections = MeshAsset->GetSections();
+
+			for (const FMeshSection& Section : Sections)
+			{
+				FRenderCommand Command;
+				Command.MeshData = Data;
+				Command.FirstIndex = Section.FirstIndex;
+				Command.IndexCount = Section.IndexCount;
+				Command.Material = MeshComp->GetMaterial(Section.MaterialIndex);
+				Command.WorldMatrix = MeshComp->GetWorldTransform();
+				OutQueue.AddCommand(Command);
+			}
+			continue;
+		}
 		// ─── 일반 프리미티브 ───
 		if (!PrimitiveComponent->GetPrimitive() || !PrimitiveComponent->GetPrimitive()->GetMeshData())
 		{
@@ -127,7 +148,7 @@ void FSceneRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 	}
 }
 
-void FSceneRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FFrustum& Frustum,
+void FLevelRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FFrustum& Frustum,
 	const FShowFlags& ShowFlags, TArray<UPrimitiveComponent*>& OutVisible)
 {
 	for (AActor* Actor : Actors)
@@ -144,7 +165,7 @@ void FSceneRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FF
 			const bool bIsUUID = PrimitiveComponent->IsA(UUUIDBillboardComponent::StaticClass());
 			const bool bIsSubUV = PrimitiveComponent->IsA(USubUVComponent::StaticClass());
 			const bool bIsText = PrimitiveComponent->IsA(UTextComponent::StaticClass());
-
+			const bool bIsMeshComp = PrimitiveComponent->IsA(UMeshComponent::StaticClass());
 			if (bIsUUID)
 			{
 				if (!ShowFlags.HasFlag(EEngineShowFlags::SF_UUID)) continue;
@@ -163,13 +184,26 @@ void FSceneRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FF
 					continue;
 				}
 			}
+			else if (bIsMeshComp)
+			{
+				if (!ShowFlags.HasFlag(EEngineShowFlags::SF_Primitives)) continue;
+				UMeshComponent* MC = static_cast<UMeshComponent*>(PrimitiveComponent);
+				if (!MC->GetMesh() || !MC->GetMesh()->GetMeshData()) continue;
+			}
 			else
 			{
 				if (!ShowFlags.HasFlag(EEngineShowFlags::SF_Primitives)) continue;
 				if (!PrimitiveComponent->GetPrimitive() || !PrimitiveComponent->GetPrimitive()->GetMeshData()) continue;
 			}
 
-			if (Frustum.IsVisible(PrimitiveComponent->GetWorldBounds()))
+			if (bIsMeshComp)
+			{
+				UMeshComponent* MC = static_cast<UMeshComponent*>(PrimitiveComponent);
+				FBoxSphereBounds Bounds = MC->GetWorldBounds();
+				if (Frustum.IsVisible(Bounds))
+					OutVisible.push_back(PrimitiveComponent);
+			}
+			else if (Frustum.IsVisible(PrimitiveComponent->GetWorldBounds()))
 			{
 				OutVisible.push_back(PrimitiveComponent);
 			}

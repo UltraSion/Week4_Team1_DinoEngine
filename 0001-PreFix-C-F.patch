@@ -1,0 +1,3798 @@
+From 47336e00096c16d818230a42d60ee2be4f9ac05d Mon Sep 17 00:00:00 2001
+From: HanYoungSeo <108516412+persona6whenrelease@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 23:02:02 +0900
+Subject: [PATCH 1/2] PreFix C -> F
+
+---
+ Editor/Source/Axis/AxisRenderer.cpp           |  4 +-
+ Editor/Source/Axis/AxisRenderer.h             |  2 +-
+ .../Controller/EditorViewportController.cpp   | 24 +++---
+ .../Controller/EditorViewportController.h     | 14 ++--
+ Editor/Source/FEditorEngine.cpp               |  8 +-
+ Editor/Source/FEditorEngine.h                 |  8 +-
+ Editor/Source/Gizmo/Gizmo.cpp                 | 78 +++++++++----------
+ Editor/Source/Gizmo/Gizmo.h                   | 32 ++++----
+ Editor/Source/Picking/Picker.cpp              |  8 +-
+ Editor/Source/Picking/Picker.h                |  6 +-
+ Editor/Source/UI/ConsoleWindow.cpp            | 28 +++----
+ Editor/Source/UI/ConsoleWindow.h              |  6 +-
+ Editor/Source/UI/ContentBrowserWindow.cpp     | 12 +--
+ Editor/Source/UI/ContentBrowserWindow.h       |  4 +-
+ Editor/Source/UI/ControlPanelWindow.cpp       |  4 +-
+ Editor/Source/UI/ControlPanelWindow.h         |  6 +-
+ Editor/Source/UI/EditorUI.cpp                 | 32 ++++----
+ Editor/Source/UI/EditorUI.h                   | 42 +++++-----
+ Editor/Source/UI/EditorViewportClient.cpp     | 28 +++----
+ Editor/Source/UI/EditorViewportClient.h       | 28 +++----
+ Editor/Source/UI/OutlinerWindow.cpp           |  2 +-
+ Editor/Source/UI/OutlinerWindow.h             |  6 +-
+ Editor/Source/UI/PreviewViewportClient.cpp    | 10 +--
+ Editor/Source/UI/PreviewViewportClient.h      | 20 ++---
+ Editor/Source/UI/PropertyWindow.cpp           |  6 +-
+ Editor/Source/UI/PropertyWindow.h             |  6 +-
+ Editor/Source/UI/StatWindow.cpp               |  4 +-
+ Editor/Source/UI/StatWindow.h                 |  2 +-
+ Editor/Source/UI/Viewport.cpp                 | 14 ++--
+ Editor/Source/UI/Viewport.h                   | 10 +--
+ Engine/Source/Camera/Camera.cpp               | 44 +++++------
+ Engine/Source/Camera/Camera.h                 |  4 +-
+ Engine/Source/Component/CameraComponent.cpp   |  4 +-
+ Engine/Source/Component/CameraComponent.h     |  6 +-
+ Engine/Source/Component/ObjComponent.cpp      |  2 +-
+ Engine/Source/Core/Core.cpp                   | 36 ++++-----
+ Engine/Source/Core/Core.h                     | 32 ++++----
+ Engine/Source/Core/FEngine.cpp                |  6 +-
+ Engine/Source/Core/FEngine.h                  | 14 ++--
+ Engine/Source/Core/ViewportClient.cpp         | 24 +++---
+ Engine/Source/Core/ViewportClient.h           | 24 +++---
+ Engine/Source/Debug/DebugDrawManager.cpp      |  4 +-
+ Engine/Source/Debug/DebugDrawManager.h        |  6 +-
+ Engine/Source/Input/EnhancedInputManager.cpp  | 14 ++--
+ Engine/Source/Input/EnhancedInputManager.h    |  8 +-
+ Engine/Source/Input/InputManager.cpp          | 16 ++--
+ Engine/Source/Input/InputManager.h            | 14 ++--
+ Engine/Source/Physics/PhysicsManager.cpp      |  2 +-
+ Engine/Source/Physics/PhysicsManager.h        |  2 +-
+ Engine/Source/Platform/Windows/Window.cpp     | 20 ++---
+ Engine/Source/Platform/Windows/Window.h       |  6 +-
+ .../Platform/Windows/WindowApplication.cpp    | 36 ++++-----
+ .../Platform/Windows/WindowApplication.h      | 24 +++---
+ Engine/Source/Primitive/PrimitiveObj.cpp      |  6 +-
+ Engine/Source/Primitive/PrimitiveObj.h        |  6 +-
+ Engine/Source/Renderer/MaterialManager.cpp    |  4 +-
+ Engine/Source/Renderer/MaterialManager.h      |  6 +-
+ Engine/Source/Renderer/RenderStateManager.cpp | 16 ++--
+ Engine/Source/Renderer/RenderStateManager.h   |  4 +-
+ Engine/Source/Renderer/Renderer.cpp           | 66 ++++++++--------
+ Engine/Source/Renderer/Renderer.h             | 22 +++---
+ Engine/Source/Renderer/SubUVRenderer.cpp      | 10 +--
+ Engine/Source/Renderer/SubUVRenderer.h        | 10 +--
+ Engine/Source/Renderer/TextMeshBuilder.cpp    | 12 +--
+ Engine/Source/Renderer/TextMeshBuilder.h      | 14 ++--
+ Engine/Source/Serializer/SceneSerializer.cpp  |  4 +-
+ Engine/Source/World/Level.cpp                 |  2 +-
+ Engine/Source/World/Level.h                   |  4 +-
+ Engine/Source/World/LevelManager.cpp          |  2 +-
+ Engine/Source/World/LevelManager.h            |  6 +-
+ Engine/Source/World/RenderCollector.cpp       |  6 +-
+ Engine/Source/World/World.cpp                 |  2 +-
+ Engine/Source/World/World.h                   |  4 +-
+ 73 files changed, 504 insertions(+), 504 deletions(-)
+
+diff --git a/Editor/Source/Axis/AxisRenderer.cpp b/Editor/Source/Axis/AxisRenderer.cpp
+index a9d751b..d61afe8 100644
+--- a/Editor/Source/Axis/AxisRenderer.cpp
++++ b/Editor/Source/Axis/AxisRenderer.cpp
+@@ -1,11 +1,11 @@
+ #include "AxisRenderer.h"
+ 
+-void CAxisRenderer::RenderWorldAxis(/* TODO */)
++void FAxisRenderer::RenderWorldAxis(/* TODO */)
+ {
+     // TODO: 원점 기준 X(빨강), Y(초록), Z(파랑) 축 라인 렌더링
+ }
+ 
+-void CAxisRenderer::RenderLocalAxis(const FVector& Position, const FMatrix& RotationMatrix)
++void FAxisRenderer::RenderLocalAxis(const FVector& Position, const FMatrix& RotationMatrix)
+ {
+     // TODO: 선택된 오브젝트 위치 기준 로컬 축 렌더링
+ }
+diff --git a/Editor/Source/Axis/AxisRenderer.h b/Editor/Source/Axis/AxisRenderer.h
+index a0cd3ca..4164ffc 100644
+--- a/Editor/Source/Axis/AxisRenderer.h
++++ b/Editor/Source/Axis/AxisRenderer.h
+@@ -3,7 +3,7 @@
+ #include "Math/Vector.h"
+ #include "Math/Matrix.h"
+ 
+-class CAxisRenderer
++class FAxisRenderer
+ {
+ public:
+     // World 좌표계 축 (항상 표시)
+diff --git a/Editor/Source/Controller/EditorViewportController.cpp b/Editor/Source/Controller/EditorViewportController.cpp
+index 7ff1f16..5a42722 100644
+--- a/Editor/Source/Controller/EditorViewportController.cpp
++++ b/Editor/Source/Controller/EditorViewportController.cpp
+@@ -6,12 +6,12 @@
+ #include "Input/InputModifier.h"
+ #include "Input/InputMappingContext.h"
+ #include "Camera/Camera.h"
+-CEditorViewportController::~CEditorViewportController()
++FEditorViewportController::~FEditorViewportController()
+ {
+ 	Cleanup();
+ }
+ 
+-void CEditorViewportController::Cleanup()
++void FEditorViewportController::Cleanup()
+ {
+ 	if (EnhancedInput && CameraContext)
+ 		EnhancedInput->RemoveMappingContext(CameraContext);
+@@ -20,7 +20,7 @@ void CEditorViewportController::Cleanup()
+ 	EnhancedInput = nullptr;
+ }
+ 
+-void CEditorViewportController::Initialize(UCameraComponent* InCameraComp, CInputManager* InInput, CEnhancedInputManager* InEnhancedInput)
++void FEditorViewportController::Initialize(UCameraComponent* InCameraComp, FInputManager* InInput, FEnhancedInputManager* InEnhancedInput)
+ {
+ 	CameraComponent = InCameraComp;
+ 	InputManager = InInput;
+@@ -28,13 +28,13 @@ void CEditorViewportController::Initialize(UCameraComponent* InCameraComp, CInpu
+ 	SetupInputBindings();
+ }
+ 
+-void CEditorViewportController::Tick(float DeltaTime)
++void FEditorViewportController::Tick(float DeltaTime)
+ {
+ 	CurrentDeltaTime = DeltaTime;
+ }
+ 
+ 
+-void CEditorViewportController::SetupInputBindings()
++void FEditorViewportController::SetupInputBindings()
+ {
+ 	CameraContext = new FInputMappingContext();
+ 
+@@ -69,43 +69,43 @@ void CEditorViewportController::SetupInputBindings()
+ 
+ 	EnhancedInput->BindAction(&MoveForwardAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-		if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 			CameraComponent->MoveForward(Value.Get() * CurrentDeltaTime);
+ 	});
+ 
+ 	EnhancedInput->BindAction(&MoveRightAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-		if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 			CameraComponent->MoveRight(Value.Get() * CurrentDeltaTime);
+ 	});
+ 
+ 	EnhancedInput->BindAction(&MoveUpAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-		if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 			CameraComponent->MoveUp(Value.Get() * CurrentDeltaTime);
+ 	});
+ 
+ 	EnhancedInput->BindAction(&LookXAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-		if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 			CameraComponent->Rotate(Value.Get() * CameraComponent->GetCamera()->GetMouseSensitivity(), 0.0f);
+ 	});
+ 
+ 	EnhancedInput->BindAction(&LookYAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-		if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 			CameraComponent->Rotate(0.0f, -Value.Get() * CameraComponent->GetCamera()->GetMouseSensitivity());
+ 	});
+ 
+ 	EnhancedInput->BindAction(&LookXAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_MIDDLE))
++			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
+ 				CameraComponent->PanRight(-Value.Get() * CurrentDeltaTime);
+ 	});
+ 
+ 	EnhancedInput->BindAction(&LookYAction, ETriggerEvent::Triggered,
+ 		[this](const FInputActionValue& Value) {
+-			if (InputManager && InputManager->IsMouseButtonDown(CInputManager::MOUSE_MIDDLE))
++			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
+ 				CameraComponent->PanUp(Value.Get() * CurrentDeltaTime);
+ 	});
+ }
+diff --git a/Editor/Source/Controller/EditorViewportController.h b/Editor/Source/Controller/EditorViewportController.h
+index b1d8b19..b958e3d 100644
+--- a/Editor/Source/Controller/EditorViewportController.h
++++ b/Editor/Source/Controller/EditorViewportController.h
+@@ -3,18 +3,18 @@
+ #include "Input/InputAction.h"
+ 
+ class UCameraComponent;
+-class CInputManager;
+-class CEnhancedInputManager;
++class FInputManager;
++class FEnhancedInputManager;
+ struct FInputMappingContext;
+ 
+ 
+-class CEditorViewportController
++class FEditorViewportController
+ {
+ public:
+-	~CEditorViewportController();
++	~FEditorViewportController();
+ 
+ 	// ← EnhancedInput 포인터 추가
+-	void Initialize(UCameraComponent* InCameraComp, CInputManager* InInput, CEnhancedInputManager* InEnhancedInput);
++	void Initialize(UCameraComponent* InCameraComp, FInputManager* InInput, FEnhancedInputManager* InEnhancedInput);
+ 	void Cleanup();
+ 
+ 	void Tick(float DeltaTime);
+@@ -25,8 +25,8 @@ private:
+ 	void SetupInputBindings(); // 기존 ProcessCameraInput 대체
+ 
+ 	UCameraComponent* CameraComponent = nullptr;
+-	CInputManager* InputManager = nullptr;
+-	CEnhancedInputManager* EnhancedInput = nullptr;
++	FInputManager* InputManager = nullptr;
++	FEnhancedInputManager* EnhancedInput = nullptr;
+ 
+ 	FInputMappingContext* CameraContext = nullptr; // 소멸자에서 정리
+ 
+diff --git a/Editor/Source/FEditorEngine.cpp b/Editor/Source/FEditorEngine.cpp
+index 4c76392..6ee4a53 100644
+--- a/Editor/Source/FEditorEngine.cpp
++++ b/Editor/Source/FEditorEngine.cpp
+@@ -22,7 +22,7 @@ namespace
+ {
+ 	constexpr const char* PreviewLevelContextName = "PreviewLevel";
+ 
+-	void InitializeDefaultPreviewLevel(CCore* Core)
++	void InitializeDefaultPreviewLevel(FCore* Core)
+ 	{
+ 		if (Core == nullptr)
+ 		{
+@@ -104,7 +104,7 @@ void FEditorEngine::PreInitialize()
+ void FEditorEngine::PostInitialize()
+ {
+ 	InitializeDefaultPreviewLevel(Core.get());
+-	PreviewViewportClient = std::make_unique<CPreviewViewportClient>(EditorUI, MainWindow, PreviewLevelContextName);
++	PreviewViewportClient = std::make_unique<FPreviewViewportClient>(EditorUI, MainWindow, PreviewLevelContextName);
+ 
+ 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
+ 
+@@ -163,10 +163,10 @@ void FEditorEngine::Tick(float DeltaTime)
+ 
+ std::unique_ptr<IViewportClient> FEditorEngine::CreateViewportClient()
+ {
+-	return std::make_unique<CEditorViewportClient>(EditorUI, MainWindow);
++	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow);
+ }
+ 
+-CEditorViewportController* FEditorEngine::GetViewportController()
++FEditorViewportController* FEditorEngine::GetViewportController()
+ {
+ 	return &ViewportController;
+ }
+diff --git a/Editor/Source/FEditorEngine.h b/Editor/Source/FEditorEngine.h
+index ea261c8..0b77cae 100644
+--- a/Editor/Source/FEditorEngine.h
++++ b/Editor/Source/FEditorEngine.h
+@@ -23,12 +23,12 @@ protected:
+ 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
+ 	std::unique_ptr<IViewportClient> CreateViewportClient() override;
+ 
+-	CEditorViewportController* GetViewportController();
++	FEditorViewportController* GetViewportController();
+ private:
+ 	void SyncViewportClient();
+ 
+-	CEditorUI EditorUI;
+-	std::unique_ptr<CPreviewViewportClient> PreviewViewportClient;
++	FEditorUI EditorUI;
++	std::unique_ptr<FPreviewViewportClient> PreviewViewportClient;
+ 	AEditorCameraPawn* EditorPawn = nullptr;
+-	CEditorViewportController ViewportController;
++	FEditorViewportController ViewportController;
+ };
+diff --git a/Editor/Source/Gizmo/Gizmo.cpp b/Editor/Source/Gizmo/Gizmo.cpp
+index 57f4837..30c932d 100644
+--- a/Editor/Source/Gizmo/Gizmo.cpp
++++ b/Editor/Source/Gizmo/Gizmo.cpp
+@@ -51,21 +51,21 @@ namespace
+ 	}
+ }
+ 
+-CGizmo::CGizmo()
++FGizmo::FGizmo()
+ {
+ 	// TODO: 매직 넘버 제거
+ 	const FString GizmoMaterialName = "M_Gizmos";
+ 	Material = FMaterialManager::Get().FindByName(GizmoMaterialName);
+ }
+ 
+-void CGizmo::SetMode(EGizmoMode InMode)
++void FGizmo::SetMode(EGizmoMode InMode)
+ {
+ 	Mode = InMode;
+ 	ClearHover();
+ 	EndDrag();
+ }
+ 
+-void CGizmo::SetCoordinateSpace(EGizmoCoordinateSpace InSpace)
++void FGizmo::SetCoordinateSpace(EGizmoCoordinateSpace InSpace)
+ {
+ 	if (CoordinateSpace == InSpace)
+ 	{
+@@ -77,7 +77,7 @@ void CGizmo::SetCoordinateSpace(EGizmoCoordinateSpace InSpace)
+ 	EndDrag();
+ }
+ 
+-void CGizmo::ToggleCoordinateSpace()
++void FGizmo::ToggleCoordinateSpace()
+ {
+ 	SetCoordinateSpace(
+ 		CoordinateSpace == EGizmoCoordinateSpace::World
+@@ -85,7 +85,7 @@ void CGizmo::ToggleCoordinateSpace()
+ 		: EGizmoCoordinateSpace::World);
+ }
+ 
+-void CGizmo::CycleMode()
++void FGizmo::CycleMode()
+ {
+ 	switch (Mode)
+ 	{
+@@ -105,7 +105,7 @@ void CGizmo::CycleMode()
+ 	EndDrag();
+ }
+ 
+-void CGizmo::BuildRenderCommands(AActor* SelectedActor, const CCamera* Camera, FRenderCommandQueue& OutQueue) const
++void FGizmo::BuildRenderCommands(AActor* SelectedActor, const FCamera* Camera, FRenderCommandQueue& OutQueue) const
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Camera)
+ 	{
+@@ -348,7 +348,7 @@ void CGizmo::BuildRenderCommands(AActor* SelectedActor, const CCamera* Camera, F
+ 	}
+ }
+ 
+-bool CGizmo::BeginDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::BeginDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy())
+ 	{
+@@ -364,7 +364,7 @@ bool CGizmo::BeginDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Pick
+ 	return BeginAxisDrag(Axis, SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ }
+ 
+-bool CGizmo::UpdateDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::UpdateDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (ActiveAxis == EGizmoAxis::None || !SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+@@ -483,7 +483,7 @@ bool CGizmo::UpdateDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Pic
+ 	return false;
+ }
+ 
+-void CGizmo::UpdateHover(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++void FGizmo::UpdateHover(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (IsDragging())
+ 	{
+@@ -499,12 +499,12 @@ void CGizmo::UpdateHover(AActor* SelectedActor, ULevel* Level, const CPicker& Pi
+ 	HoveredAxis = HitTestAxis(SelectedActor, Level, Picker, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ }
+ 
+-void CGizmo::ClearHover()
++void FGizmo::ClearHover()
+ {
+ 	HoveredAxis = EGizmoAxis::None;
+ }
+ 
+-void CGizmo::EndDrag()
++void FGizmo::EndDrag()
+ {
+ 	ActiveAxis = EGizmoAxis::None;
+ 	CurrentRotationDeltaDegrees = 0.0f;
+@@ -520,7 +520,7 @@ void CGizmo::EndDrag()
+ 	DragStartScreenY = 0;
+ }
+ 
+-bool CGizmo::EnsureTranslationMeshes() const
++bool FGizmo::EnsureTranslationMeshes() const
+ {
+ 	if (!TranslationGizmo || !TranslationGizmo->GetMeshData())
+ 	{
+@@ -573,7 +573,7 @@ bool CGizmo::EnsureTranslationMeshes() const
+ 		&& TranslationScreenMesh;
+ }
+ 
+-bool CGizmo::EnsureRotationMeshes(const CCamera* Camera, const FVector& GizmoWorldLocation) const
++bool FGizmo::EnsureRotationMeshes(const FCamera* Camera, const FVector& GizmoWorldLocation) const
+ {
+ 	if (!Camera)
+ 	{
+@@ -613,7 +613,7 @@ bool CGizmo::EnsureRotationMeshes(const CCamera* Camera, const FVector& GizmoWor
+ 		|| RotationScreenMesh;
+ }
+ 
+-bool CGizmo::EnsureScaleMeshes() const
++bool FGizmo::EnsureScaleMeshes() const
+ {
+ 	if (!ScaleGizmo || !ScaleGizmo->GetMeshData())
+ 	{
+@@ -666,7 +666,7 @@ bool CGizmo::EnsureScaleMeshes() const
+ 		&& ScaleCenterMesh;
+ }
+ 
+-EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
++EGizmoAxis FGizmo::HitTestAxis(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+@@ -775,7 +775,7 @@ EGizmoAxis CGizmo::HitTestAxis(AActor* SelectedActor, ULevel* Level, const CPick
+ 	return BestAxis;
+ }
+ 
+-bool CGizmo::BeginAxisDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::BeginAxisDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (Mode == EGizmoMode::Location)
+ 	{
+@@ -795,7 +795,7 @@ bool CGizmo::BeginAxisDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Lev
+ 	return false;
+ }
+ 
+-bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+@@ -806,7 +806,7 @@ bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULev
+ 
+ 	const FVector GizmoLocation = GetActorWorldLocation(SelectedActor);
+ 	const FVector Axis = GetGizmoAxisVector(AxisId, SelectedActor);
+-	const CCamera* Camera = Level->GetCamera();
++	const FCamera* Camera = Level->GetCamera();
+ 
+ 	FVector PlaneNormal = FVector::ZeroVector;
+ 	if (AxisId >= EGizmoAxis::X && AxisId <= EGizmoAxis::Z)
+@@ -854,7 +854,7 @@ bool CGizmo::BeginTranslationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULev
+ 	return true;
+ }
+ 
+-bool CGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+@@ -887,7 +887,7 @@ bool CGizmo::BeginRotationDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel*
+ 	return true;
+ }
+ 
+-bool CGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
++bool FGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight)
+ {
+ 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !Level || !Level->GetCamera())
+ 	{
+@@ -897,7 +897,7 @@ bool CGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Le
+ 	const FRay Ray = Picker.ScreenToRay(Level->GetCamera(), ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	const FVector GizmoLocation = GetActorWorldLocation(SelectedActor);
+-	const CCamera* Camera = Level->GetCamera();
++	const FCamera* Camera = Level->GetCamera();
+ 
+ 	FVector PlaneNormal = FVector::ZeroVector;
+ 	if (AxisId >= EGizmoAxis::X && AxisId <= EGizmoAxis::Z)
+@@ -949,12 +949,12 @@ bool CGizmo::BeginScaleDrag(EGizmoAxis AxisId, AActor* SelectedActor, ULevel* Le
+ 	return true;
+ }
+ 
+-EGizmoAxis CGizmo::GetDisplayAxis() const
++EGizmoAxis FGizmo::GetDisplayAxis() const
+ {
+ 	return ActiveAxis != EGizmoAxis::None ? ActiveAxis : HoveredAxis;
+ }
+ 
+-FQuat CGizmo::GetGizmoRotation(const AActor* Actor) const
++FQuat FGizmo::GetGizmoRotation(const AActor* Actor) const
+ {
+ 	const bool bUseLocalOrientation = (Mode == EGizmoMode::Scale) || (CoordinateSpace == EGizmoCoordinateSpace::Local);
+ 	if (!bUseLocalOrientation)
+@@ -970,7 +970,7 @@ FQuat CGizmo::GetGizmoRotation(const AActor* Actor) const
+ 	return GetActorWorldRotation(Actor);
+ }
+ 
+-FVector CGizmo::GetGizmoAxisVector(EGizmoAxis Axis, const AActor* Actor) const
++FVector FGizmo::GetGizmoAxisVector(EGizmoAxis Axis, const AActor* Actor) const
+ {
+ 	const FVector WorldAxis = GetAxisVector(Axis);
+ 	const bool bUseLocalOrientation = (Mode == EGizmoMode::Scale) || (CoordinateSpace == EGizmoCoordinateSpace::Local);
+@@ -982,7 +982,7 @@ FVector CGizmo::GetGizmoAxisVector(EGizmoAxis Axis, const AActor* Actor) const
+ 	return GetGizmoRotation(Actor).RotateVector(WorldAxis).GetSafeNormal();
+ }
+ 
+-FVector CGizmo::GetGizmoPlaneNormal(EGizmoAxis Axis, const AActor* Actor) const
++FVector FGizmo::GetGizmoPlaneNormal(EGizmoAxis Axis, const AActor* Actor) const
+ {
+ 	const FVector WorldNormal = GetPlaneNormal(Axis);
+ 	const bool bUseLocalOrientation = (Mode == EGizmoMode::Scale) || (CoordinateSpace == EGizmoCoordinateSpace::Local);
+@@ -994,7 +994,7 @@ FVector CGizmo::GetGizmoPlaneNormal(EGizmoAxis Axis, const AActor* Actor) const
+ 	return GetGizmoRotation(Actor).RotateVector(WorldNormal).GetSafeNormal();
+ }
+ 
+-FVector CGizmo::GetAxisVector(EGizmoAxis Axis)
++FVector FGizmo::GetAxisVector(EGizmoAxis Axis)
+ {
+ 	switch (Axis)
+ 	{
+@@ -1009,7 +1009,7 @@ FVector CGizmo::GetAxisVector(EGizmoAxis Axis)
+ 	}
+ }
+ 
+-RotationDesc CGizmo::BuildRotationDesc(const CCamera* Camera, const FVector& GizmoWorldLocation) const
++RotationDesc FGizmo::BuildRotationDesc(const FCamera* Camera, const FVector& GizmoWorldLocation) const
+ {
+ 	RotationDesc Desc{};
+ 	if (!Camera)
+@@ -1052,7 +1052,7 @@ RotationDesc CGizmo::BuildRotationDesc(const CCamera* Camera, const FVector& Giz
+ 	return Desc;
+ }
+ 
+-FVector CGizmo::GetPlaneNormal(EGizmoAxis Axis)
++FVector FGizmo::GetPlaneNormal(EGizmoAxis Axis)
+ {
+ 	switch (Axis)
+ 	{
+@@ -1067,7 +1067,7 @@ FVector CGizmo::GetPlaneNormal(EGizmoAxis Axis)
+ 	}
+ }
+ 
+-FVector CGizmo::GetActorWorldLocation(const AActor* Actor)
++FVector FGizmo::GetActorWorldLocation(const AActor* Actor)
+ {
+ 	if (!Actor || !Actor->GetRootComponent())
+ 	{
+@@ -1077,7 +1077,7 @@ FVector CGizmo::GetActorWorldLocation(const AActor* Actor)
+ 	return Actor->GetRootComponent()->GetWorldLocation();
+ }
+ 
+-FQuat CGizmo::GetActorWorldRotation(const AActor* Actor)
++FQuat FGizmo::GetActorWorldRotation(const AActor* Actor)
+ {
+ 	if (!Actor || !Actor->GetRootComponent())
+ 	{
+@@ -1087,7 +1087,7 @@ FQuat CGizmo::GetActorWorldRotation(const AActor* Actor)
+ 	return FTransform(Actor->GetRootComponent()->GetWorldTransform()).GetRotation();
+ }
+ 
+-FQuat CGizmo::GetComponentWorldRotationIgnoringScale(const USceneComponent* Component)
++FQuat FGizmo::GetComponentWorldRotationIgnoringScale(const USceneComponent* Component)
+ {
+ 	if (!Component)
+ 	{
+@@ -1104,7 +1104,7 @@ FQuat CGizmo::GetComponentWorldRotationIgnoringScale(const USceneComponent* Comp
+ 	return (LocalRotation * GetComponentWorldRotationIgnoringScale(Parent)).GetNormalized();
+ }
+ 
+-FVector CGizmo::GetActorRelativeScale(const AActor* Actor)
++FVector FGizmo::GetActorRelativeScale(const AActor* Actor)
+ {
+ 	if (!Actor || !Actor->GetRootComponent())
+ 	{
+@@ -1114,7 +1114,7 @@ FVector CGizmo::GetActorRelativeScale(const AActor* Actor)
+ 	return Actor->GetRootComponent()->GetRelativeTransform().GetScale3D();
+ }
+ 
+-bool CGizmo::ApplyActorWorldLocation(AActor* Actor, const FVector& NewWorldLocation)
++bool FGizmo::ApplyActorWorldLocation(AActor* Actor, const FVector& NewWorldLocation)
+ {
+ 	if (!Actor)
+ 	{
+@@ -1138,7 +1138,7 @@ bool CGizmo::ApplyActorWorldLocation(AActor* Actor, const FVector& NewWorldLocat
+ 	return true;
+ }
+ 
+-bool CGizmo::ApplyActorWorldRotation(AActor* Actor, const FQuat& NewWorldRotation)
++bool FGizmo::ApplyActorWorldRotation(AActor* Actor, const FQuat& NewWorldRotation)
+ {
+ 	if (!Actor)
+ 	{
+@@ -1164,7 +1164,7 @@ bool CGizmo::ApplyActorWorldRotation(AActor* Actor, const FQuat& NewWorldRotatio
+ 	return true;
+ }
+ 
+-bool CGizmo::ApplyActorRelativeScale(AActor* Actor, const FVector& NewRelativeScale)
++bool FGizmo::ApplyActorRelativeScale(AActor* Actor, const FVector& NewRelativeScale)
+ {
+ 	if (!Actor)
+ 	{
+@@ -1183,7 +1183,7 @@ bool CGizmo::ApplyActorRelativeScale(AActor* Actor, const FVector& NewRelativeSc
+ 	return true;
+ }
+ 
+-bool CGizmo::IntersectPlane(const FRay& Ray, const FVector& PlaneOrigin, const FVector& PlaneNormal, FVector& OutIntersection)
++bool FGizmo::IntersectPlane(const FRay& Ray, const FVector& PlaneOrigin, const FVector& PlaneNormal, FVector& OutIntersection)
+ {
+ 	const float Denominator = FVector::DotProduct(PlaneNormal, Ray.Direction);
+ 	if (std::abs(Denominator) <= ParallelTolerance)
+@@ -1201,7 +1201,7 @@ bool CGizmo::IntersectPlane(const FRay& Ray, const FVector& PlaneOrigin, const F
+ 	return true;
+ }
+ 
+-bool CGizmo::RayTriangleIntersectTwoSided(const FRay& Ray, const FVector& V0, const FVector& V1, const FVector& V2, float& OutDistance)
++bool FGizmo::RayTriangleIntersectTwoSided(const FRay& Ray, const FVector& V0, const FVector& V1, const FVector& V2, float& OutDistance)
+ {
+ 	const FVector Edge1 = V1 - V0;
+ 	const FVector Edge2 = V2 - V0;
+@@ -1237,7 +1237,7 @@ bool CGizmo::RayTriangleIntersectTwoSided(const FRay& Ray, const FVector& V0, co
+ 	return true;
+ }
+ 
+-float CGizmo::ComputeGizmoScale(const FVector& WorldPosition, const CCamera* Camera) const
++float FGizmo::ComputeGizmoScale(const FVector& WorldPosition, const FCamera* Camera) const
+ {
+ 	if (!Camera)
+ 	{
+@@ -1261,7 +1261,7 @@ float CGizmo::ComputeGizmoScale(const FVector& WorldPosition, const CCamera* Cam
+ 	return std::clamp(DesiredAxisLength / ReferenceAxisLength, MinGizmoScale, MaxGizmoScale);
+ }
+ 
+-float CGizmo::GetRenderGizmoScale(float BaseGizmoScale) const
++float FGizmo::GetRenderGizmoScale(float BaseGizmoScale) const
+ {
+ 	return (Mode == EGizmoMode::Scale) ? (BaseGizmoScale * 0.5f) : BaseGizmoScale;
+ }
+diff --git a/Editor/Source/Gizmo/Gizmo.h b/Editor/Source/Gizmo/Gizmo.h
+index 005d035..f9ac744 100644
+--- a/Editor/Source/Gizmo/Gizmo.h
++++ b/Editor/Source/Gizmo/Gizmo.h
+@@ -6,8 +6,8 @@
+ #include <memory>
+ 
+ class AActor;
+-class CCamera;
+-class CPicker;
++class FCamera;
++class FPicker;
+ class ULevel;
+ class USceneComponent;
+ struct RotationDesc;
+@@ -43,10 +43,10 @@ enum class EGizmoAxis : uint8
+ 	Screen
+ };
+ 
+-class CGizmo
++class FGizmo
+ {
+ public:
+-	CGizmo();
++	FGizmo();
+ 	void SetMode(EGizmoMode InMode);
+ 	EGizmoMode GetMode() const { return Mode; }
+ 	void CycleMode();
+@@ -54,10 +54,10 @@ public:
+ 	EGizmoCoordinateSpace GetCoordinateSpace() const { return CoordinateSpace; }
+ 	void ToggleCoordinateSpace();
+ 
+-	void BuildRenderCommands(AActor* SelectedActor, const CCamera* Camera, FRenderCommandQueue& OutQueue) const;
+-	bool BeginDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool UpdateDrag(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	void UpdateHover(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	void BuildRenderCommands(AActor* SelectedActor, const FCamera* Camera, FRenderCommandQueue& OutQueue) const;
++	bool BeginDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool UpdateDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	void UpdateHover(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+ 	void ClearHover();
+ 	void EndDrag();
+ 
+@@ -65,15 +65,15 @@ public:
+ 
+ private:
+ 	bool EnsureTranslationMeshes() const;
+-	bool EnsureRotationMeshes(const CCamera* Camera, const FVector& GizmoWorldLocation) const;
++	bool EnsureRotationMeshes(const FCamera* Camera, const FVector& GizmoWorldLocation) const;
+ 	bool EnsureScaleMeshes() const;
+-	EGizmoAxis HitTestAxis(AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
+-	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+-	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const CPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	EGizmoAxis HitTestAxis(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
++	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
++	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+ 	EGizmoAxis GetDisplayAxis() const;
+-	RotationDesc BuildRotationDesc(const CCamera* Camera, const FVector& GizmoWorldLocation) const;
++	RotationDesc BuildRotationDesc(const FCamera* Camera, const FVector& GizmoWorldLocation) const;
+ 	FQuat GetGizmoRotation(const AActor* Actor) const;
+ 	FVector GetGizmoAxisVector(EGizmoAxis Axis, const AActor* Actor) const;
+ 	FVector GetGizmoPlaneNormal(EGizmoAxis Axis, const AActor* Actor) const;
+@@ -90,7 +90,7 @@ private:
+ 	static bool RayTriangleIntersectTwoSided(const FRay& Ray, const FVector& V0, const FVector& V1, const FVector& V2, float& OutDistance);
+ 	static bool IntersectPlane(const FRay& Ray, const FVector& PlaneOrigin, const FVector& PlaneNormal, FVector& OutIntersection);
+ 
+-	float ComputeGizmoScale(const FVector& WorldPosition, const CCamera* Camera) const;
++	float ComputeGizmoScale(const FVector& WorldPosition, const FCamera* Camera) const;
+ 	float GetRenderGizmoScale(float BaseGizmoScale) const;
+ 
+ private:
+diff --git a/Editor/Source/Picking/Picker.cpp b/Editor/Source/Picking/Picker.cpp
+index 900c78a..17c8ca9 100644
+--- a/Editor/Source/Picking/Picker.cpp
++++ b/Editor/Source/Picking/Picker.cpp
+@@ -12,7 +12,7 @@
+ #include "Actor/SkySphereActor.h" 
+ #include <limits>
+ 
+-FRay CPicker::ScreenToRay(const CCamera* Camera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
++FRay FPicker::ScreenToRay(const FCamera* Camera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
+ {
+ 	if (!Camera || ScreenWidth <= 0 || ScreenHeight <= 0)
+ 	{
+@@ -57,7 +57,7 @@ FRay CPicker::ScreenToRay(const CCamera* Camera, int32 ScreenX, int32 ScreenY, i
+ 	return { RayOrigin, RayDirectionWorld };
+ }
+ 
+-bool CPicker::RayTriangleIntersect(const FRay& Ray,
++bool FPicker::RayTriangleIntersect(const FRay& Ray,
+ 								   const FVector& V0, const FVector& V1, const FVector& V2,
+ 								   float& OutDistance) const
+ {
+@@ -100,7 +100,7 @@ bool CPicker::RayTriangleIntersect(const FRay& Ray,
+ 	return false;
+ }
+ 
+-AActor* CPicker::PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
++AActor* FPicker::PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
+ 						   int32 ScreenWidth, int32 ScreenHeight) const
+ {
+ 	if (!Level || !Level->GetCamera())
+@@ -108,7 +108,7 @@ AActor* CPicker::PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
+ 		return nullptr;
+ 	}
+ 
+-	CCamera* Camera = Level->GetCamera();
++	FCamera* Camera = Level->GetCamera();
+ 	const FRay Ray = ScreenToRay(Camera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+ 
+ 	AActor* ClosestActor = nullptr;
+diff --git a/Editor/Source/Picking/Picker.h b/Editor/Source/Picking/Picker.h
+index 65cb17a..af594da 100644
+--- a/Editor/Source/Picking/Picker.h
++++ b/Editor/Source/Picking/Picker.h
+@@ -5,7 +5,7 @@
+ 
+ class AActor;
+ class ULevel;
+-class CCamera;
++class FCamera;
+ 
+ struct FRay
+ {
+@@ -13,11 +13,11 @@ struct FRay
+     FVector Direction;
+ };
+ 
+-class CPicker
++class FPicker
+ {
+ public:
+     // 스크린 좌표 → 월드 레이 변환 (Deprojection)
+-    FRay ScreenToRay(const CCamera* Camera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
++    FRay ScreenToRay(const FCamera* Camera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
+ 
+     // Möller–Trumbore 알고리즘: 레이-삼각형 교차 검사
+     bool RayTriangleIntersect(const FRay& Ray,
+diff --git a/Editor/Source/UI/ConsoleWindow.cpp b/Editor/Source/UI/ConsoleWindow.cpp
+index 0a59a43..9d625b2 100644
+--- a/Editor/Source/UI/ConsoleWindow.cpp
++++ b/Editor/Source/UI/ConsoleWindow.cpp
+@@ -4,25 +4,25 @@
+ #include <cctype>
+ 
+ // --- Helpers ---
+-int32 CConsoleWindow::Stricmp(const char* S1, const char* S2)
++int32 FConsoleWindow::Stricmp(const char* S1, const char* S2)
+ {
+ 	int32 d;
+ 	while ((d = toupper(*S2) - toupper(*S1)) == 0 && *S1) { S1++; S2++; }
+ 	return d;
+ }
+-int32 CConsoleWindow::Strnicmp(const char* S1, const char* S2, int32 N)
++int32 FConsoleWindow::Strnicmp(const char* S1, const char* S2, int32 N)
+ {
+ 	int32 d = 0;
+ 	while (N > 0 && (d = toupper(*S2) - toupper(*S1)) == 0 && *S1) { S1++; S2++; N--; }
+ 	return d;
+ }
+-char* CConsoleWindow::Strdup(const char* S)
++char* FConsoleWindow::Strdup(const char* S)
+ {
+ 	size_t Len = strlen(S) + 1;
+ 	void* Buf = ImGui::MemAlloc(Len);
+ 	return (char*)memcpy(Buf, S, Len);
+ }
+-void CConsoleWindow::Strtrim(char* S)
++void FConsoleWindow::Strtrim(char* S)
+ {
+ 	char* End = S + strlen(S);
+ 	while (End > S && End[-1] == ' ') End--;
+@@ -30,7 +30,7 @@ void CConsoleWindow::Strtrim(char* S)
+ }
+ 
+ // --- Constructor / Destructor ---
+-CConsoleWindow::CConsoleWindow()
++FConsoleWindow::FConsoleWindow()
+ {
+ 	ClearLog();
+ 	memset(InputBuf, 0, sizeof(InputBuf));
+@@ -43,21 +43,21 @@ CConsoleWindow::CConsoleWindow()
+ 	AddLog("Welcome to Console.");
+ }
+ 
+-CConsoleWindow::~CConsoleWindow()
++FConsoleWindow::~FConsoleWindow()
+ {
+ 	ClearLog();
+ 	for (int32 i = 0; i < History.Size; i++)
+ 		ImGui::MemFree(History[i]);
+ }
+ 
+-void CConsoleWindow::ClearLog()
++void FConsoleWindow::ClearLog()
+ {
+ 	for (int32 i = 0; i < Items.Size; i++)
+ 		ImGui::MemFree(Items[i]);
+ 	Items.clear();
+ }
+ 
+-void CConsoleWindow::AddLog(const char* Fmt, ...)
++void FConsoleWindow::AddLog(const char* Fmt, ...)
+ {
+ 	char Buf[1024];
+ 	va_list Args;
+@@ -68,13 +68,13 @@ void CConsoleWindow::AddLog(const char* Fmt, ...)
+ 	Items.push_back(Strdup(Buf));
+ }
+ 
+-void CConsoleWindow::RegisterCommand(const char* Command)
++void FConsoleWindow::RegisterCommand(const char* Command)
+ {
+ 	Commands.push_back(Command);
+ }
+ 
+ // --- Render ---
+-void CConsoleWindow::Render()
++void FConsoleWindow::Render()
+ {
+ 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+ 	bool bOpen = ImGui::Begin("Console");
+@@ -180,7 +180,7 @@ void CConsoleWindow::Render()
+ }
+ 
+ // --- Command execution ---
+-void CConsoleWindow::ExecCommand(const char* CommandLine)
++void FConsoleWindow::ExecCommand(const char* CommandLine)
+ {
+ 	AddLog("# %s\n", CommandLine);
+ 
+@@ -223,12 +223,12 @@ void CConsoleWindow::ExecCommand(const char* CommandLine)
+ }
+ 
+ // --- Text callback ---
+-int32 CConsoleWindow::TextEditCallbackStub(ImGuiInputTextCallbackData* Data)
++int32 FConsoleWindow::TextEditCallbackStub(ImGuiInputTextCallbackData* Data)
+ {
+-	return ((CConsoleWindow*)Data->UserData)->TextEditCallback(Data);
++	return ((FConsoleWindow*)Data->UserData)->TextEditCallback(Data);
+ }
+ 
+-int32 CConsoleWindow::TextEditCallback(ImGuiInputTextCallbackData* Data)
++int32 FConsoleWindow::TextEditCallback(ImGuiInputTextCallbackData* Data)
+ {
+ 	switch (Data->EventFlag)
+ 	{
+diff --git a/Editor/Source/UI/ConsoleWindow.h b/Editor/Source/UI/ConsoleWindow.h
+index 5724031..747b9c1 100644
+--- a/Editor/Source/UI/ConsoleWindow.h
++++ b/Editor/Source/UI/ConsoleWindow.h
+@@ -5,11 +5,11 @@
+ 
+ using FCommandHandler = std::function<void(const char*)>;
+ 
+-class CConsoleWindow
++class FConsoleWindow
+ {
+ public:
+-	CConsoleWindow();
+-	~CConsoleWindow();
++	FConsoleWindow();
++	~FConsoleWindow();
+ 
+ 	void Render();
+ 	void AddLog(const char* Fmt, ...) IM_FMTARGS(2);
+diff --git a/Editor/Source/UI/ContentBrowserWindow.cpp b/Editor/Source/UI/ContentBrowserWindow.cpp
+index eb51101..f937ec5 100644
+--- a/Editor/Source/UI/ContentBrowserWindow.cpp
++++ b/Editor/Source/UI/ContentBrowserWindow.cpp
+@@ -4,7 +4,7 @@
+ #include "Debug/EngineLog.h"
+ #include "Core/Paths.h"
+ 
+-CContentBrowserWindow::CContentBrowserWindow():
++FContentBrowserWindow::FContentBrowserWindow():
+ 	RootPath(std::filesystem::current_path()),
+ 	CurrentPath(std::filesystem::current_path())
+ {
+@@ -17,7 +17,7 @@ CContentBrowserWindow::CContentBrowserWindow():
+ 	CurrentPath = RootPath;
+ }
+ 
+-void CContentBrowserWindow::Render()
++void FContentBrowserWindow::Render()
+ {
+ 	if (!ImGui::Begin("Content Browser"))
+ 	{
+@@ -87,17 +87,17 @@ void CContentBrowserWindow::Render()
+ 	}
+ }
+ 
+-void CContentBrowserWindow::SetFolderIcon(ID3D11ShaderResourceView* FolderSRV)
++void FContentBrowserWindow::SetFolderIcon(ID3D11ShaderResourceView* FolderSRV)
+ {
+ 	FolderIcon = (ImTextureID)(FolderSRV);
+ }
+ 
+-void CContentBrowserWindow::SetFileIcon(ID3D11ShaderResourceView* FileSRV)
++void FContentBrowserWindow::SetFileIcon(ID3D11ShaderResourceView* FileSRV)
+ {
+ 	FileIcon = (ImTextureID)(FileSRV);
+ }
+ 
+-void CContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
++void FContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
+ {
+ 	for (auto& Entry : std::filesystem::directory_iterator(Path))
+ 	{
+@@ -143,7 +143,7 @@ void CContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
+ 	}
+ }
+ 
+-void CContentBrowserWindow::DrawFileGrid()
++void FContentBrowserWindow::DrawFileGrid()
+ {
+ 	const float CellSize = 80.0f;
+ 	const float IconSize = 48.0f;
+diff --git a/Editor/Source/UI/ContentBrowserWindow.h b/Editor/Source/UI/ContentBrowserWindow.h
+index 7c129ca..caed102 100644
+--- a/Editor/Source/UI/ContentBrowserWindow.h
++++ b/Editor/Source/UI/ContentBrowserWindow.h
+@@ -6,10 +6,10 @@
+ 
+ struct ID3D11ShaderResourceView;
+ 
+-class CContentBrowserWindow
++class FContentBrowserWindow
+ {
+ public:
+-	CContentBrowserWindow();
++	FContentBrowserWindow();
+ 
+ 	void Render();
+ 
+diff --git a/Editor/Source/UI/ControlPanelWindow.cpp b/Editor/Source/UI/ControlPanelWindow.cpp
+index 030e0ec..9cb1086 100644
+--- a/Editor/Source/UI/ControlPanelWindow.cpp
++++ b/Editor/Source/UI/ControlPanelWindow.cpp
+@@ -46,7 +46,7 @@ namespace
+ 	}
+ }
+ 
+-void CControlPanelWindow::Render(CCore* Core)
++void FControlPanelWindow::Render(FCore* Core)
+ {
+ 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+ 	const bool bOpen = ImGui::Begin("Control Panel");
+@@ -130,7 +130,7 @@ void CControlPanelWindow::Render(CCore* Core)
+ 		}
+ 		*/
+ 		
+-		if (CCamera* Camera = Core->GetLevel()->GetCamera())
++		if (FCamera* Camera = Core->GetLevel()->GetCamera())
+ 		{
+ 		
+ 			float Sensitivity = Camera->GetMouseSensitivity();
+diff --git a/Editor/Source/UI/ControlPanelWindow.h b/Editor/Source/UI/ControlPanelWindow.h
+index dfa9798..3e45783 100644
+--- a/Editor/Source/UI/ControlPanelWindow.h
++++ b/Editor/Source/UI/ControlPanelWindow.h
+@@ -1,12 +1,12 @@
+ #pragma once
+ #include "CoreMinimal.h"
+ 
+-class CCore;
++class FCore;
+ 
+-class CControlPanelWindow
++class FControlPanelWindow
+ {
+ public:
+-	void Render(CCore* Core);
++	void Render(FCore* Core);
+ 
+ private:
+ 	TArray<FString> LevelFiles;
+diff --git a/Editor/Source/UI/EditorUI.cpp b/Editor/Source/UI/EditorUI.cpp
+index c82fbf3..9467dc8 100644
+--- a/Editor/Source/UI/EditorUI.cpp
++++ b/Editor/Source/UI/EditorUI.cpp
+@@ -69,7 +69,7 @@ std::string GetFilePathUsingDialog(EFileDialogType Type)
+ 
+ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
+ 
+-void CEditorUI::Initialize(CCore* InCore)
++void FEditorUI::Initialize(FCore* InCore)
+ {
+ 	Core = InCore;
+ 
+@@ -164,7 +164,7 @@ void CEditorUI::Initialize(CCore* InCore)
+ 		};
+ }
+ 
+-void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
++void FEditorUI::AttachToRenderer(FRenderer* InRenderer)
+ {
+ 	if (!Core || !InRenderer)
+ 	{
+@@ -277,7 +277,7 @@ void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
+ 
+ 	InRenderer->SetGUIUpdateCallback([this]() { Render(); });
+ 
+-	InRenderer->SetPostRenderCallback([this](CRenderer* Renderer)
++	InRenderer->SetPostRenderCallback([this](FRenderer* Renderer)
+ 		{
+ 			if (!Core)
+ 			{
+@@ -313,7 +313,7 @@ void CEditorUI::AttachToRenderer(CRenderer* InRenderer)
+ 	LoadEditorSettings();
+ }
+ 
+-void CEditorUI::DetachFromRenderer(CRenderer* InRenderer)
++void FEditorUI::DetachFromRenderer(FRenderer* InRenderer)
+ {
+ 	bViewportClientActive = false;
+ 	CurrentRenderer = nullptr;
+@@ -326,7 +326,7 @@ void CEditorUI::DetachFromRenderer(CRenderer* InRenderer)
+ 	}
+ }
+ 
+-void CEditorUI::SetupWindow(CWindow* InWindow)
++void FEditorUI::SetupWindow(FWindow* InWindow)
+ {
+ 	MainWindow = InWindow;
+ 	if (bWindowSetup || MainWindow == nullptr)
+@@ -383,7 +383,7 @@ void CEditorUI::SetupWindow(CWindow* InWindow)
+ 		});
+ }
+ 
+-void CEditorUI::BuildDefaultLayout(uint32 DockID)
++void FEditorUI::BuildDefaultLayout(uint32 DockID)
+ {
+ 	ImGui::DockBuilderRemoveNode(DockID);
+ 	ImGui::DockBuilderAddNode(DockID, ImGuiDockNodeFlags_DockSpace);
+@@ -415,7 +415,7 @@ void CEditorUI::BuildDefaultLayout(uint32 DockID)
+ 	ImGui::DockBuilderFinish(DockID);
+ }
+ 
+-void CEditorUI::LoadEditorSettings()
++void FEditorUI::LoadEditorSettings()
+ {
+ 	std::wstring Path = GetEditorIniPathW();
+ 	wchar_t Buf[64];
+@@ -431,7 +431,7 @@ void CEditorUI::LoadEditorSettings()
+ 
+ 	if (Core && Core->GetViewportClient())
+ 	{
+-		auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
++		auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+ 		VPC->SetGridSize(GridSize);
+ 		VPC->SetLineThickness(Thickness);
+ 		VPC->SetGridVisible(bShowGrid);
+@@ -456,11 +456,11 @@ void CEditorUI::LoadEditorSettings()
+ 
+ }
+ 
+-void CEditorUI::SaveEditorSettings()
++void FEditorUI::SaveEditorSettings()
+ {
+ 	std::wstring Path = GetEditorIniPathW();
+ 	if (!Core || !Core->GetViewportClient()) return;
+-	auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
++	auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+ 
+ 	wchar_t Buf[64];
+ 	swprintf(Buf, 64, L"%.2f", VPC->GetGridSize());
+@@ -479,13 +479,13 @@ void CEditorUI::SaveEditorSettings()
+ 
+ }
+ 
+-std::wstring CEditorUI::GetEditorIniPathW() const
++std::wstring FEditorUI::GetEditorIniPathW() const
+ {
+ 	return (FPaths::ProjectRoot() / "editor.ini").wstring();
+ }
+ 
+ 
+-void CEditorUI::Render()
++void FEditorUI::Render()
+ {
+ 	static bool bOpenAboutPopup = false;
+ 
+@@ -617,7 +617,7 @@ void CEditorUI::Render()
+ 		{
+ 			if (Core && Core->GetViewportClient())
+ 			{
+-				auto* VPC = static_cast<CEditorViewportClient*>(Core->GetViewportClient());
++				auto* VPC = static_cast<FEditorViewportClient*>(Core->GetViewportClient());
+ 			
+ 
+ 				IViewportClient* ViewportCli = Core->GetViewportClient();
+@@ -761,12 +761,12 @@ void CEditorUI::Render()
+ 	ContentBrowser.Render();
+ }
+ 
+-bool CEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
++bool FEditorUI::GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+ {
+ 	return Viewport.GetMousePositionInViewport(WindowMouseX, WindowMouseY, OutViewportX, OutViewportY, OutWidth, OutHeight);
+ }
+ 
+-void CEditorUI::SyncSelectedActorProperty()
++void FEditorUI::SyncSelectedActorProperty()
+ {
+ 	if (!Core)
+ 	{
+@@ -795,7 +795,7 @@ void CEditorUI::SyncSelectedActorProperty()
+ 	CachedSelectedActor = Selected;
+ }
+ 
+-bool CEditorUI::IsViewportInteractive() const
++bool FEditorUI::IsViewportInteractive() const
+ {
+ 	return Viewport.IsVisible() && (Viewport.IsHovered() || Viewport.IsFocused());
+ }
+diff --git a/Editor/Source/UI/EditorUI.h b/Editor/Source/UI/EditorUI.h
+index 2d9e417..4f42362 100644
+--- a/Editor/Source/UI/EditorUI.h
++++ b/Editor/Source/UI/EditorUI.h
+@@ -8,46 +8,46 @@
+ #include "Types/ObjectPtr.h"
+ #include "ContentBrowserWindow.h"
+ 
+-class CCore;
+-class CWindow;
+-class CRenderer;
++class FCore;
++class FWindow;
++class FRenderer;
+ class AActor;
+-class CEditorViewportClient;
+-class CEditorUI
++class FEditorViewportClient;
++class FEditorUI
+ {
+ public:
+-	void Initialize(CCore* InCore);
+-	void SetupWindow(CWindow* InWindow);
+-	void AttachToRenderer(CRenderer* InRenderer);
+-	void DetachFromRenderer(CRenderer* InRenderer);
++	void Initialize(FCore* InCore);
++	void SetupWindow(FWindow* InWindow);
++	void AttachToRenderer(FRenderer* InRenderer);
++	void DetachFromRenderer(FRenderer* InRenderer);
+ 	void Render();
+ 	void SyncSelectedActorProperty();
+ 	bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+ 	bool IsViewportInteractive() const;
+ 
+-	CConsoleWindow& GetConsole() { return Console; }
+-	CCore* GetCore() { return Core; }
++	FConsoleWindow& GetConsole() { return Console; }
++	FCore* GetCore() { return Core; }
+ 
+ private:
+ 	void BuildDefaultLayout(uint32 DockID);
+ 	void LoadEditorSettings();
+ 	void SaveEditorSettings();
+ 	std::wstring GetEditorIniPathW() const;
+-	CCore* Core = nullptr;
++	FCore* Core = nullptr;
+ 	TObjectPtr<AActor> CachedSelectedActor;
+ 
+-	CWindow* MainWindow = nullptr;
++	FWindow* MainWindow = nullptr;
+ 
+-	CControlPanelWindow ControlPanel;
+-	CPropertyWindow Property;
+-	CConsoleWindow Console;
+-	CStatWindow Stat;
+-	CViewport Viewport;
+-	COutlinerWindow Outliner;
+-	CContentBrowserWindow ContentBrowser;
++	FControlPanelWindow ControlPanel;
++	FPropertyWindow Property;
++	FConsoleWindow Console;
++	FStatWindow Stat;
++	FViewport Viewport;
++	FOutlinerWindow Outliner;
++	FContentBrowserWindow ContentBrowser;
+ 
+ 	bool bWindowSetup = false;
+ 	bool bViewportClientActive = false;
+ 	bool bLayoutInitialized = false;
+-	CRenderer* CurrentRenderer = nullptr;
++	FRenderer* CurrentRenderer = nullptr;
+ };
+diff --git a/Editor/Source/UI/EditorViewportClient.cpp b/Editor/Source/UI/EditorViewportClient.cpp
+index f3534e0..3069c52 100644
+--- a/Editor/Source/UI/EditorViewportClient.cpp
++++ b/Editor/Source/UI/EditorViewportClient.cpp
+@@ -19,13 +19,13 @@
+ #include "imgui.h"
+ #include "Actor/ObjActor.h"
+ #include "Actor/SkySphereActor.h"
+-CEditorViewportClient::CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow)
++FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow)
+ 	: EditorUI(InEditorUI)
+ 	, MainWindow(InMainWindow)
+ {
+ }
+ 
+-void CEditorViewportClient::Attach(CCore* Core, CRenderer* Renderer)
++void FEditorViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+ {
+ 	if (!Core || !Renderer || !MainWindow)
+ 	{
+@@ -42,7 +42,7 @@ void CEditorViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+ 	CreateGridResource(Renderer);
+ }
+ 
+-void CEditorViewportClient::CreateGridResource(CRenderer* Renderer)
++void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
+ {
+ 	// 그리드 리소스 초기화
+ 	ID3D11Device* Device = Renderer->GetDevice();
+@@ -99,7 +99,7 @@ void CEditorViewportClient::CreateGridResource(CRenderer* Renderer)
+ 	}
+ }
+ 
+-void CEditorViewportClient::Detach(CCore* Core, CRenderer* Renderer)
++void FEditorViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+ {
+ 	Gizmo.EndDrag();
+ 	EditorUI.DetachFromRenderer(Renderer);
+@@ -108,7 +108,7 @@ void CEditorViewportClient::Detach(CCore* Core, CRenderer* Renderer)
+ 	GridMaterial.reset();
+ }
+ 
+-void CEditorViewportClient::Tick(CCore* Core, float DeltaTime)
++void FEditorViewportClient::Tick(FCore* Core, float DeltaTime)
+ {
+ 	if (!Core)
+ 	{
+@@ -132,7 +132,7 @@ void CEditorViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	IViewportClient::Tick(Core, DeltaTime);
+ }
+ 
+-void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
++void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ {
+ 	if (!Core || !EditorUI.IsViewportInteractive())
+ 	{
+@@ -160,7 +160,7 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 		ScreenHeight);
+ 
+ 	const bool bRightMouseDown = Core->GetInputManager() &&
+-		Core->GetInputManager()->IsMouseButtonDown(CInputManager::MOUSE_RIGHT);
++		Core->GetInputManager()->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
+ 
+ 	switch (Msg)
+ 	{
+@@ -251,9 +251,9 @@ void CEditorViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPAR
+ 	}
+ }
+ 
+-void CEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
++void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
+ {
+-	CCore* Core = EditorUI.GetCore();
++	FCore* Core = EditorUI.GetCore();
+ 
+ 	if (Core)
+ 	{
+@@ -280,9 +280,9 @@ void CEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
+ 	}
+ }
+ 
+-void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
++void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ {
+-	CCore* Core = EditorUI.GetCore();
++	FCore* Core = EditorUI.GetCore();
+ 
+ 	if (Core && Core->GetRenderer())
+ 	{
+@@ -299,7 +299,7 @@ void CEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ 	}
+ }
+ 
+-void CEditorViewportClient::BuildRenderCommands(CCore* Core, ULevel* Level,
++void FEditorViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level,
+ 	const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+ 	IViewportClient::BuildRenderCommands(Core, Level, Frustum, OutQueue);  // non-const 부모 호출
+@@ -338,7 +338,7 @@ void CEditorViewportClient::BuildRenderCommands(CCore* Core, ULevel* Level,
+ 	}
+ }
+ 
+-void CEditorViewportClient::SetGridSize(float InSize)
++void FEditorViewportClient::SetGridSize(float InSize)
+ {
+ 	GridSize = InSize;
+ 	if (GridMaterial)
+@@ -347,7 +347,7 @@ void CEditorViewportClient::SetGridSize(float InSize)
+ 	}
+ }
+ 
+-void CEditorViewportClient::SetLineThickness(float InThickness)
++void FEditorViewportClient::SetLineThickness(float InThickness)
+ {
+ 	LineThickness = InThickness;
+ 	if (GridMaterial)
+diff --git a/Editor/Source/UI/EditorViewportClient.h b/Editor/Source/UI/EditorViewportClient.h
+index 7f5bd4f..ace6d07 100644
+--- a/Editor/Source/UI/EditorViewportClient.h
++++ b/Editor/Source/UI/EditorViewportClient.h
+@@ -5,8 +5,8 @@
+ #include "Picking/Picker.h"
+ #include "Types/CoreTypes.h"
+ 
+-class CEditorUI;
+-class CWindow;
++class FEditorUI;
++class FWindow;
+ class FFrustum;
+ struct FRenderCommandQueue;
+ 
+@@ -17,15 +17,15 @@ enum class ERenderMode
+ 	Wireframe,
+ };
+ 
+-class CEditorViewportClient : public IViewportClient
++class FEditorViewportClient : public IViewportClient
+ {
+ public:
+-	CEditorViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow);
++	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow);
+ 
+-	void Attach(CCore* Core, CRenderer* Renderer) override;
+-	void Detach(CCore* Core, CRenderer* Renderer) override;
+-	void Tick(CCore* Core, float DeltaTime) override;
+-	void HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
++	void Attach(FCore* Core, FRenderer* Renderer) override;
++	void Detach(FCore* Core, FRenderer* Renderer) override;
++	void Tick(FCore* Core, float DeltaTime) override;
++	void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
+ 	EGizmoMode GetGizmoMode() const { return Gizmo.GetMode(); }
+ 	void SetGizmoMode(EGizmoMode InMode) { Gizmo.SetMode(InMode); }
+ 	ERenderMode GetRenderMode() { return RenderMode; }
+@@ -33,7 +33,7 @@ public:
+ 
+ 	void HandleFileDoubleClick(const FString& FilePath) override;
+ 	void HandleFileDropOnViewport(const FString& FilePath) override;
+-	void BuildRenderCommands(CCore* Core, ULevel* Level,
++	void BuildRenderCommands(FCore* Core, ULevel* Level,
+ 		const FFrustum& Frustum, FRenderCommandQueue& OutQueue) override;
+ 	float GetGridSize() const { return GridSize; }
+ 	void SetGridSize(float InSize);
+@@ -42,10 +42,10 @@ public:
+ 	bool IsGridVisible() const { return bShowGrid; }
+ 	void SetGridVisible(bool bVisible) { bShowGrid = bVisible; }
+ private:
+-	CEditorUI& EditorUI;
+-	CWindow* MainWindow = nullptr;
+-	CPicker Picker;
+-	mutable CGizmo Gizmo;
++	FEditorUI& EditorUI;
++	FWindow* MainWindow = nullptr;
++	FPicker Picker;
++	mutable FGizmo Gizmo;
+ 
+ 	ERenderMode RenderMode = ERenderMode::Lighting;
+ 	const FString WireframeMaterialName = "M_Wireframe";
+@@ -59,7 +59,7 @@ private:
+ 	// 그리드 렌더링용
+ 	std::unique_ptr<FMeshData> GridMesh;
+ 	std::shared_ptr<FMaterial> GridMaterial;
+-	void CreateGridResource(CRenderer* Renderer);
++	void CreateGridResource(FRenderer* Renderer);
+ 	float GridSize = 10.0f;
+ 	float LineThickness = 1.0f;
+ 	bool bShowGrid = true;
+diff --git a/Editor/Source/UI/OutlinerWindow.cpp b/Editor/Source/UI/OutlinerWindow.cpp
+index 0e55c2b..b520186 100644
+--- a/Editor/Source/UI/OutlinerWindow.cpp
++++ b/Editor/Source/UI/OutlinerWindow.cpp
+@@ -10,7 +10,7 @@
+ #include "Component/TextComponent.h"
+ #include "Component/UUIDBillboardComponent.h"
+ 
+-void COutlinerWindow::Render(CCore* Core)
++void FOutlinerWindow::Render(FCore* Core)
+ {
+ 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+ 	const bool bOpen = ImGui::Begin("Outliner");
+diff --git a/Editor/Source/UI/OutlinerWindow.h b/Editor/Source/UI/OutlinerWindow.h
+index d9c0310..9b0c14e 100644
+--- a/Editor/Source/UI/OutlinerWindow.h
++++ b/Editor/Source/UI/OutlinerWindow.h
+@@ -1,10 +1,10 @@
+ #pragma once
+ #include "CoreMinimal.h"
+ 
+-class CCore;
++class FCore;
+ 
+-class COutlinerWindow
++class FOutlinerWindow
+ {
+ public:
+-	void Render(CCore* Core);
++	void Render(FCore* Core);
+ };
+\ No newline at end of file
+diff --git a/Editor/Source/UI/PreviewViewportClient.cpp b/Editor/Source/UI/PreviewViewportClient.cpp
+index 080fa31..6aebd79 100644
+--- a/Editor/Source/UI/PreviewViewportClient.cpp
++++ b/Editor/Source/UI/PreviewViewportClient.cpp
+@@ -7,14 +7,14 @@
+ 
+ #include "imgui.h"
+ 
+-CPreviewViewportClient::CPreviewViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, FString InPreviewContextName)
++FPreviewViewportClient::FPreviewViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, FString InPreviewContextName)
+ 	: EditorUI(InEditorUI)
+ 	, MainWindow(InMainWindow)
+ 	, PreviewContextName(std::move(InPreviewContextName))
+ {
+ }
+ 
+-void CPreviewViewportClient::Attach(CCore* Core, CRenderer* Renderer)
++void FPreviewViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+ {
+ 	if (!Core || !Renderer || !MainWindow)
+ 	{
+@@ -26,12 +26,12 @@ void CPreviewViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+ 	EditorUI.AttachToRenderer(Renderer);
+ }
+ 
+-void CPreviewViewportClient::Detach(CCore* Core, CRenderer* Renderer)
++void FPreviewViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+ {
+ 	EditorUI.DetachFromRenderer(Renderer);
+ }
+ 
+-void CPreviewViewportClient::Tick(CCore* Core, float DeltaTime)
++void FPreviewViewportClient::Tick(FCore* Core, float DeltaTime)
+ {
+ 	if (!Core)
+ 	{
+@@ -55,7 +55,7 @@ void CPreviewViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	IViewportClient::Tick(Core, DeltaTime);
+ }
+ 
+-ULevel* CPreviewViewportClient::ResolveLevel(CCore* Core) const
++ULevel* FPreviewViewportClient::ResolveLevel(FCore* Core) const
+ {
+ 	if (!Core)
+ 	{
+diff --git a/Editor/Source/UI/PreviewViewportClient.h b/Editor/Source/UI/PreviewViewportClient.h
+index 5245e88..b24973f 100644
+--- a/Editor/Source/UI/PreviewViewportClient.h
++++ b/Editor/Source/UI/PreviewViewportClient.h
+@@ -3,21 +3,21 @@
+ #include "CoreMinimal.h"
+ #include "Core/ViewportClient.h"
+ 
+-class CEditorUI;
+-class CWindow;
++class FEditorUI;
++class FWindow;
+ 
+-class CPreviewViewportClient : public IViewportClient
++class FPreviewViewportClient : public IViewportClient
+ {
+ public:
+-	CPreviewViewportClient(CEditorUI& InEditorUI, CWindow* InMainWindow, FString InPreviewContextName);
++	FPreviewViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, FString InPreviewContextName);
+ 
+-	void Attach(CCore* Core, CRenderer* Renderer) override;
+-	void Detach(CCore* Core, CRenderer* Renderer) override;
+-	void Tick(CCore* Core, float DeltaTime) override;
+-	ULevel* ResolveLevel(CCore* Core) const override;
++	void Attach(FCore* Core, FRenderer* Renderer) override;
++	void Detach(FCore* Core, FRenderer* Renderer) override;
++	void Tick(FCore* Core, float DeltaTime) override;
++	ULevel* ResolveLevel(FCore* Core) const override;
+ 
+ private:
+-	CEditorUI& EditorUI;
+-	CWindow* MainWindow = nullptr;
++	FEditorUI& EditorUI;
++	FWindow* MainWindow = nullptr;
+ 	FString PreviewContextName;
+ };
+diff --git a/Editor/Source/UI/PropertyWindow.cpp b/Editor/Source/UI/PropertyWindow.cpp
+index d246f1a..df38537 100644
+--- a/Editor/Source/UI/PropertyWindow.cpp
++++ b/Editor/Source/UI/PropertyWindow.cpp
+@@ -4,7 +4,7 @@
+ #include "Component/SubUVComponent.h"
+ #include "Component/TextComponent.h"
+ #include "Component/UUIDBillboardComponent.h"
+-void CPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation,
++void FPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation,
+ 	const FVector& Scale, const char* ActorName)
+ {
+ 	EditLocation = Location;
+@@ -18,7 +18,7 @@ void CPropertyWindow::SetTarget(const FVector& Location, const FVector& Rotation
+ 		snprintf(ActorNameBuf, sizeof(ActorNameBuf), "None");
+ }
+ 
+-void CPropertyWindow::DrawTransformSection()
++void FPropertyWindow::DrawTransformSection()
+ {
+ 	float Loc[3] = { EditLocation.X, EditLocation.Y, EditLocation.Z };
+ 	float Rot[3] = { EditRotation.X, EditRotation.Y, EditRotation.Z };
+@@ -98,7 +98,7 @@ void CPropertyWindow::DrawTransformSection()
+ 		OnChanged(EditLocation, EditRotation, EditScale);
+ }
+ 
+-void CPropertyWindow::Render(CCore* Core)
++void FPropertyWindow::Render(FCore* Core)
+ {
+ 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+ 	bool bOpen = ImGui::Begin("Properties");
+diff --git a/Editor/Source/UI/PropertyWindow.h b/Editor/Source/UI/PropertyWindow.h
+index 20c33ec..e881043 100644
+--- a/Editor/Source/UI/PropertyWindow.h
++++ b/Editor/Source/UI/PropertyWindow.h
+@@ -2,13 +2,13 @@
+ #include "Math/Vector.h"
+ #include "imgui.h"
+ #include <functional>
+-class CCore;
++class FCore;
+ using FPropertyChangedCallback = std::function<void(const FVector&, const FVector&, const FVector&)>;
+ 
+-class CPropertyWindow
++class FPropertyWindow
+ {
+ public:
+-	void Render(CCore* Core);
++	void Render(FCore* Core);
+ 	void SetTarget(const FVector& Location, const FVector& Rotation, const FVector& Scale,
+ 		const char* ActorName = nullptr);
+ 
+diff --git a/Editor/Source/UI/StatWindow.cpp b/Editor/Source/UI/StatWindow.cpp
+index ea9b4fc..fdacc36 100644
+--- a/Editor/Source/UI/StatWindow.cpp
++++ b/Editor/Source/UI/StatWindow.cpp
+@@ -4,7 +4,7 @@
+ #include "Object/ObjectGlobals.h"
+ #include "Memory/MemoryBase.h"
+ 
+-void CStatWindow::RefreshObjectList()
++void FStatWindow::RefreshObjectList()
+ {
+ 	ObjectEntries.clear();
+ 
+@@ -25,7 +25,7 @@ void CStatWindow::RefreshObjectList()
+ 	bShowObjectList = true;
+ }
+ 
+-void CStatWindow::Render()
++void FStatWindow::Render()
+ {
+ 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+ 	bool bOpen = ImGui::Begin("Stats");
+diff --git a/Editor/Source/UI/StatWindow.h b/Editor/Source/UI/StatWindow.h
+index d20d6ec..ef0d533 100644
+--- a/Editor/Source/UI/StatWindow.h
++++ b/Editor/Source/UI/StatWindow.h
+@@ -9,7 +9,7 @@ struct FObjectEntry
+ 	uint32 Size = 0;
+ };
+ 
+-class CStatWindow
++class FStatWindow
+ {
+ public:
+ 	void Render();
+diff --git a/Editor/Source/UI/Viewport.cpp b/Editor/Source/UI/Viewport.cpp
+index c19d667..1077223 100644
+--- a/Editor/Source/UI/Viewport.cpp
++++ b/Editor/Source/UI/Viewport.cpp
+@@ -19,7 +19,7 @@ namespace
+ 		}
+ 	}
+ 
+-	bool RenderGizmoModeButton(const char* Label, EGizmoMode Mode, CEditorViewportClient* ViewportClient)
++	bool RenderGizmoModeButton(const char* Label, EGizmoMode Mode, FEditorViewportClient* ViewportClient)
+ 	{
+ 		if (ViewportClient == nullptr)
+ 		{
+@@ -47,12 +47,12 @@ namespace
+ 	}
+ }
+ 
+-CViewport::~CViewport()
++FViewport::~FViewport()
+ {
+ 	ReleaseLevelView();
+ }
+ 
+-void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
++void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
+ {
+ 	//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+ 	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
+@@ -73,7 +73,7 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 
+ 	if (ImGui::BeginMenuBar())
+ 	{
+-		CEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<CEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
++		FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
+ 		if (EditorViewportClient)
+ 		{
+ 			// 도구 선택 버튼
+@@ -180,7 +180,7 @@ void CViewport::Render(CCore* Core, CRenderer* Renderer, HWND Hwnd)
+ 	ImGui::End();
+ }
+ 
+-void CViewport::ReleaseLevelView()
++void FViewport::ReleaseLevelView()
+ {
+ 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
+ 	ReleaseIfValid(Resource);
+@@ -206,7 +206,7 @@ void CViewport::ReleaseLevelView()
+ 	OffscreenHeight = 0;
+ }
+ 
+-bool CViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
++bool FViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
+ {
+ 	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
+ 	{
+@@ -232,7 +232,7 @@ bool CViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouse
+ 	return true;
+ }
+ 
+-void CViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
++void FViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
+ {
+ 	if (Device == nullptr)
+ 	{
+diff --git a/Editor/Source/UI/Viewport.h b/Editor/Source/UI/Viewport.h
+index 3663438..67d35a8 100644
+--- a/Editor/Source/UI/Viewport.h
++++ b/Editor/Source/UI/Viewport.h
+@@ -2,15 +2,15 @@
+ #include <d3d11.h>
+ #include <CoreMinimal.h>
+ 
+-class CCore;
+-class CRenderer;
++class FCore;
++class FRenderer;
+ 
+-class CViewport
++class FViewport
+ {
+ public:
+-	~CViewport();
++	~FViewport();
+ 
+-	void Render(CCore* Core, CRenderer* Renderer, HWND Hwnd);
++	void Render(FCore* Core, FRenderer* Renderer, HWND Hwnd);
+ 	void ReleaseLevelView();
+ 	bool GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+ 	bool IsHovered() const { return bHovered; }
+diff --git a/Engine/Source/Camera/Camera.cpp b/Engine/Source/Camera/Camera.cpp
+index 6ff48ae..e8b2fa9 100644
+--- a/Engine/Source/Camera/Camera.cpp
++++ b/Engine/Source/Camera/Camera.cpp
+@@ -3,18 +3,18 @@
+ #include <cmath>
+ #include "Math/MathUtility.h"
+ 
+-void CCamera::SetPosition(const FVector& InPosition)
++void FCamera::SetPosition(const FVector& InPosition)
+ {
+ 	Position = InPosition;
+ }
+ 
+-void CCamera::SetRotation(float InYaw, float InPitch)
++void FCamera::SetRotation(float InYaw, float InPitch)
+ {
+ 	Yaw = InYaw;
+ 	Pitch = InPitch;
+ }
+ 
+-FVector CCamera::GetForward() const
++FVector FCamera::GetForward() const
+ {
+ 	float RadYaw = FMath::DegreesToRadians(Yaw);
+ 	float RadPitch = FMath::DegreesToRadians(Pitch);
+@@ -27,29 +27,29 @@ FVector CCamera::GetForward() const
+ 	return Forward.GetSafeNormal();
+ }
+ 
+-FVector CCamera::GetRight() const
++FVector FCamera::GetRight() const
+ {
+ 	return FVector::CrossProduct(Up, GetForward()).GetSafeNormal();
+ }
+ 
+-void CCamera::MoveForward(float Delta)
++void FCamera::MoveForward(float Delta)
+ {
+ 	FVector Forward = GetForward();
+ 	Position = Position + Forward * (Delta * Speed);
+ }
+ 
+-void CCamera::MoveRight(float Delta)
++void FCamera::MoveRight(float Delta)
+ {
+ 	FVector Right = GetRight();
+ 	Position = Position + Right * (Delta * Speed);
+ }
+ 
+-void CCamera::MoveUp(float Delta)
++void FCamera::MoveUp(float Delta)
+ {
+ 	Position = Position + Up * (Delta * Speed);
+ }
+ 
+-void CCamera::Rotate(float DeltaYaw, float DeltaPitch)
++void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
+ {
+ 	Yaw += DeltaYaw;
+ 	Pitch += DeltaPitch;
+@@ -59,13 +59,13 @@ void CCamera::Rotate(float DeltaYaw, float DeltaPitch)
+ 	if (Pitch < -89.0f) Pitch = -89.0f;
+ }
+ 
+-FMatrix CCamera::GetViewMatrix() const
++FMatrix FCamera::GetViewMatrix() const
+ {
+ 	FVector Target = Position + GetForward();
+ 	return FMatrix::MakeViewLookAtLH(Position, Target, Up);
+ }
+ 
+-FMatrix CCamera::GetProjectionMatrix() const
++FMatrix FCamera::GetProjectionMatrix() const
+ {
+ 	if (ProjectionMode == ECameraProjectionMode::Orthographic)
+ 	{
+@@ -77,62 +77,62 @@ FMatrix CCamera::GetProjectionMatrix() const
+ 	return FMatrix::MakePerspectiveFovLH(FMath::DegreesToRadians(FOV), AspectRatio, NearPlane, FarPlane);
+ }
+ 
+-void CCamera::SetAspectRatio(float InAspectRatio)
++void FCamera::SetAspectRatio(float InAspectRatio)
+ {
+ 	AspectRatio = (std::max)(InAspectRatio, 0.01f);
+ }
+ 
+-FVector CCamera::GetPosition() const
++FVector FCamera::GetPosition() const
+ {
+ 	return Position;
+ }
+ 
+-float CCamera::GetYaw() const
++float FCamera::GetYaw() const
+ {
+ 	return Yaw;
+ }
+ 
+-float CCamera::GetPitch() const
++float FCamera::GetPitch() const
+ {
+ 	return Pitch;
+ }
+ 
+-float CCamera::GetFOV() const
++float FCamera::GetFOV() const
+ {
+ 	return FOV;
+ }
+ 
+-void CCamera::SetFOV(float InFOV)
++void FCamera::SetFOV(float InFOV)
+ {
+ 	FOV = std::clamp(InFOV, 1.0f, 179.0f);
+ }
+ 
+-ECameraProjectionMode CCamera::GetProjectionMode() const
++ECameraProjectionMode FCamera::GetProjectionMode() const
+ {
+ 	return ProjectionMode;
+ }
+ 
+-bool CCamera::IsOrthographic() const
++bool FCamera::IsOrthographic() const
+ {
+ 	return ProjectionMode == ECameraProjectionMode::Orthographic;
+ }
+ 
+-void CCamera::SetProjectionMode(ECameraProjectionMode InProjectionMode)
++void FCamera::SetProjectionMode(ECameraProjectionMode InProjectionMode)
+ {
+ 	ProjectionMode = InProjectionMode;
+ }
+ 
+-float CCamera::GetOrthoWidth() const
++float FCamera::GetOrthoWidth() const
+ {
+ 	return OrthoWidth;
+ }
+ 
+-float CCamera::GetOrthoHeight() const
++float FCamera::GetOrthoHeight() const
+ {
+ 	return OrthoWidth / (std::max)(AspectRatio, 0.01f);
+ }
+ 
+-void CCamera::SetOrthoWidth(float InOrthoWidth)
++void FCamera::SetOrthoWidth(float InOrthoWidth)
+ {
+ 	OrthoWidth = (std::max)(InOrthoWidth, 0.01f);
+ }
+diff --git a/Engine/Source/Camera/Camera.h b/Engine/Source/Camera/Camera.h
+index 15545c4..c06aa15 100644
+--- a/Engine/Source/Camera/Camera.h
++++ b/Engine/Source/Camera/Camera.h
+@@ -8,10 +8,10 @@ enum class ECameraProjectionMode : uint8_t
+ 	Orthographic
+ };
+ 
+-class ENGINE_API CCamera
++class ENGINE_API FCamera
+ {
+ public:
+-	CCamera() = default;
++	FCamera() = default;
+ 
+ 	void SetPosition(const FVector& InPosition);
+ 	void SetRotation(float InYaw, float InPitch);
+diff --git a/Engine/Source/Component/CameraComponent.cpp b/Engine/Source/Component/CameraComponent.cpp
+index 9fecb28..2a27626 100644
+--- a/Engine/Source/Component/CameraComponent.cpp
++++ b/Engine/Source/Component/CameraComponent.cpp
+@@ -7,7 +7,7 @@ IMPLEMENT_RTTI(UCameraComponent, USceneComponent)
+ void UCameraComponent::Initialize()
+ {
+ 	bCanEverTick = true;
+-	Camera = new CCamera();
++	Camera = new FCamera();
+ }
+ 
+ UCameraComponent::~UCameraComponent()
+@@ -60,7 +60,7 @@ void UCameraComponent::Rotate(float DeltaYaw, float DeltaPitch)
+ 	Camera->Rotate(DeltaYaw, DeltaPitch);
+ }
+ 
+-CCamera* UCameraComponent::GetCamera() const
++FCamera* UCameraComponent::GetCamera() const
+ {
+ 	return Camera;
+ }
+diff --git a/Engine/Source/Component/CameraComponent.h b/Engine/Source/Component/CameraComponent.h
+index 604383f..2587bad 100644
+--- a/Engine/Source/Component/CameraComponent.h
++++ b/Engine/Source/Component/CameraComponent.h
+@@ -1,7 +1,7 @@
+ #pragma once
+ #include "SceneComponent.h"
+ 
+-class CCamera;
++class FCamera;
+ 
+ class ENGINE_API UCameraComponent : public USceneComponent
+ {
+@@ -20,7 +20,7 @@ public:
+ 	void Rotate(float DeltaYaw, float DeltaPitch);
+ 
+ 	//Camera property getter
+-	CCamera* GetCamera() const;
++	FCamera* GetCamera() const;
+ 	FMatrix GetViewMatrix() const;
+ 	FMatrix GetProjectionMatrix() const;
+ 
+@@ -29,5 +29,5 @@ public:
+ 	void SetSpeed(float Inspeed);
+ 	void SetSensitivity(float InSetSensitivity);
+ private:
+-	CCamera* Camera = nullptr;
++	FCamera* Camera = nullptr;
+ };
+\ No newline at end of file
+diff --git a/Engine/Source/Component/ObjComponent.cpp b/Engine/Source/Component/ObjComponent.cpp
+index 36ea16f..5a32a25 100644
+--- a/Engine/Source/Component/ObjComponent.cpp
++++ b/Engine/Source/Component/ObjComponent.cpp
+@@ -17,7 +17,7 @@ void UObjComponent::Initialize()
+ 
+ void UObjComponent::LoadPrimitive(const FString& FilePath)
+ {
+-	Primitive = std::make_unique<CPrimitiveObj>(FilePath);	
++	Primitive = std::make_unique<FPrimitiveObj>(FilePath);	
+ }
+ 
+ void UObjComponent::LoadTexture(ID3D11Device* Device, const FString& FilePath)
+diff --git a/Engine/Source/Core/Core.cpp b/Engine/Source/Core/Core.cpp
+index 0b39193..6b8147d 100644
+--- a/Engine/Source/Core/Core.cpp
++++ b/Engine/Source/Core/Core.cpp
+@@ -20,18 +20,18 @@
+ #include "Component/UUIDBillboardComponent.h"
+ #include "Component/SubUVComponent.h"
+ #include "Actor/SkySphereActor.h"
+-CCore::~CCore()
++FCore::~FCore()
+ {
+ 	Release();
+ }
+ 
+-bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType)
++bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType)
+ {
+ 	FPaths::Initialize();
+ 	WindowWidth = Width;
+ 	WindowHeight = Height;
+ 
+-	Renderer = std::make_unique<CRenderer>(Hwnd, Width, Height);
++	Renderer = std::make_unique<FRenderer>(Hwnd, Width, Height);
+ 	if (!Renderer)
+ 	{
+ 		return false;
+@@ -43,10 +43,10 @@ bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
+ 	FMaterialManager::Get().LoadAllMaterials(Renderer->GetDevice(), Renderer->GetRenderStateManager().get());
+ 
+ 	// InputManager
+-	InputManager = new CInputManager();
+-	EnhancedInput = new CEnhancedInputManager();
++	InputManager = new FInputManager();
++	EnhancedInput = new FEnhancedInputManager();
+ 
+-	PhysicsManager = std::make_unique<CPhysicsManager>();
++	PhysicsManager = std::make_unique<FPhysicsManager>();
+ 
+ 	// Timer
+ 	Timer.Initialize();
+@@ -63,7 +63,7 @@ bool CCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
+ 
+ 
+ 
+-void CCore::SetViewportClient(IViewportClient* InViewportClient)
++void FCore::SetViewportClient(IViewportClient* InViewportClient)
+ {
+ 	if (ViewportClient == InViewportClient)
+ 	{
+@@ -83,7 +83,7 @@ void CCore::SetViewportClient(IViewportClient* InViewportClient)
+ 	}
+ }
+ 
+-void CCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
++void FCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ {
+ 	if (InputManager)
+ 	{
+@@ -96,7 +96,7 @@ void CCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ 	}
+ }
+ 
+-void CCore::Release()
++void FCore::Release()
+ {
+ 	if (ViewportClient && Renderer)
+ 	{
+@@ -130,13 +130,13 @@ void CCore::Release()
+ 	}
+ }
+ 
+-void CCore::Tick()
++void FCore::Tick()
+ {
+ 	Timer.Tick();
+ 	Tick(Timer.GetDeltaTime());
+ }
+ 
+-void CCore::Tick(const float DeltaTime)
++void FCore::Tick(const float DeltaTime)
+ {
+ 	Input(DeltaTime);
+ 	Physics(DeltaTime);
+@@ -145,7 +145,7 @@ void CCore::Tick(const float DeltaTime)
+ 	LateUpdate(DeltaTime);
+ }
+ 
+-void CCore::Input(float DeltaTime)
++void FCore::Input(float DeltaTime)
+ {
+ 	if (InputManager)
+ 	{
+@@ -163,7 +163,7 @@ void CCore::Input(float DeltaTime)
+ 	}
+ }
+ 
+-void CCore::Physics(float DeltaTime)
++void FCore::Physics(float DeltaTime)
+ {
+ 	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
+ 	
+@@ -210,7 +210,7 @@ void CCore::Physics(float DeltaTime)
+ 	}
+ }
+ 
+-void CCore::GameLogic(float DeltaTime)
++void FCore::GameLogic(float DeltaTime)
+ {
+ 	UWorld* World = GetActiveWorld();
+ 	if (World)
+@@ -219,7 +219,7 @@ void CCore::GameLogic(float DeltaTime)
+ 	}
+ }
+ 
+-void CCore::LateUpdate(float DeltaTime)
++void FCore::LateUpdate(float DeltaTime)
+ {
+ 	if (GCInterval <= 0.0)
+ 	{
+@@ -234,7 +234,7 @@ void CCore::LateUpdate(float DeltaTime)
+ 	}
+ }
+ 
+-void CCore::Render()
++void FCore::Render()
+ {
+ 	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
+ 	if (!Renderer || !Level || Renderer->IsOccluded())
+@@ -282,7 +282,7 @@ void CCore::Render()
+ 	Renderer->EndFrame();
+ }
+ 
+-void CCore::OnResize(int32 Width, int32 Height)
++void FCore::OnResize(int32 Width, int32 Height)
+ {
+ 	if (Width == 0 || Height == 0) return;
+ 	WindowWidth = Width;
+@@ -291,7 +291,7 @@ void CCore::OnResize(int32 Width, int32 Height)
+ 	if (LevelManager) LevelManager->OnResize(Width, Height);
+ }
+ 
+-void CCore::RegisterConsoleVariables()
++void FCore::RegisterConsoleVariables()
+ {
+ 	FConsoleVariableManager& CVM = FConsoleVariableManager::Get();
+ 
+diff --git a/Engine/Source/Core/Core.h b/Engine/Source/Core/Core.h
+index b20ef0c..2b76825 100644
+--- a/Engine/Source/Core/Core.h
++++ b/Engine/Source/Core/Core.h
+@@ -10,24 +10,24 @@
+ #include "World/WorldContext.h"
+ #include <memory>
+ #include "Debug/DebugDrawManager.h"
+-class CEnhancedInputManager;
+-class CInputManager;
++class FEnhancedInputManager;
++class FInputManager;
+ 
+ class AActor;
+ class ULevel;
+ class ObjectManager;
+ class IViewportClient;
+ 
+-class ENGINE_API CCore
++class ENGINE_API FCore
+ {
+ public:
+-	CCore() = default;
+-	~CCore();
++	FCore() = default;
++	~FCore();
+ 
+-	CCore(const CCore&) = delete;
+-	CCore(CCore&&) = delete;
+-	CCore& operator=(const CCore&) = delete;
+-	CCore& operator=(CCore&&) = delete;
++	FCore(const FCore&) = delete;
++	FCore(FCore&&) = delete;
++	FCore& operator=(const FCore&) = delete;
++	FCore& operator=(FCore&&) = delete;
+ 
+ 	bool Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupLevelType = ELevelType::Game);
+ 	void Release();
+@@ -36,16 +36,16 @@ public:
+ 	void Tick(float DeltaTime);
+ 
+ 	void ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+-	CRenderer* GetRenderer() const { return Renderer.get(); }
++	FRenderer* GetRenderer() const { return Renderer.get(); }
+ 
+ 	IViewportClient* GetViewportClient() const { return ViewportClient; }
+-	CInputManager* GetInputManager() const { return InputManager; }
++	FInputManager* GetInputManager() const { return InputManager; }
+ 	const FTimer& GetTimer() const { return Timer; }
+ 
+ 	void SetViewportClient(IViewportClient* InViewportClient);
+ 
+ 	void OnResize(int32 Width, int32 Height);
+-	CEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
++	FEnhancedInputManager* GetEnhancedInputManager() const { return EnhancedInput; }
+ 	float GetDeltaTime() const { return Timer.GetDeltaTime(); }
+ 
+ 	FLevelManager* GetLevelManager() const { return LevelManager.get(); }
+@@ -79,15 +79,15 @@ private:
+ 
+ private:
+ 	FDebugDrawManager DebugDrawManager;
+-	std::unique_ptr<CRenderer> Renderer;
+-	CInputManager* InputManager = nullptr;
+-	CEnhancedInputManager* EnhancedInput = nullptr;
++	std::unique_ptr<FRenderer> Renderer;
++	FInputManager* InputManager = nullptr;
++	FEnhancedInputManager* EnhancedInput = nullptr;
+ 
+ 	ObjectManager* ObjManager = nullptr;
+ 	IViewportClient* ViewportClient = nullptr;
+ 	std::unique_ptr<FLevelManager> LevelManager;
+ 
+-	std::unique_ptr<CPhysicsManager> PhysicsManager;
++	std::unique_ptr<FPhysicsManager> PhysicsManager;
+ 
+ 	FTimer Timer;
+ 	double LastGCTime = 0.0;
+diff --git a/Engine/Source/Core/FEngine.cpp b/Engine/Source/Core/FEngine.cpp
+index ba678aa..75db389 100644
+--- a/Engine/Source/Core/FEngine.cpp
++++ b/Engine/Source/Core/FEngine.cpp
+@@ -13,7 +13,7 @@ FEngine::~FEngine()
+ 
+ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width, int32 Height)
+ {
+-	App = &CWindowApplication::Get();
++	App = &FWindowApplication::Get();
+ 	if (!App->Create(hInstance))
+ 	{
+ 		return false;
+@@ -34,7 +34,7 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
+ 
+ 	PreInitialize();
+ 
+-	Core = std::make_unique<CCore>();
++	Core = std::make_unique<FCore>();
+ 	if (!Core->Initialize(MainWindow->GetHwnd(), MainWindow->GetWidth(), MainWindow->GetHeight(), GetStartupLevelType()))
+ 	{
+ 		return false;
+@@ -83,7 +83,7 @@ void FEngine::OnResize(int32 Width, int32 Height)
+ 
+ std::unique_ptr<IViewportClient> FEngine::CreateViewportClient()
+ {
+-	return std::make_unique<CGameViewportClient>();
++	return std::make_unique<FGameViewportClient>();
+ }
+ 
+ void FEngine::Shutdown()
+diff --git a/Engine/Source/Core/FEngine.h b/Engine/Source/Core/FEngine.h
+index 1e28cbb..8b8e0ca 100644
+--- a/Engine/Source/Core/FEngine.h
++++ b/Engine/Source/Core/FEngine.h
+@@ -6,8 +6,8 @@
+ #include "ViewportClient.h"
+ #include <memory>
+ 
+-class CWindowApplication;
+-class CWindow;
++class FWindowApplication;
++class FWindow;
+ 
+ class ENGINE_API FEngine
+ {
+@@ -22,8 +22,8 @@ public:
+ 	void Run();
+ 	virtual void Shutdown();
+ 
+-	CCore* GetCore() const { return Core.get(); }
+-	CWindowApplication* GetApp() const { return App; }
++	FCore* GetCore() const { return Core.get(); }
++	FWindowApplication* GetApp() const { return App; }
+ 
+ protected:
+ 	virtual void PreInitialize() {}
+@@ -32,9 +32,9 @@ protected:
+ 	virtual ELevelType GetStartupLevelType() const { return ELevelType::Game; }
+ 	virtual std::unique_ptr<IViewportClient> CreateViewportClient();
+ 
+-	CWindowApplication* App = nullptr;
+-	CWindow* MainWindow = nullptr;
+-	std::unique_ptr<CCore> Core;
++	FWindowApplication* App = nullptr;
++	FWindow* MainWindow = nullptr;
++	std::unique_ptr<FCore> Core;
+ 	std::unique_ptr<IViewportClient> ViewportClient;
+ 
+ private:
+diff --git a/Engine/Source/Core/ViewportClient.cpp b/Engine/Source/Core/ViewportClient.cpp
+index 357ff00..da9d3eb 100644
+--- a/Engine/Source/Core/ViewportClient.cpp
++++ b/Engine/Source/Core/ViewportClient.cpp
+@@ -14,15 +14,15 @@
+ #include "Component/TextComponent.h"
+ 
+ 
+-void IViewportClient::Attach(CCore* Core, CRenderer* Renderer)
++void IViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+ {
+ }
+ 
+-void IViewportClient::Detach(CCore* Core, CRenderer* Renderer)
++void IViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+ {
+ }
+ 
+-void IViewportClient::Tick(CCore* Core, float DeltaTime)
++void IViewportClient::Tick(FCore* Core, float DeltaTime)
+ {
+ 	// instead Enhance input system controller
+ 	//if (!Core)
+@@ -30,14 +30,14 @@ void IViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	//	return;
+ 	//}
+ 
+-	//CInputManager* InputManager = Core->GetInputManager();
++	//FInputManager* InputManager = Core->GetInputManager();
+ 	//ULevel* Level = ResolveLevel(Core);
+ 	//if (!InputManager || !Level)
+ 	//{
+ 	//	return;
+ 	//}
+ 
+-	//CCamera* Camera = Level->GetCamera();
++	//FCamera* Camera = Level->GetCamera();
+ 	//if (!Camera)
+ 	//{
+ 	//	return;
+@@ -50,7 +50,7 @@ void IViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	//if (InputManager->IsKeyDown('E')) Camera->MoveUp(DeltaTime);
+ 	//if (InputManager->IsKeyDown('Q')) Camera->MoveUp(-DeltaTime);
+ 
+-	//if (InputManager->IsMouseButtonDown(CInputManager::MOUSE_RIGHT))
++	//if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+ 	//{
+ 	//	const float DeltaX = InputManager->GetMouseDeltaX();
+ 	//	const float DeltaY = InputManager->GetMouseDeltaY();
+@@ -58,21 +58,21 @@ void IViewportClient::Tick(CCore* Core, float DeltaTime)
+ 	//}
+ }
+ 
+-void IViewportClient::HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
++void IViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ {
+ }
+ 
+-ULevel* IViewportClient::ResolveLevel(CCore* Core) const
++ULevel* IViewportClient::ResolveLevel(FCore* Core) const
+ {
+ 	return Core ? Core->GetActiveLevel() : nullptr;
+ }
+ 
+-UWorld* IViewportClient::ResolveWorld(CCore* Core) const
++UWorld* IViewportClient::ResolveWorld(FCore* Core) const
+ {
+ 	return Core ? Core->GetActiveWorld() : nullptr;
+ }
+ 
+-void IViewportClient::BuildRenderCommands(CCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
++void IViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
+ {
+ 	UWorld* World = ResolveWorld(Core);
+ 	if (!World) return;
+@@ -92,7 +92,7 @@ void IViewportClient::HandleFileDropOnViewport(const FString& FilePath)
+ 
+ }
+ 
+-void CGameViewportClient::Attach(CCore* Core, CRenderer* Renderer)
++void FGameViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+ {
+ 	if (Renderer)
+ 	{
+@@ -100,7 +100,7 @@ void CGameViewportClient::Attach(CCore* Core, CRenderer* Renderer)
+ 	}
+ }
+ 
+-void CGameViewportClient::Detach(CCore* Core, CRenderer* Renderer)
++void FGameViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+ {
+ 	if (Renderer)
+ 	{
+diff --git a/Engine/Source/Core/ViewportClient.h b/Engine/Source/Core/ViewportClient.h
+index 9c20f71..cd8bc98 100644
+--- a/Engine/Source/Core/ViewportClient.h
++++ b/Engine/Source/Core/ViewportClient.h
+@@ -7,8 +7,8 @@
+ #include "Renderer/RenderCommand.h"
+ #include "World/RenderCollector.h"
+ 
+-class CCore;
+-class CRenderer;
++class FCore;
++class FRenderer;
+ class ULevel;
+ class FFrustum;
+ class UPrimitiveComponent;
+@@ -19,15 +19,15 @@ class ENGINE_API IViewportClient
+ public:
+ 	virtual ~IViewportClient() = default;
+ 
+-	virtual void Attach(CCore* Core, CRenderer* Renderer);
+-	virtual void Detach(CCore* Core, CRenderer* Renderer);
+-	virtual void Tick(CCore* Core, float DeltaTime);
+-	virtual void HandleMessage(CCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+-	virtual ULevel* ResolveLevel(CCore* Core) const;
+-	virtual UWorld* ResolveWorld(CCore* Core) const;
++	virtual void Attach(FCore* Core, FRenderer* Renderer);
++	virtual void Detach(FCore* Core, FRenderer* Renderer);
++	virtual void Tick(FCore* Core, float DeltaTime);
++	virtual void HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
++	virtual ULevel* ResolveLevel(FCore* Core) const;
++	virtual UWorld* ResolveWorld(FCore* Core) const;
+ 	FShowFlags& GetShowFlags() { return ShowFlags; }
+ 	const FShowFlags& GetShowFlags() const { return ShowFlags; }
+-	virtual void BuildRenderCommands(CCore* Core, ULevel* Level,
++	virtual void BuildRenderCommands(FCore* Core, ULevel* Level,
+ 		const FFrustum& Frustum, FRenderCommandQueue& OutQueue);
+ 	/** 입력 처리는 원래 Viewport 에서 처리하는게 맞는데 구조상 여기다 넣음 */
+ 	virtual void HandleFileDoubleClick(const FString& FilePath);
+@@ -37,9 +37,9 @@ protected:
+ 	FLevelRenderCollector RenderCollector;
+ };
+ 
+-class ENGINE_API CGameViewportClient : public IViewportClient
++class ENGINE_API FGameViewportClient : public IViewportClient
+ {
+ public:
+-	void Attach(CCore* Core, CRenderer* Renderer) override;
+-	void Detach(CCore* Core, CRenderer* Renderer) override;
++	void Attach(FCore* Core, FRenderer* Renderer) override;
++	void Detach(FCore* Core, FRenderer* Renderer) override;
+ };
+diff --git a/Engine/Source/Debug/DebugDrawManager.cpp b/Engine/Source/Debug/DebugDrawManager.cpp
+index 1616ed4..6be3c62 100644
+--- a/Engine/Source/Debug/DebugDrawManager.cpp
++++ b/Engine/Source/Debug/DebugDrawManager.cpp
+@@ -23,7 +23,7 @@ void FDebugDrawManager::DrawWorldAxis(float Length)
+ 	bDrawWorldAxis = true;
+ }
+ 
+-void FDebugDrawManager::Flush(CRenderer* Renderer, const FShowFlags& ShowFlags, UWorld* World)
++void FDebugDrawManager::Flush(FRenderer* Renderer, const FShowFlags& ShowFlags, UWorld* World)
+ {
+ 
+ 	if (!Renderer) return;
+@@ -70,7 +70,7 @@ void FDebugDrawManager::Clear()
+ 	bDrawWorldAxis = false;
+ }
+ 
+-void FDebugDrawManager::DrawAllCollisionBounds(CRenderer* Renderer, UWorld* World)
++void FDebugDrawManager::DrawAllCollisionBounds(FRenderer* Renderer, UWorld* World)
+ {
+ 	TArray<AActor*> AllActors = World->GetAllActors();
+ 	for (AActor* Actor : AllActors)
+diff --git a/Engine/Source/Debug/DebugDrawManager.h b/Engine/Source/Debug/DebugDrawManager.h
+index 806fe24..9ccac5a 100644
+--- a/Engine/Source/Debug/DebugDrawManager.h
++++ b/Engine/Source/Debug/DebugDrawManager.h
+@@ -4,7 +4,7 @@
+ #include "Math/Vector.h"
+ #include "../Math/Vector.h"
+ 
+-class CRenderer;
++class FRenderer;
+ class FShowFlags;
+ class UWorld;
+ struct FDebugLine
+@@ -28,11 +28,11 @@ public:
+ 	void DrawCube(const FVector& Center, const FVector& Extent, const FVector4& Color);
+ 	void DrawWorldAxis(float Length = 1000.f);
+ 
+-	void Flush(CRenderer* Renderer, const FShowFlags& ShowFlags, UWorld* World);
++	void Flush(FRenderer* Renderer, const FShowFlags& ShowFlags, UWorld* World);
+ 	void Clear();
+ private:
+ 	TArray<FDebugLine> Lines;
+ 	TArray<FDebugCube> Cubes;
+ 	bool bDrawWorldAxis = false;
+-	void DrawAllCollisionBounds(CRenderer* Renderer, UWorld* World);
++	void DrawAllCollisionBounds(FRenderer* Renderer, UWorld* World);
+ };
+\ No newline at end of file
+diff --git a/Engine/Source/Input/EnhancedInputManager.cpp b/Engine/Source/Input/EnhancedInputManager.cpp
+index 346bccc..5c6de48 100644
+--- a/Engine/Source/Input/EnhancedInputManager.cpp
++++ b/Engine/Source/Input/EnhancedInputManager.cpp
+@@ -6,7 +6,7 @@
+ 
+ #include <algorithm>
+ 
+-void CEnhancedInputManager::AddMappingContext(FInputMappingContext* Context, int32 Priority)
++void FEnhancedInputManager::AddMappingContext(FInputMappingContext* Context, int32 Priority)
+ {
+ 	MappingContexts.push_back({ Context, Priority });
+ 	std::sort(MappingContexts.begin(), MappingContexts.end(),
+@@ -16,7 +16,7 @@ void CEnhancedInputManager::AddMappingContext(FInputMappingContext* Context, int
+ 	});
+ }
+ 
+-void CEnhancedInputManager::RemoveMappingContext(FInputMappingContext* Context)
++void FEnhancedInputManager::RemoveMappingContext(FInputMappingContext* Context)
+ {
+ 	MappingContexts.erase(
+ 		std::remove_if(MappingContexts.begin(), MappingContexts.end(),
+@@ -24,23 +24,23 @@ void CEnhancedInputManager::RemoveMappingContext(FInputMappingContext* Context)
+ 		MappingContexts.end());
+ }
+ 
+-void CEnhancedInputManager::ClearAllMappingContexts()
++void FEnhancedInputManager::ClearAllMappingContexts()
+ {
+ 	MappingContexts.clear();
+ }
+ 
+-void CEnhancedInputManager::BindAction(FInputAction* Action, ETriggerEvent TriggerEvent, FInputActionCallback Callback)
++void FEnhancedInputManager::BindAction(FInputAction* Action, ETriggerEvent TriggerEvent, FInputActionCallback Callback)
+ {
+ 	Bindings.push_back({ Action, TriggerEvent, std::move(Callback) });
+ }
+ 
+-void CEnhancedInputManager::ClearBindings()
++void FEnhancedInputManager::ClearBindings()
+ {
+ 	Bindings.clear();
+ }
+ 
+ 
+-FInputActionValue CEnhancedInputManager::GetRawActionValue(CInputManager* Input, int32 Key)
++FInputActionValue FEnhancedInputManager::GetRawActionValue(FInputManager* Input, int32 Key)
+ {
+ 	if (Key == static_cast<int32>(EInputKey::MouseX))
+ 		return FInputActionValue(Input->GetMouseDeltaX());
+@@ -49,7 +49,7 @@ FInputActionValue CEnhancedInputManager::GetRawActionValue(CInputManager* Input,
+ 	return FInputActionValue(Input->IsKeyDown(Key) ? 1.0f : 0.0f);
+ }
+ 
+-void CEnhancedInputManager::ProcessInput(CInputManager* RawInput, float DeltaTime)
++void FEnhancedInputManager::ProcessInput(FInputManager* RawInput, float DeltaTime)
+ {
+ 	TMap<FInputAction*, FInputActionValue> ActionValues;
+ 	TMap<FInputAction*, ETriggerState> NewTriggerStates;
+diff --git a/Engine/Source/Input/EnhancedInputManager.h b/Engine/Source/Input/EnhancedInputManager.h
+index c1f056f..4c0e423 100644
+--- a/Engine/Source/Input/EnhancedInputManager.h
++++ b/Engine/Source/Input/EnhancedInputManager.h
+@@ -3,13 +3,13 @@
+ #include "InputTrigger.h"
+ #include <functional>
+ 
+-class CInputManager;
++class FInputManager;
+ 
+ struct FInputMappingContext;
+ struct FInputAction;
+ 
+ using FInputActionCallback = std::function<void(const FInputActionValue&)>;
+-class ENGINE_API  CEnhancedInputManager
++class ENGINE_API  FEnhancedInputManager
+ {
+ public:
+ 
+@@ -20,9 +20,9 @@ public:
+ 	void BindAction(FInputAction* Action, ETriggerEvent TriggerEvent, FInputActionCallback Callback);
+ 	void ClearBindings();
+ 
+-	void ProcessInput(CInputManager* RawInput, float DeltaTime);
++	void ProcessInput(FInputManager* RawInput, float DeltaTime);
+ private:
+-	FInputActionValue GetRawActionValue(CInputManager* Input, int32 Key);
++	FInputActionValue GetRawActionValue(FInputManager* Input, int32 Key);
+ 	struct FMappingContextEntry
+ 	{
+ 		FInputMappingContext* Context;
+diff --git a/Engine/Source/Input/InputManager.cpp b/Engine/Source/Input/InputManager.cpp
+index 399af65..3dbb034 100644
+--- a/Engine/Source/Input/InputManager.cpp
++++ b/Engine/Source/Input/InputManager.cpp
+@@ -1,7 +1,7 @@
+ #include "InputManager.h"
+ #include <cstring>
+ 
+-void CInputManager::ProcessMessage(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
++void FInputManager::ProcessMessage(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+ {
+ 	switch (Msg)
+ 	{
+@@ -53,7 +53,7 @@ void CInputManager::ProcessMessage(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LP
+ 	}
+ }
+ 
+-void CInputManager::Tick()
++void FInputManager::Tick()
+ {
+ 	// Save previous frame state
+ 	std::memcpy(PrevKeyState, KeyState, sizeof(KeyState));
+@@ -96,37 +96,37 @@ void CInputManager::Tick()
+ 	}
+ }
+ 
+-bool CInputManager::IsKeyDown(int32 Key) const
++bool FInputManager::IsKeyDown(int32 Key) const
+ {
+ 	if (Key < 0 || Key >= MAX_KEYS) return false;
+ 	return KeyState[Key];
+ }
+ 
+-bool CInputManager::IsKeyPressed(int32 Key) const
++bool FInputManager::IsKeyPressed(int32 Key) const
+ {
+ 	if (Key < 0 || Key >= MAX_KEYS) return false;
+ 	return KeyState[Key] && !PrevKeyState[Key];
+ }
+ 
+-bool CInputManager::IsKeyReleased(int32 Key) const
++bool FInputManager::IsKeyReleased(int32 Key) const
+ {
+ 	if (Key < 0 || Key >= MAX_KEYS) return false;
+ 	return !KeyState[Key] && PrevKeyState[Key];
+ }
+ 
+-bool CInputManager::IsMouseButtonDown(int32 Button) const
++bool FInputManager::IsMouseButtonDown(int32 Button) const
+ {
+ 	if (Button < 0 || Button >= MAX_MOUSE_BUTTONS) return false;
+ 	return MouseButtonState[Button];
+ }
+ 
+-bool CInputManager::IsMouseButtonPressed(int32 Button) const
++bool FInputManager::IsMouseButtonPressed(int32 Button) const
+ {
+ 	if (Button < 0 || Button >= MAX_MOUSE_BUTTONS) return false;
+ 	return MouseButtonState[Button] && !PrevMouseButtonState[Button];
+ }
+ 
+-bool CInputManager::IsMouseButtonReleased(int32 Button) const
++bool FInputManager::IsMouseButtonReleased(int32 Button) const
+ {
+ 	if (Button < 0 || Button >= MAX_MOUSE_BUTTONS) return false;
+ 	return !MouseButtonState[Button] && PrevMouseButtonState[Button];
+diff --git a/Engine/Source/Input/InputManager.h b/Engine/Source/Input/InputManager.h
+index 2f90f7b..5a4c785 100644
+--- a/Engine/Source/Input/InputManager.h
++++ b/Engine/Source/Input/InputManager.h
+@@ -17,16 +17,16 @@ struct FInputEvent
+ 	int32 KeyOrButton;
+ };
+ 
+-class ENGINE_API CInputManager
++class ENGINE_API FInputManager
+ {
+ public:
+-	CInputManager() = default;
+-	~CInputManager() = default;
++	FInputManager() = default;
++	~FInputManager() = default;
+ 
+-	CInputManager(const CInputManager&) = delete;
+-	CInputManager(CInputManager&&) = delete;
+-	CInputManager& operator=(const CInputManager&) = delete;
+-	CInputManager& operator=(CInputManager&&) = delete;
++	FInputManager(const FInputManager&) = delete;
++	FInputManager(FInputManager&&) = delete;
++	FInputManager& operator=(const FInputManager&) = delete;
++	FInputManager& operator=(FInputManager&&) = delete;
+ 
+ 	void ProcessMessage(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+ 	void Tick();
+diff --git a/Engine/Source/Physics/PhysicsManager.cpp b/Engine/Source/Physics/PhysicsManager.cpp
+index f0c6693..1ac2e3a 100644
+--- a/Engine/Source/Physics/PhysicsManager.cpp
++++ b/Engine/Source/Physics/PhysicsManager.cpp
+@@ -8,7 +8,7 @@
+ #include "Component/UUIDBillboardComponent.h"
+ #include "Component/TextComponent.h"
+ 
+-bool CPhysicsManager::Linetrace(const ULevel* Level, const FVector& Start, const FVector& End, FHitResult& OutHit)
++bool FPhysicsManager::Linetrace(const ULevel* Level, const FVector& Start, const FVector& End, FHitResult& OutHit)
+ {
+ 	const TArray<AActor*>& Actors = Level->GetActors();
+ 
+diff --git a/Engine/Source/Physics/PhysicsManager.h b/Engine/Source/Physics/PhysicsManager.h
+index ce7bdad..f0b002a 100644
+--- a/Engine/Source/Physics/PhysicsManager.h
++++ b/Engine/Source/Physics/PhysicsManager.h
+@@ -10,7 +10,7 @@ struct FHitResult
+ 	FVector HitLocation;
+ };
+ 
+-class CPhysicsManager
++class FPhysicsManager
+ {
+ public:
+ 	/**
+diff --git a/Engine/Source/Platform/Windows/Window.cpp b/Engine/Source/Platform/Windows/Window.cpp
+index 7bfe285..fac1b77 100644
+--- a/Engine/Source/Platform/Windows/Window.cpp
++++ b/Engine/Source/Platform/Windows/Window.cpp
+@@ -1,12 +1,12 @@
+ #include "Window.h"
+ #include "WindowApplication.h"
+ 
+-CWindow::~CWindow()
++FWindow::~FWindow()
+ {
+ 	Destroy();
+ }
+ 
+-bool CWindow::Create(HINSTANCE Instance, const WCHAR* ClassName,
++bool FWindow::Create(HINSTANCE Instance, const WCHAR* ClassName,
+ 	const WCHAR* Title, int InWidth, int InHeight, int InX, int InY)
+ {
+ 	Width = InWidth;
+@@ -32,21 +32,21 @@ bool CWindow::Create(HINSTANCE Instance, const WCHAR* ClassName,
+ 		return false;
+ 	}
+ 
+-	CWindowApplication::Get().RegisterWindow(Hwnd, this);
++	FWindowApplication::Get().RegisterWindow(Hwnd, this);
+ 	return true;
+ }
+ 
+-void CWindow::Destroy()
++void FWindow::Destroy()
+ {
+ 	if (Hwnd)
+ 	{
+-		CWindowApplication::Get().UnregisterWindow(Hwnd);
++		FWindowApplication::Get().UnregisterWindow(Hwnd);
+ 		::DestroyWindow(Hwnd);
+ 		Hwnd = nullptr;
+ 	}
+ }
+ 
+-void CWindow::Show()
++void FWindow::Show()
+ {
+ 	if (Hwnd)
+ 	{
+@@ -55,7 +55,7 @@ void CWindow::Show()
+ 	}
+ }
+ 
+-void CWindow::Hide()
++void FWindow::Hide()
+ {
+ 	if (Hwnd)
+ 	{
+@@ -63,17 +63,17 @@ void CWindow::Hide()
+ 	}
+ }
+ 
+-void CWindow::AddMessageFilter(FWndProcFilter Filter)
++void FWindow::AddMessageFilter(FWndProcFilter Filter)
+ {
+ 	MessageFilters.push_back(Filter);
+ }
+ 
+-void CWindow::SetOnResizeCallback(FOnResizeCallback Callback)
++void FWindow::SetOnResizeCallback(FOnResizeCallback Callback)
+ {
+ 	OnResizeCallback = Callback;
+ }
+ 
+-LRESULT CWindow::HandleMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
++LRESULT FWindow::HandleMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
+ {
+ 	// Run message filters (ImGui, picking, input, etc.)
+ 	for (auto& Filter : MessageFilters)
+diff --git a/Engine/Source/Platform/Windows/Window.h b/Engine/Source/Platform/Windows/Window.h
+index 01aa6a6..1c150b8 100644
+--- a/Engine/Source/Platform/Windows/Window.h
++++ b/Engine/Source/Platform/Windows/Window.h
+@@ -4,11 +4,11 @@
+ #include <functional>
+ #include "WindowTypes.h"
+ 
+-class ENGINE_API CWindow
++class ENGINE_API FWindow
+ {
+ public:
+-	CWindow() = default;
+-	~CWindow();
++	FWindow() = default;
++	~FWindow();
+ 
+ 	bool Create(HINSTANCE Instance, const WCHAR* ClassName,
+ 		const WCHAR* Title, int InWidth, int InHeight, int InX, int InY);
+diff --git a/Engine/Source/Platform/Windows/WindowApplication.cpp b/Engine/Source/Platform/Windows/WindowApplication.cpp
+index 13b0741..c0becf1 100644
+--- a/Engine/Source/Platform/Windows/WindowApplication.cpp
++++ b/Engine/Source/Platform/Windows/WindowApplication.cpp
+@@ -3,15 +3,15 @@
+ #include "Window.h"
+ 
+ 
+-TMap<HWND, CWindow*> CWindowApplication::WindowMap;
++TMap<HWND, FWindow*> FWindowApplication::WindowMap;
+ 
+-CWindowApplication& CWindowApplication::Get()
++FWindowApplication& FWindowApplication::Get()
+ {
+-	static CWindowApplication Instance;
++	static FWindowApplication Instance;
+ 	return Instance;
+ }
+ 
+-bool CWindowApplication::Create(HINSTANCE InInstance, const WCHAR* ClassName)
++bool FWindowApplication::Create(HINSTANCE InInstance, const WCHAR* ClassName)
+ {
+ 	Instance = InInstance;
+ 	GhInstance = InInstance;
+@@ -33,7 +33,7 @@ bool CWindowApplication::Create(HINSTANCE InInstance, const WCHAR* ClassName)
+ 	return true;
+ }
+ 
+-void CWindowApplication::Destroy()
++void FWindowApplication::Destroy()
+ {
+ 	if (MainWindow)
+ 	{
+@@ -48,9 +48,9 @@ void CWindowApplication::Destroy()
+ 	}
+ }
+ 
+-CWindow* CWindowApplication::MakeWindow(const WCHAR* Title, int Width, int Height, int X, int Y)
++FWindow* FWindowApplication::MakeWindow(const WCHAR* Title, int Width, int Height, int X, int Y)
+ {
+-	CWindow* Window = new CWindow();
++	FWindow* Window = new FWindow();
+ 	if (!Window->Create(Instance, WindowClassName, Title, Width, Height, X, Y))
+ 	{
+ 		delete Window;
+@@ -59,13 +59,13 @@ CWindow* CWindowApplication::MakeWindow(const WCHAR* Title, int Width, int Heigh
+ 	return Window;
+ }
+ 
+-bool CWindowApplication::CreateMainWindow(const WCHAR* Title, int Width, int Height, int X, int Y)
++bool FWindowApplication::CreateMainWindow(const WCHAR* Title, int Width, int Height, int X, int Y)
+ {
+ 	MainWindow = MakeWindow(Title, Width, Height, X, Y);
+ 	return MainWindow != nullptr;
+ }
+ 
+-bool CWindowApplication::PumpMessages()
++bool FWindowApplication::PumpMessages()
+ {
+ 	MSG Msg = {};
+ 	while (PeekMessage(&Msg, nullptr, 0, 0, PM_REMOVE))
+@@ -80,7 +80,7 @@ bool CWindowApplication::PumpMessages()
+ 	return true;
+ }
+ 
+-LRESULT CALLBACK CWindowApplication::StaticWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
++LRESULT CALLBACK FWindowApplication::StaticWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+ {
+ 	auto It = WindowMap.find(hWnd);
+ 	if (It != WindowMap.end())
+@@ -90,32 +90,32 @@ LRESULT CALLBACK CWindowApplication::StaticWndProc(HWND hWnd, UINT Msg, WPARAM w
+ 	return DefWindowProc(hWnd, Msg, wParam, lParam);
+ }
+ 
+-void CWindowApplication::RegisterWindow(HWND Hwnd, CWindow* Window)
++void FWindowApplication::RegisterWindow(HWND Hwnd, FWindow* Window)
+ {
+ 	WindowMap[Hwnd] = Window;
+ }
+ 
+-void CWindowApplication::UnregisterWindow(HWND Hwnd)
++void FWindowApplication::UnregisterWindow(HWND Hwnd)
+ {
+ 	WindowMap.erase(Hwnd);
+ }
+ 
+-HWND CWindowApplication::GetHwnd() const
++HWND FWindowApplication::GetHwnd() const
+ {
+ 	return MainWindow ? MainWindow->GetHwnd() : nullptr;
+ }
+ 
+-int32 CWindowApplication::GetWindowWidth() const
++int32 FWindowApplication::GetWindowWidth() const
+ {
+ 	return MainWindow ? MainWindow->GetWidth() : 0;
+ }
+ 
+-int32 CWindowApplication::GetWindowHeight() const
++int32 FWindowApplication::GetWindowHeight() const
+ {
+ 	return MainWindow ? MainWindow->GetHeight() : 0;
+ }
+ 
+-void CWindowApplication::AddMessageFilter(FWndProcFilter Filter)
++void FWindowApplication::AddMessageFilter(FWndProcFilter Filter)
+ {
+ 	if (MainWindow)
+ 	{
+@@ -123,7 +123,7 @@ void CWindowApplication::AddMessageFilter(FWndProcFilter Filter)
+ 	}
+ }
+ 
+-void CWindowApplication::SetOnResizeCallback(FOnResizeCallback Callback)
++void FWindowApplication::SetOnResizeCallback(FOnResizeCallback Callback)
+ {
+ 	if (MainWindow)
+ 	{
+@@ -131,7 +131,7 @@ void CWindowApplication::SetOnResizeCallback(FOnResizeCallback Callback)
+ 	}
+ }
+ 
+-void CWindowApplication::ShowWindow()
++void FWindowApplication::ShowWindow()
+ {
+ 	if (MainWindow)
+ 	{
+diff --git a/Engine/Source/Platform/Windows/WindowApplication.h b/Engine/Source/Platform/Windows/WindowApplication.h
+index 9fe2e40..01f435b 100644
+--- a/Engine/Source/Platform/Windows/WindowApplication.h
++++ b/Engine/Source/Platform/Windows/WindowApplication.h
+@@ -2,17 +2,17 @@
+ #include "CoreMinimal.h"
+ #include "WindowTypes.h"
+ 
+-class CWindow;
++class FWindow;
+ 
+-class ENGINE_API CWindowApplication
++class ENGINE_API FWindowApplication
+ {
+ public:
+-	static CWindowApplication& Get();
++	static FWindowApplication& Get();
+ 
+ 	bool Create(HINSTANCE InInstance, const WCHAR* ClassName = L"JungleEngineWindow");
+ 	void Destroy();
+ 
+-	CWindow* MakeWindow(const WCHAR* Title, int Width, int Height, int X = 100, int Y = 100);
++	FWindow* MakeWindow(const WCHAR* Title, int Width, int Height, int X = 100, int Y = 100);
+ 	bool CreateMainWindow(const WCHAR* Title, int Width, int Height, int X = 100, int Y = 100);
+ 
+ 	// Returns false when WM_QUIT received
+@@ -21,7 +21,7 @@ public:
+ 	HINSTANCE GetInstance() const { return Instance; }
+ 	const WCHAR* GetClassName() const { return WindowClassName; }
+ 
+-	CWindow* GetMainWindow() const { return MainWindow; }
++	FWindow* GetMainWindow() const { return MainWindow; }
+ 	HWND GetHwnd() const;
+ 	int32 GetWindowWidth() const;
+ 	int32 GetWindowHeight() const;
+@@ -31,8 +31,8 @@ public:
+ 	void ShowWindow();
+ 
+ private:
+-	CWindowApplication() = default;
+-	~CWindowApplication() = default;
++	FWindowApplication() = default;
++	~FWindowApplication() = default;
+ 
+ 	static LRESULT CALLBACK StaticWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+ 
+@@ -40,13 +40,13 @@ private:
+ 	WNDCLASSEX WindowClass = {};
+ 	WCHAR WindowClassName[128] = {};
+ 	bool bClassRegistered = false;
+-	CWindow* MainWindow = nullptr;
++	FWindow* MainWindow = nullptr;
+ 
+-	// HWND -> CWindow mapping
+-	static TMap<HWND, CWindow*> WindowMap;
++	// HWND -> FWindow mapping
++	static TMap<HWND, FWindow*> WindowMap;
+ 
+-	void RegisterWindow(HWND Hwnd, CWindow* Window);
++	void RegisterWindow(HWND Hwnd, FWindow* Window);
+ 	void UnregisterWindow(HWND Hwnd);
+ 
+-	friend class CWindow;
++	friend class FWindow;
+ };
+diff --git a/Engine/Source/Primitive/PrimitiveObj.cpp b/Engine/Source/Primitive/PrimitiveObj.cpp
+index 19e33dd..c04bf20 100644
+--- a/Engine/Source/Primitive/PrimitiveObj.cpp
++++ b/Engine/Source/Primitive/PrimitiveObj.cpp
+@@ -3,18 +3,18 @@
+ #include <fstream>
+ #include <sstream>
+ 
+-CPrimitiveObj::CPrimitiveObj()
++FPrimitiveObj::FPrimitiveObj()
+ {
+ 	MeshData = std::make_shared<FMeshData>();
+ }
+ 
+-CPrimitiveObj::CPrimitiveObj(const FString& FilePath)
++FPrimitiveObj::FPrimitiveObj(const FString& FilePath)
+ {
+ 	MeshData = std::make_shared<FMeshData>();
+ 	LoadObj(FilePath);
+ }
+ 
+-void CPrimitiveObj::LoadObj(const FString& FilePath)
++void FPrimitiveObj::LoadObj(const FString& FilePath)
+ {
+ 	SetPrimitiveFileName(FilePath);
+ 
+diff --git a/Engine/Source/Primitive/PrimitiveObj.h b/Engine/Source/Primitive/PrimitiveObj.h
+index ac312f1..647f637 100644
+--- a/Engine/Source/Primitive/PrimitiveObj.h
++++ b/Engine/Source/Primitive/PrimitiveObj.h
+@@ -2,11 +2,11 @@
+ 
+ #include "PrimitiveBase.h"
+ 
+-class CPrimitiveObj : public CPrimitiveBase
++class FPrimitiveObj : public CPrimitiveBase
+ {
+ public:
+-	CPrimitiveObj();
+-	CPrimitiveObj(const FString& FilePath);
++	FPrimitiveObj();
++	FPrimitiveObj(const FString& FilePath);
+ 
+ private:
+ 	void LoadObj(const FString& FilePath);
+diff --git a/Engine/Source/Renderer/MaterialManager.cpp b/Engine/Source/Renderer/MaterialManager.cpp
+index 2613878..10f5d7c 100644
+--- a/Engine/Source/Renderer/MaterialManager.cpp
++++ b/Engine/Source/Renderer/MaterialManager.cpp
+@@ -53,7 +53,7 @@ FMaterialManager& FMaterialManager::Get()
+ 	return Instance;
+ }
+ 
+-void FMaterialManager::LoadAllMaterials(ID3D11Device* InDevice, CRenderStateManager* InStateManager)
++void FMaterialManager::LoadAllMaterials(ID3D11Device* InDevice, FRenderStateManager* InStateManager)
+ {
+ 	// 경로 내의 모든 머티리얼 JSON 파일 가져오기
+ 	namespace fs = std::filesystem;
+@@ -80,7 +80,7 @@ void FMaterialManager::LoadAllMaterials(ID3D11Device* InDevice, CRenderStateMana
+ 
+ std::shared_ptr<FMaterial> FMaterialManager::LoadFromFile(
+ 	ID3D11Device* InDevice, 
+-	CRenderStateManager* InStateManager, 
++	FRenderStateManager* InStateManager, 
+ 	const FString& InFilePath
+ )
+ {
+diff --git a/Engine/Source/Renderer/MaterialManager.h b/Engine/Source/Renderer/MaterialManager.h
+index 117164a..350b22d 100644
+--- a/Engine/Source/Renderer/MaterialManager.h
++++ b/Engine/Source/Renderer/MaterialManager.h
+@@ -5,7 +5,7 @@
+ #include <memory>
+ 
+ class FMaterial;
+-class CRenderStateManager;
++class FRenderStateManager;
+ 
+ // Material 에셋 로더 + 캐시 (싱글톤)
+ // JSON 파일에서 Material을 로드하고 이름 기반으로 캐싱
+@@ -15,10 +15,10 @@ public:
+ 	static FMaterialManager& Get();
+ 
+ 	// 지정된 디렉토리 내의 모든 머티리얼을 미리 로드
+-	void LoadAllMaterials(ID3D11Device* Device, CRenderStateManager* InStateManager);
++	void LoadAllMaterials(ID3D11Device* Device, FRenderStateManager* InStateManager);
+ 
+ 	// JSON 파일에서 Material 로드 (캐시 히트 시 기존 반환)
+-	std::shared_ptr<FMaterial> LoadFromFile(ID3D11Device* InDevice, CRenderStateManager* InStateManager, const FString& InFilePath);
++	std::shared_ptr<FMaterial> LoadFromFile(ID3D11Device* InDevice, FRenderStateManager* InStateManager, const FString& InFilePath);
+ 
+ 	// 이름으로 이미 로드된 Material 조회
+ 	std::shared_ptr<FMaterial> FindByName(const FString& Name) const;
+diff --git a/Engine/Source/Renderer/RenderStateManager.cpp b/Engine/Source/Renderer/RenderStateManager.cpp
+index f33ed5a..eb3a9b5 100644
+--- a/Engine/Source/Renderer/RenderStateManager.cpp
++++ b/Engine/Source/Renderer/RenderStateManager.cpp
+@@ -1,7 +1,7 @@
+ #include "RenderStateManager.h"
+ #include "RenderState.h"
+ 
+-void CRenderStateManager::PrepareCommonStates()
++void FRenderStateManager::PrepareCommonStates()
+ {
+ 	// 예: Solid/Wireframe x Cull None/Back/Front
+ 	D3D11_FILL_MODE fills[] = { D3D11_FILL_SOLID, D3D11_FILL_WIREFRAME };
+@@ -31,7 +31,7 @@ void CRenderStateManager::PrepareCommonStates()
+ 	GetOrCreateBlendState(blendOpt);
+ }
+ 
+-std::shared_ptr<FRasterizerState> CRenderStateManager::GetOrCreateRasterizerState(const FRasterizerStateOption& opt)
++std::shared_ptr<FRasterizerState> FRenderStateManager::GetOrCreateRasterizerState(const FRasterizerStateOption& opt)
+ {
+ 	uint32 key = opt.ToKey();
+ 	auto it = RasterizerStateMap.find(key);
+@@ -43,7 +43,7 @@ std::shared_ptr<FRasterizerState> CRenderStateManager::GetOrCreateRasterizerStat
+ 	return state;
+ }
+ 
+-std::shared_ptr<FDepthStencilState> CRenderStateManager::GetOrCreateDepthStencilState(const FDepthStencilStateOption& opt)
++std::shared_ptr<FDepthStencilState> FRenderStateManager::GetOrCreateDepthStencilState(const FDepthStencilStateOption& opt)
+ {
+ 	uint32 key = opt.ToKey();
+ 	auto it = DepthStencilStateMap.find(key);
+@@ -55,7 +55,7 @@ std::shared_ptr<FDepthStencilState> CRenderStateManager::GetOrCreateDepthStencil
+ 	return state;
+ }
+ 
+-std::shared_ptr<FBlendState> CRenderStateManager::GetOrCreateBlendState(const FBlendStateOption& opt)
++std::shared_ptr<FBlendState> FRenderStateManager::GetOrCreateBlendState(const FBlendStateOption& opt)
+ {
+ 	uint32 key = opt.ToKey();
+ 	auto it = BlendStateMap.find(key);
+@@ -67,7 +67,7 @@ std::shared_ptr<FBlendState> CRenderStateManager::GetOrCreateBlendState(const FB
+ 	return state;
+ }
+ 
+-void CRenderStateManager::BindState(std::shared_ptr<FRasterizerState> InRS)
++void FRenderStateManager::BindState(std::shared_ptr<FRasterizerState> InRS)
+ {
+ 	if (InRS != nullptr && CurrentRasterizerState != InRS)
+ 	{
+@@ -76,7 +76,7 @@ void CRenderStateManager::BindState(std::shared_ptr<FRasterizerState> InRS)
+ 	}
+ }
+ 
+-void CRenderStateManager::BindState(std::shared_ptr<FDepthStencilState> InDSS)
++void FRenderStateManager::BindState(std::shared_ptr<FDepthStencilState> InDSS)
+ {
+ 	if (InDSS != nullptr && CurrentDepthStencilState != InDSS)
+ 	{
+@@ -85,7 +85,7 @@ void CRenderStateManager::BindState(std::shared_ptr<FDepthStencilState> InDSS)
+ 	}
+ }
+ 
+-void CRenderStateManager::BindState(std::shared_ptr<FBlendState> InBS)
++void FRenderStateManager::BindState(std::shared_ptr<FBlendState> InBS)
+ {
+ 	if (InBS != nullptr && CurrentBlendState != InBS)
+ 	{
+@@ -94,7 +94,7 @@ void CRenderStateManager::BindState(std::shared_ptr<FBlendState> InBS)
+ 	}
+ }
+ 
+-void CRenderStateManager::RebindState()
++void FRenderStateManager::RebindState()
+ {
+ 	if (CurrentRasterizerState) CurrentRasterizerState->Bind(DeviceContext);
+ 	if (CurrentDepthStencilState) CurrentDepthStencilState->Bind(DeviceContext);
+diff --git a/Engine/Source/Renderer/RenderStateManager.h b/Engine/Source/Renderer/RenderStateManager.h
+index d0e0dfa..9b9ea34 100644
+--- a/Engine/Source/Renderer/RenderStateManager.h
++++ b/Engine/Source/Renderer/RenderStateManager.h
+@@ -10,7 +10,7 @@ using Microsoft::WRL::ComPtr;
+ 
+ /// RasterizerState, BlendState, DepthStencilState 등의 Renderer state 담당
+ /// 현재 RasterizerState만 적용된 상태
+-class ENGINE_API CRenderStateManager
++class ENGINE_API FRenderStateManager
+ {
+ private:
+ 	ID3D11Device* Device;
+@@ -24,7 +24,7 @@ private:
+ 	std::shared_ptr<FBlendState> CurrentBlendState = nullptr;
+ 
+ public:
+-	CRenderStateManager(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext) 
++	FRenderStateManager(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext) 
+ 		: Device(InDevice)
+ 		, DeviceContext(InDeviceContext)
+ 	{}
+diff --git a/Engine/Source/Renderer/Renderer.cpp b/Engine/Source/Renderer/Renderer.cpp
+index dca5188..e7ee5d9 100644
+--- a/Engine/Source/Renderer/Renderer.cpp
++++ b/Engine/Source/Renderer/Renderer.cpp
+@@ -21,17 +21,17 @@ static FVector GetCameraWorldPositionFromViewMatrix(const FMatrix& ViewMatrix)
+ 	return FVector(InvView.M[3][0], InvView.M[3][1], InvView.M[3][2]);
+ }
+ 
+-CRenderer::CRenderer(HWND InHwnd, int32 InWidth, int32 InHeight)
++FRenderer::FRenderer(HWND InHwnd, int32 InWidth, int32 InHeight)
+ {
+ 	Initialize(InHwnd, InWidth, InHeight);
+ }
+ 
+-CRenderer::~CRenderer()
++FRenderer::~FRenderer()
+ {
+ 	Release();
+ }
+ 
+-void CRenderer::SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
++void FRenderer::SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView, ID3D11DepthStencilView* InDepthStencilView, const D3D11_VIEWPORT& InViewport)
+ {
+ 	LevelRenderTargetView = InRenderTargetView;
+ 	LevelDepthStencilView = InDepthStencilView;
+@@ -39,7 +39,7 @@ void CRenderer::SetLevelRenderTarget(ID3D11RenderTargetView* InRenderTargetView,
+ 	bUseLevelRenderTargetOverride = (LevelRenderTargetView != nullptr && LevelDepthStencilView != nullptr);
+ }
+ 
+-void CRenderer::ClearLevelRenderTarget()
++void FRenderer::ClearLevelRenderTarget()
+ {
+ 	LevelRenderTargetView = nullptr;
+ 	LevelDepthStencilView = nullptr;
+@@ -47,7 +47,7 @@ void CRenderer::ClearLevelRenderTarget()
+ 	bUseLevelRenderTargetOverride = false;
+ }
+ 
+-void CRenderer::SetGUICallbacks(
++void FRenderer::SetGUICallbacks(
+ 	FGUICallback InInit,
+ 	FGUICallback InShutdown,
+ 	FGUICallback InNewFrame,
+@@ -66,12 +66,12 @@ void CRenderer::SetGUICallbacks(
+ 	}
+ }
+ 
+-void CRenderer::SetGUIUpdateCallback(FGUICallback InUpdate)
++void FRenderer::SetGUIUpdateCallback(FGUICallback InUpdate)
+ {
+ 	GUIUpdate = std::move(InUpdate);
+ }
+ 
+-void CRenderer::ClearViewportCallbacks()
++void FRenderer::ClearViewportCallbacks()
+ {
+ 	if (GUIShutdown)
+ 	{
+@@ -87,7 +87,7 @@ void CRenderer::ClearViewportCallbacks()
+ 	PostRenderCallback = nullptr;
+ }
+ 
+-bool CRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
++bool FRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
+ {
+ 	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
+ 	SwapChainDesc.BufferDesc.Width = Width;
+@@ -122,7 +122,7 @@ bool CRenderer::CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height)
+ 	return true;
+ }
+ 
+-bool CRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
++bool FRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
+ {
+ 	ID3D11Texture2D* BackBuffer = nullptr;
+ 	HRESULT Hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer);
+@@ -152,7 +152,7 @@ bool CRenderer::CreateRenderTargetAndDepthStencil(int32 Width, int32 Height)
+ 	return SUCCEEDED(Hr);
+ }
+ 
+-bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
++bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
+ {
+ 	Hwnd = InHwnd;
+ 
+@@ -166,7 +166,7 @@ bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
+ 	Viewport.MinDepth = 0.f;
+ 	Viewport.MaxDepth = 1.f;
+ 
+-	RenderStateManager = std::make_unique<CRenderStateManager>(Device, DeviceContext);
++	RenderStateManager = std::make_unique<FRenderStateManager>(Device, DeviceContext);
+ 	RenderStateManager->PrepareCommonStates();
+ 
+ 	if (!CreateConstantBuffers()) return false;
+@@ -263,13 +263,13 @@ bool CRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
+ 	return true;
+ }
+ 
+-void CRenderer::SetConstantBuffers()
++void FRenderer::SetConstantBuffers()
+ {
+ 	ID3D11Buffer* CBs[2] = { FrameConstantBuffer, ObjectConstantBuffer };
+ 	DeviceContext->VSSetConstantBuffers(0, 2, CBs);
+ }
+ 
+-void CRenderer::BeginFrame()
++void FRenderer::BeginFrame()
+ {
+ 	if (GUINewFrame) GUINewFrame();
+ 	if (GUIUpdate) GUIUpdate();
+@@ -297,14 +297,14 @@ void CRenderer::BeginFrame()
+ 	ClearCommandList();
+ }
+ 
+-void CRenderer::ClearCommandList()
++void FRenderer::ClearCommandList()
+ {
+ 	PrevCommandCount = CommandList.size();
+ 	CommandList.clear();
+ 	CommandList.reserve(PrevCommandCount);	
+ }
+ 
+-void CRenderer::EndFrame()
++void FRenderer::EndFrame()
+ {
+ 	if (RenderTargetView)
+ 	{
+@@ -321,7 +321,7 @@ void CRenderer::EndFrame()
+ 	if (GUIPostPresent) GUIPostPresent();
+ }
+ 
+-void CRenderer::SubmitCommands(const FRenderCommandQueue& Queue)
++void FRenderer::SubmitCommands(const FRenderCommandQueue& Queue)
+ {
+ 	ViewMatrix = Queue.ViewMatrix;
+ 	ProjectionMatrix = Queue.ProjectionMatrix;
+@@ -333,7 +333,7 @@ void CRenderer::SubmitCommands(const FRenderCommandQueue& Queue)
+ 	}
+ }
+ 
+-void CRenderer::AddCommand(const FRenderCommand& Command)
++void FRenderer::AddCommand(const FRenderCommand& Command)
+ {
+ 	CommandList.push_back(Command);
+ 	FRenderCommand& Added = CommandList.back();
+@@ -341,7 +341,7 @@ void CRenderer::AddCommand(const FRenderCommand& Command)
+ 	Added.SortKey = FRenderCommand::MakeSortKey(Added.Material, Added.MeshData);
+ }
+ 
+-void CRenderer::ExecuteCommands()
++void FRenderer::ExecuteCommands()
+ {
+ 	std::sort(CommandList.begin(), CommandList.end(),
+ 		[](const FRenderCommand& A, const FRenderCommand& B) {
+@@ -359,7 +359,7 @@ void CRenderer::ExecuteCommands()
+ 	if (PostRenderCallback) PostRenderCallback(this);
+ }
+ 
+-void CRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
++void FRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
+ {
+ 	FMaterial* CurrentMaterial = nullptr;
+ 	FMeshData* CurrentMesh = nullptr;
+@@ -433,17 +433,17 @@ void CRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
+ 	}
+ }
+ 
+-void CRenderer::ClearDepthBuffer()
++void FRenderer::ClearDepthBuffer()
+ {
+ 	if (LevelDepthStencilView) DeviceContext->ClearDepthStencilView(LevelDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+ }
+ 
+-FVector CRenderer::GetCameraPosition() const
++FVector FRenderer::GetCameraPosition() const
+ {
+ 	return GetCameraWorldPositionFromViewMatrix(ViewMatrix);
+ }
+ 
+-bool CRenderer::CreateConstantBuffers()
++bool FRenderer::CreateConstantBuffers()
+ {
+ 	D3D11_BUFFER_DESC Desc = {};
+ 	Desc.Usage = D3D11_USAGE_DYNAMIC;
+@@ -457,7 +457,7 @@ bool CRenderer::CreateConstantBuffers()
+ 	return SUCCEEDED(Device->CreateBuffer(&Desc, nullptr, &ObjectConstantBuffer));
+ }
+ 
+-void CRenderer::UpdateFrameConstantBuffer()
++void FRenderer::UpdateFrameConstantBuffer()
+ {
+ 	FFrameConstantBuffer CBData;
+ 	CBData.View = ViewMatrix.GetTransposed();
+@@ -470,7 +470,7 @@ void CRenderer::UpdateFrameConstantBuffer()
+ 	}
+ }
+ 
+-void CRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
++void FRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
+ {
+ 	FObjectConstantBuffer CBData;
+ 	CBData.World = WorldMatrix.GetTransposed();
+@@ -482,7 +482,7 @@ void CRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
+ 	}
+ }
+ 
+-bool CRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV)
++bool FRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV)
+ {
+ 	int W, H, C;
+ 	unsigned char* Data = stbi_load(FilePath, &W, &H, &C, 4);
+@@ -504,7 +504,7 @@ bool CRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath,
+ 	return SUCCEEDED(hr);
+ }
+ 
+-bool CRenderer::InitOutlineResources()
++bool FRenderer::InitOutlineResources()
+ {
+ 	if (StencilWriteState && StencilTestState && OutlinePS) return true;
+ 
+@@ -528,7 +528,7 @@ bool CRenderer::InitOutlineResources()
+ 	return OutlinePS != nullptr;
+ }
+ 
+-void CRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float OutlineScale)
++void FRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float OutlineScale)
+ {
+ 	if (!Mesh || !InitOutlineResources()) return;
+ 	Mesh->UpdateVertexAndIndexBuffer(Device);
+@@ -552,13 +552,13 @@ void CRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float
+ 	DeviceContext->OMSetDepthStencilState(nullptr, 0);
+ }
+ 
+-void CRenderer::DrawLine(const FVector& Start, const FVector& End, const FVector4& Color)
++void FRenderer::DrawLine(const FVector& Start, const FVector& End, const FVector4& Color)
+ {
+ 	LineVertices.push_back({ Start, Color, FVector::ZeroVector });
+ 	LineVertices.push_back({ End, Color, FVector::ZeroVector });
+ }
+ 
+-void CRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const FVector4& Color)
++void FRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const FVector4& Color)
+ {
+ 	FVector v[8] = {
+ 		Center + FVector(-BoxExtent.X, -BoxExtent.Y, -BoxExtent.Z), Center + FVector(-BoxExtent.X, -BoxExtent.Y, BoxExtent.Z),
+@@ -571,7 +571,7 @@ void CRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const
+ 	DrawLine(v[0], v[1], Color); DrawLine(v[4], v[5], Color); DrawLine(v[6], v[7], Color); DrawLine(v[2], v[3], Color);
+ }
+ 
+-void CRenderer::ExecuteLineCommands()
++void FRenderer::ExecuteLineCommands()
+ {
+ 	if (LineVertices.empty()) return;
+ 	ShaderManager.Bind(DeviceContext);
+@@ -599,7 +599,7 @@ void CRenderer::ExecuteLineCommands()
+ 	LineVertices.clear();
+ }
+ 
+-void CRenderer::Release()
++void FRenderer::Release()
+ {
+ 	ClearViewportCallbacks(); ClearLevelRenderTarget();
+ 	TextRenderer.Release(); SubUVRenderer.Release();
+@@ -620,13 +620,13 @@ void CRenderer::Release()
+ 	if (Device) Device->Release();
+ }
+ 
+-bool CRenderer::IsOccluded()
++bool FRenderer::IsOccluded()
+ {
+ 	if (bSwapChainOccluded && SwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) return true;
+ 	bSwapChainOccluded = false; return false;
+ }
+ 
+-void CRenderer::OnResize(int32 W, int32 H)
++void FRenderer::OnResize(int32 W, int32 H)
+ {
+ 	if (W == 0 || H == 0) return;
+ 	ClearLevelRenderTarget();
+diff --git a/Engine/Source/Renderer/Renderer.h b/Engine/Source/Renderer/Renderer.h
+index 24daee3..05c1deb 100644
+--- a/Engine/Source/Renderer/Renderer.h
++++ b/Engine/Source/Renderer/Renderer.h
+@@ -17,18 +17,18 @@ class FMaterial;
+ class ULevel;
+ 
+ using FGUICallback = std::function<void()>;
+-class CRenderer;
+-using FPostRenderCallback = std::function<void(CRenderer*)>;
++class FRenderer;
++using FPostRenderCallback = std::function<void(FRenderer*)>;
+ 
+ /**
+  * 엔진의 핵심 렌더링 시스템
+  * 렌더링 정책에 따라 제출된 명령들을 GPU에서 실행함
+  */
+-class ENGINE_API CRenderer
++class ENGINE_API FRenderer
+ {
+ public:
+-	CRenderer(HWND InHwnd, int32 InWidth, int32 InHeight);
+-	~CRenderer();
++	FRenderer(HWND InHwnd, int32 InWidth, int32 InHeight);
++	~FRenderer();
+ 
+ 	/** 시스템 초기화 및 D3D11 장치 생성 */
+ 	bool Initialize(HWND InHwnd, int32 InWidth, int32 InHeight);
+@@ -86,15 +86,15 @@ public:
+ 	// ─── 접근자 ───
+ 	FMaterial* GetDefaultMaterial() const { return DefaultMaterial.get(); }
+ 	size_t GetPrevCommandCount() const { return PrevCommandCount; }
+-	std::unique_ptr<CRenderStateManager>& GetRenderStateManager() { return RenderStateManager; }
++	std::unique_ptr<FRenderStateManager>& GetRenderStateManager() { return RenderStateManager; }
+ 	ID3D11Device* GetDevice() const { return Device; }
+ 	ID3D11DeviceContext* GetDeviceContext() const { return DeviceContext; }
+ 	ID3D11RenderTargetView* GetRenderTargetView() const { return RenderTargetView; }
+ 	IDXGISwapChain* GetSwapChain() const { return SwapChain; };
+ 	HWND GetHwnd() const { return Hwnd; }
+ 
+-	CTextMeshBuilder& GetTextRenderer() { return TextRenderer; }
+-	CSubUVRenderer& GetSubUVRenderer() { return SubUVRenderer; }
++	FTextMeshBuilder& GetTextRenderer() { return TextRenderer; }
++	FSubUVRenderer& GetSubUVRenderer() { return SubUVRenderer; }
+ 	FVector GetCameraPosition() const;
+ 
+ 	ID3D11ShaderResourceView* GetFolderIconSRV() const { return FolderIconSRV; }
+@@ -114,7 +114,7 @@ private:
+ 	bool CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV);
+ 
+ private:
+-	std::unique_ptr<CRenderStateManager> RenderStateManager = nullptr;
++	std::unique_ptr<FRenderStateManager> RenderStateManager = nullptr;
+ 
+ 	HWND Hwnd = nullptr;
+ 	ID3D11Device* Device = nullptr;
+@@ -162,8 +162,8 @@ private:
+ 	std::shared_ptr<FMaterial> DefaultMaterial;
+ 	std::shared_ptr<FMaterial> DefaultTextureMaterial;
+ 
+-	CTextMeshBuilder TextRenderer;
+-	CSubUVRenderer SubUVRenderer;
++	FTextMeshBuilder TextRenderer;
++	FSubUVRenderer SubUVRenderer;
+ 
+ 	ID3D11ShaderResourceView* FolderIconSRV = nullptr;
+ 	ID3D11ShaderResourceView* FileIconSRV = nullptr;
+diff --git a/Engine/Source/Renderer/SubUVRenderer.cpp b/Engine/Source/Renderer/SubUVRenderer.cpp
+index dd12e54..d41a620 100644
+--- a/Engine/Source/Renderer/SubUVRenderer.cpp
++++ b/Engine/Source/Renderer/SubUVRenderer.cpp
+@@ -13,12 +13,12 @@
+ #include <cstring>
+ #include <algorithm>
+ 
+-CSubUVRenderer::~CSubUVRenderer()
++FSubUVRenderer::~FSubUVRenderer()
+ {
+ 	Release();
+ }
+ 
+-bool CSubUVRenderer::Initialize(CRenderer* InRenderer, const std::wstring& TexturePath)
++bool FSubUVRenderer::Initialize(FRenderer* InRenderer, const std::wstring& TexturePath)
+ {
+ 	Release();
+ 
+@@ -103,7 +103,7 @@ bool CSubUVRenderer::Initialize(CRenderer* InRenderer, const std::wstring& Textu
+ 	return true;
+ }
+ 
+-void CSubUVRenderer::Release()
++void FSubUVRenderer::Release()
+ {
+ 	if (TextureSRV) { TextureSRV->Release(); TextureSRV = nullptr; }
+ 	if (SamplerState) { SamplerState->Release(); SamplerState = nullptr; }
+@@ -112,7 +112,7 @@ void CSubUVRenderer::Release()
+ 	DeviceContext = nullptr;
+ }
+ 
+-bool CSubUVRenderer::BuildSubUVMesh(const FVector2& Size, FMeshData& OutMesh) const
++bool FSubUVRenderer::BuildSubUVMesh(const FVector2& Size, FMeshData& OutMesh) const
+ {
+ 	OutMesh.Vertices.clear();
+ 	OutMesh.Indices.clear();
+@@ -140,7 +140,7 @@ bool CSubUVRenderer::BuildSubUVMesh(const FVector2& Size, FMeshData& OutMesh) co
+ 	return true;
+ }
+ 
+-void CSubUVRenderer::UpdateAnimationParams(
++void FSubUVRenderer::UpdateAnimationParams(
+ 	int32 Columns, int32 Rows, int32 TotalFrames,
+ 	int32 FirstFrame, int32 LastFrame,
+ 	float FPS, float ElapsedTime, bool bLoop)
+diff --git a/Engine/Source/Renderer/SubUVRenderer.h b/Engine/Source/Renderer/SubUVRenderer.h
+index 4ccf893..1826013 100644
+--- a/Engine/Source/Renderer/SubUVRenderer.h
++++ b/Engine/Source/Renderer/SubUVRenderer.h
+@@ -9,19 +9,19 @@ class FVertexShader;
+ class FPixelShader;
+ class FMaterial;
+ struct FMeshData;
+-class CRenderer;
++class FRenderer;
+ 
+ /**
+  * 스프라이트 시트 애니메이션(SubUV)을 위한 메시 생성 및 머티리얼을 관리함
+  * 렌더러가 직접 그리는 대신 메시와 머티리얼 데이터를 생성하여 통합 패스에서 처리함
+  */
+-class ENGINE_API CSubUVRenderer
++class ENGINE_API FSubUVRenderer
+ {
+ public:
+-	CSubUVRenderer() = default;
+-	~CSubUVRenderer();
++	FSubUVRenderer() = default;
++	~FSubUVRenderer();
+ 
+-	bool Initialize(CRenderer* InRenderer, const std::wstring& TexturePath);
++	bool Initialize(FRenderer* InRenderer, const std::wstring& TexturePath);
+ 	void Release();
+ 
+ 	/** SubUV 전용 머티리얼 반환 */
+diff --git a/Engine/Source/Renderer/TextMeshBuilder.cpp b/Engine/Source/Renderer/TextMeshBuilder.cpp
+index 202ef33..03a1344 100644
+--- a/Engine/Source/Renderer/TextMeshBuilder.cpp
++++ b/Engine/Source/Renderer/TextMeshBuilder.cpp
+@@ -11,12 +11,12 @@
+ #include "Core/Paths.h"
+ #include <cstring>
+ 
+-CTextMeshBuilder::~CTextMeshBuilder()
++FTextMeshBuilder::~FTextMeshBuilder()
+ {
+ 	Release();
+ }
+ 
+-bool CTextMeshBuilder::Initialize(CRenderer* InRenderer)
++bool FTextMeshBuilder::Initialize(FRenderer* InRenderer)
+ {
+ 	Release();
+ 
+@@ -95,7 +95,7 @@ bool CTextMeshBuilder::Initialize(CRenderer* InRenderer)
+ 	return true;
+ }
+ 
+-void CTextMeshBuilder::Release()
++void FTextMeshBuilder::Release()
+ {
+ 	Atlas.Release();
+ 	FontMaterial.reset();
+@@ -104,7 +104,7 @@ void CTextMeshBuilder::Release()
+ 	RenderStateManager = nullptr;
+ }
+ 
+-bool CTextMeshBuilder::BuildTextMesh(const FString& Text, FMeshData& OutMesh) const
++bool FTextMeshBuilder::BuildTextMesh(const FString& Text, FMeshData& OutMesh) const
+ {
+ 	if (Text.empty())
+ 	{
+@@ -171,7 +171,7 @@ bool CTextMeshBuilder::BuildTextMesh(const FString& Text, FMeshData& OutMesh) co
+ 	return !OutMesh.Vertices.empty();
+ }
+ 
+-void CTextMeshBuilder::SetFillMode(D3D11_FILL_MODE InFillMode)
++void FTextMeshBuilder::SetFillMode(D3D11_FILL_MODE InFillMode)
+ {
+ 	if (!FontMaterial) return;
+ 	FRasterizerStateOption Option = FontMaterial->GetRasterizerOption();
+@@ -182,7 +182,7 @@ void CTextMeshBuilder::SetFillMode(D3D11_FILL_MODE InFillMode)
+ 	FontMaterial->SetRasterizerState(RS);
+ }
+ 
+-TArray<uint32> CTextMeshBuilder::DecodeToCodepoints(const FString& Text) const
++TArray<uint32> FTextMeshBuilder::DecodeToCodepoints(const FString& Text) const
+ {
+ 	TArray<uint32> Result;
+ 
+diff --git a/Engine/Source/Renderer/TextMeshBuilder.h b/Engine/Source/Renderer/TextMeshBuilder.h
+index 7786d63..3953c0b 100644
+--- a/Engine/Source/Renderer/TextMeshBuilder.h
++++ b/Engine/Source/Renderer/TextMeshBuilder.h
+@@ -10,19 +10,19 @@ class FVertexShader;
+ class FPixelShader;
+ class FMaterial;
+ struct FMeshData;
+-class CRenderer;
+-class CRenderStateManager;
++class FRenderer;
++class FRenderStateManager;
+ /**
+  * 문자열을 렌더링 가능한 메시 데이터로 변환하고 폰트 머티리얼을 관리함
+  * 렌더러가 직접 문자열을 그리는 대신 메시와 머티리얼을 생성하여 통합 패스에서 처리함
+  */
+-class ENGINE_API CTextMeshBuilder
++class ENGINE_API FTextMeshBuilder
+ {
+ public:
+-	CTextMeshBuilder() = default;
+-	~CTextMeshBuilder();
++	FTextMeshBuilder() = default;
++	~FTextMeshBuilder();
+ 
+-	bool Initialize(CRenderer* InRenderer);
++	bool Initialize(FRenderer* InRenderer);
+ 	void Release();
+ 
+ 	/** 폰트 셰이더와 아틀라스가 설정된 공유 머티리얼 반환 */
+@@ -48,7 +48,7 @@ private:
+ private:
+ 	ID3D11Device* Device = nullptr;
+ 	ID3D11DeviceContext* DeviceContext = nullptr;
+-	CRenderStateManager* RenderStateManager = nullptr;
++	FRenderStateManager* RenderStateManager = nullptr;
+ 	FFontAtlas Atlas;
+ 	std::shared_ptr<FMaterial> FontMaterial;
+ };
+\ No newline at end of file
+diff --git a/Engine/Source/Serializer/SceneSerializer.cpp b/Engine/Source/Serializer/SceneSerializer.cpp
+index 5aea149..150bf45 100644
+--- a/Engine/Source/Serializer/SceneSerializer.cpp
++++ b/Engine/Source/Serializer/SceneSerializer.cpp
+@@ -21,7 +21,7 @@
+ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
+ {
+ 	nlohmann::json Json;
+-	CCamera* Camera = Level->GetCamera();
++	FCamera* Camera = Level->GetCamera();
+ 	if (Camera)
+ 	{
+ 		const FVector Position = Camera->GetPosition();
+@@ -92,7 +92,7 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
+ 	if (!Json.contains("Primitives"))
+ 		return false;
+ 
+-	CCamera* Camera = Level->GetCamera();
++	FCamera* Camera = Level->GetCamera();
+ 	if (Camera && Json.contains("Camera"))
+ 	{
+ 		auto& Cam = Json["Camera"];
+diff --git a/Engine/Source/World/Level.cpp b/Engine/Source/World/Level.cpp
+index d91d553..16a9115 100644
+--- a/Engine/Source/World/Level.cpp
++++ b/Engine/Source/World/Level.cpp
+@@ -33,7 +33,7 @@ ULevel::~ULevel()
+ }
+ 
+ 
+-CCamera* ULevel::GetCamera() const
++FCamera* ULevel::GetCamera() const
+ {
+ 	UWorld* World = GetTypedOuter<UWorld>();
+ 	return World ? World->GetCamera() : nullptr;
+diff --git a/Engine/Source/World/Level.h b/Engine/Source/World/Level.h
+index ca6423b..2e334d4 100644
+--- a/Engine/Source/World/Level.h
++++ b/Engine/Source/World/Level.h
+@@ -7,7 +7,7 @@
+ #include "Core/ShowFlags.h"
+ #include "World/RenderCollector.h"
+ class AActor;
+-class CCamera;
++class FCamera;
+ class FFrustum;
+ class UCameraComponent;
+ class UPrimitiveComponent;
+@@ -46,7 +46,7 @@ public:
+ 	bool IsGameLevel() const { return LevelType == ELevelType::Game || LevelType == ELevelType::PIE; }
+ 
+   
+-	CCamera* GetCamera() const;
++	FCamera* GetCamera() const;
+ 
+ 
+ 	void ClearActors();
+diff --git a/Engine/Source/World/LevelManager.cpp b/Engine/Source/World/LevelManager.cpp
+index 5a30e69..979b34c 100644
+--- a/Engine/Source/World/LevelManager.cpp
++++ b/Engine/Source/World/LevelManager.cpp
+@@ -11,7 +11,7 @@ FLevelManager::~FLevelManager()
+ 	Release();
+ }
+ 
+-bool FLevelManager::Initialize(float AspectRatio, ELevelType StartupLevelType, CRenderer* InRenderer)
++bool FLevelManager::Initialize(float AspectRatio, ELevelType StartupLevelType, FRenderer* InRenderer)
+ {
+ 	Renderer = InRenderer;
+ 
+diff --git a/Engine/Source/World/LevelManager.h b/Engine/Source/World/LevelManager.h
+index 7dcd661..342895b 100644
+--- a/Engine/Source/World/LevelManager.h
++++ b/Engine/Source/World/LevelManager.h
+@@ -7,7 +7,7 @@
+ class ULevel;
+ class UWorld;
+ class AActor;
+-class CRenderer;
++class FRenderer;
+ 
+ class ENGINE_API FLevelManager
+ {
+@@ -20,7 +20,7 @@ public:
+ 	FLevelManager& operator=(FLevelManager&&) = delete;
+ 
+ 	// 초기화
+-	bool Initialize(float AspectRatio, ELevelType StartupLevelType, CRenderer* InRenderer);
++	bool Initialize(float AspectRatio, ELevelType StartupLevelType, FRenderer* InRenderer);
+ 	void Release();
+ 
+ 	// World 전환
+@@ -69,5 +69,5 @@ private:
+ 	FEditorWorldContext EditorWorldContext;
+ 	TArray<std::unique_ptr<FEditorWorldContext>> PreviewWorldContexts;
+ 	FWorldContext* ActiveWorldContext = nullptr;
+-	CRenderer* Renderer = nullptr;
++	FRenderer* Renderer = nullptr;
+ };
+diff --git a/Engine/Source/World/RenderCollector.cpp b/Engine/Source/World/RenderCollector.cpp
+index f8ced1a..5c2d641 100644
+--- a/Engine/Source/World/RenderCollector.cpp
++++ b/Engine/Source/World/RenderCollector.cpp
+@@ -16,11 +16,11 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
+ 	TArray<UPrimitiveComponent*> VisiblePrimitives;
+ 	FrustrumCull(Actors, Frustum, ShowFlags, VisiblePrimitives);
+ 
+-	CRenderer* Renderer = GEngine->GetCore()->GetRenderer();
++	FRenderer* Renderer = GEngine->GetCore()->GetRenderer();
+ 	if (!Renderer) return;
+ 
+-	CTextMeshBuilder& TextRenderer = Renderer->GetTextRenderer();
+-	CSubUVRenderer& SubUVRenderer = Renderer->GetSubUVRenderer();
++	FTextMeshBuilder& TextRenderer = Renderer->GetTextRenderer();
++	FSubUVRenderer& SubUVRenderer = Renderer->GetSubUVRenderer();
+ 
+ 	for (UPrimitiveComponent* PrimitiveComponent : VisiblePrimitives)
+ 	{
+diff --git a/Engine/Source/World/World.cpp b/Engine/Source/World/World.cpp
+index 2a76707..4bf2fea 100644
+--- a/Engine/Source/World/World.cpp
++++ b/Engine/Source/World/World.cpp
+@@ -212,7 +212,7 @@ UCameraComponent* UWorld::GetActiveCameraComponent() const
+ 	return ActiveCameraComponent ? ActiveCameraComponent.Get() : LevelCameraComponent;
+ }
+ 
+-CCamera* UWorld::GetCamera() const
++FCamera* UWorld::GetCamera() const
+ {
+ 	UCameraComponent* Cam = GetActiveCameraComponent();
+ 	return Cam ? Cam->GetCamera() : nullptr;
+diff --git a/Engine/Source/World/World.h b/Engine/Source/World/World.h
+index 5a9ee45..bda0784 100644
+--- a/Engine/Source/World/World.h
++++ b/Engine/Source/World/World.h
+@@ -7,7 +7,7 @@
+ class ULevel;
+ class AActor;
+ class UCameraComponent;
+-class CCamera;
++class FCamera;
+ class FFrustum;
+ struct FRenderCommandQueue;
+ struct ID3D11Device;
+@@ -38,7 +38,7 @@ public:
+ 	// 카메라
+ 	void SetActiveCameraComponent(UCameraComponent* InCamera);
+ 	UCameraComponent* GetActiveCameraComponent() const;
+-	CCamera* GetCamera() const;
++	FCamera* GetCamera() const;
+ 
+ 	// 라이프사이클
+ 	void InitializeWorld(float AspectRatio, ID3D11Device* Device = nullptr);
+-- 
+2.53.0.windows.1
+
