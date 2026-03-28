@@ -34,5 +34,6 @@ private:
 	TArray<FDebugLine> Lines;
 	TArray<FDebugCube> Cubes;
 	bool bDrawWorldAxis = false;
+	float WorldAxisLength = 1000.0f;
 	void DrawAllCollisionBounds(FRenderer* Renderer, UWorld* World);
 };

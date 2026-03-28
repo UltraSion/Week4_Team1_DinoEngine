@@ -646,7 +646,8 @@ void FEditorUI::Render()
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-				//ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
+				//뷰어에서는 월드축을 킬 수 없어야 합니다.
+				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
 				// ─── Grid ───
