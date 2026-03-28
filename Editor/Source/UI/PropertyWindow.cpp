@@ -212,7 +212,8 @@ void FPropertyWindow::Render(FCore* Core)
 							break;
 						}
 					}
-
+					if (SMComp)
+					{
 					if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
 					{
 						if (Core && SelectedMeshIndex > 0)
@@ -255,50 +256,60 @@ void FPropertyWindow::Render(FCore* Core)
 							TexItems.push_back(T.c_str());
 
 						// ── 여기서부터 다중 슬롯 UI 루프 시작 ──
-						uint32 NumSlots = SMComp->GetNumMaterials();
+					
 
-						// 각 슬롯별로 어떤 항목을 선택했는지 기억하기 위한 동적 배열
-						static std::vector<int> SlotMatIndices;
-						static std::vector<int> SlotTexIndices;
-						if (SlotMatIndices.size() < NumSlots) SlotMatIndices.resize(NumSlots, 0);
-						if (SlotTexIndices.size() < NumSlots) SlotTexIndices.resize(NumSlots, 0);
+							uint32 NumSlots = SMComp->GetNumMaterials();
+							static AActor* LastSelectedActor = nullptr;
 
-						for (uint32 SlotIdx = 0; SlotIdx < NumSlots; ++SlotIdx)
-						{
-							// ImGui에서 같은 이름의 위젯이 충돌하지 않도록 ID 푸시
-							ImGui::PushID(SlotIdx);
-
-							FString HeaderText = "Material Slot " + std::to_string(SlotIdx);
-							if (ImGui::TreeNodeEx(HeaderText.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+							// 각 슬롯별로 어떤 항목을 선택했는지 기억하기 위한 동적 배열
+							static std::vector<int> SlotMatIndices;
+							static std::vector<int> SlotTexIndices;
+							if (LastSelectedActor != SelectedActor)
 							{
-								// 1. 해당 슬롯의 머티리얼 콤보박스
-								if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), (int)MatItems.size()))
+								SlotMatIndices.clear();
+								SlotTexIndices.clear();
+								LastSelectedActor = SelectedActor; // 갱신
+							}
+							if (SlotMatIndices.size() < NumSlots) SlotMatIndices.resize(NumSlots, 0);
+							if (SlotTexIndices.size() < NumSlots) SlotTexIndices.resize(NumSlots, 0);
+
+							for (uint32 SlotIdx = 0; SlotIdx < NumSlots; ++SlotIdx)
+							{
+								// ImGui에서 같은 이름의 위젯이 충돌하지 않도록 ID 푸시
+								ImGui::PushID(SlotIdx);
+
+								FString HeaderText = "Material Slot " + std::to_string(SlotIdx);
+								if (ImGui::TreeNodeEx(HeaderText.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 								{
-									if (Core && SMComp && SMComp->GetMeshData() && SlotMatIndices[SlotIdx] > 0)
+									// 1. 해당 슬롯의 머티리얼 콤보박스
+									if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), (int)MatItems.size()))
 									{
-										FString MatName = MaterialNames[SlotMatIndices[SlotIdx] - 1];
-										auto Mat = FMaterialManager::Get().FindByName(MatName);
-										if (Mat)
+										if (Core && SMComp && SMComp->GetMeshData() && SlotMatIndices[SlotIdx] > 0)
 										{
-											// 전체 반복문 대신 해당 슬롯에만 세팅!
-											SMComp->SetMaterial(SlotIdx, Mat.get());
+											FString MatName = MaterialNames[SlotMatIndices[SlotIdx] - 1];
+											auto Mat = FMaterialManager::Get().FindByName(MatName);
+											if (Mat)
+											{
+												// 전체 반복문 대신 해당 슬롯에만 세팅!
+												SMComp->SetMaterial(SlotIdx, Mat.get());
+											}
 										}
 									}
-								}
 
-								// 2. 해당 슬롯의 텍스처 콤보박스
-								if (ImGui::Combo("Texture", &SlotTexIndices[SlotIdx], TexItems.data(), (int)TexItems.size()))
-								{
-									if (Core && SMComp && SlotTexIndices[SlotIdx] > 0)
+									// 2. 해당 슬롯의 텍스처 콤보박스
+									if (ImGui::Combo("Texture", &SlotTexIndices[SlotIdx], TexItems.data(), (int)TexItems.size()))
 									{
-										ID3D11Device* Device = Core->GetRenderer()->GetDevice();
-										// 방금 만든 LoadTextureToSlot 호출!
-										SMComp->LoadTextureToSlot(Device, TextureFiles[SlotTexIndices[SlotIdx] - 1], SlotIdx);
+										if (Core && SMComp && SlotTexIndices[SlotIdx] > 0)
+										{
+											ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+											// 방금 만든 LoadTextureToSlot 호출!
+											SMComp->LoadTextureToSlot(Device, TextureFiles[SlotTexIndices[SlotIdx] - 1], SlotIdx);
+										}
 									}
+									ImGui::TreePop();
 								}
-								ImGui::TreePop();
+								ImGui::PopID();
 							}
-							ImGui::PopID();
 						}
 					} // if (!CurrentAsset.empty()) 끝
 
