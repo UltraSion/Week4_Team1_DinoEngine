@@ -11,7 +11,7 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
 	std::ifstream File(FPaths::ToAbsolutePath(FilePath));
 	if (!File.is_open()) return false;
-
+	OutInfo.ObjDirectory = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path().string();
 	std::string Line;
 	while (std::getline(File, Line))
 	{
@@ -143,7 +143,7 @@ bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& O
 		}
 		else if (Type == "map_Kd")  // Diffuse Texture
 		{
-			SS >> Current->DiffuseTexturePath;
+			std::getline(SS >> std::ws, Current->DiffuseTexturePath);
 		}
 	}
 	return true;
@@ -215,5 +215,27 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();
 	Mesh->SetMeshData(MeshData);
+
+	std::filesystem::path Dir(Info.ObjDirectory);
+
+	for (uint32 s = 0; s < MeshData->Sections.size(); ++s)
+	{
+		FString TexPath = "";
+		if (s < Info.MaterialNames.size())
+		{
+			FString MatName = Info.MaterialNames[s]; // 현재 섹션이 요구하는 머티리얼 이름
+			for (const auto& Mtl : Info.Materials)
+			{
+				// 이름이 일치하고, 텍스처(map_Kd)가 존재한다면
+				if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
+				{
+					// 절대 경로로 조립
+					TexPath = (Dir / Mtl.DiffuseTexturePath).string();
+					break;
+				}
+			}
+		}
+		Mesh->ImportedTexturePaths.push_back(TexPath);
+	}
 	return Mesh;
 }

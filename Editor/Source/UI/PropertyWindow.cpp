@@ -214,49 +214,52 @@ void FPropertyWindow::Render(FCore* Core)
 					}
 					if (SMComp)
 					{
-					if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
-					{
-						if (Core && SelectedMeshIndex > 0)
+						if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()))
 						{
-							UStaticMesh* Selected = LoadedMeshes[SelectedMeshIndex - 1];
-							SMComp->SetStaticMeshData(Selected->GetStaticMeshAsset());
-						}
-					}
-					if (!CurrentAsset.empty())
-					{
-						static TArray<FString> MaterialNames;
-						static bool bMatScanned = false;
-						if (!bMatScanned)
-						{
-							namespace fs = std::filesystem;
-							auto MatDir = FPaths::ProjectRoot() / "Assets" / "Materials";
-							if (fs::exists(MatDir))
+							if (Core && SelectedMeshIndex > 0)
 							{
-								for (const auto& entry : fs::directory_iterator(MatDir))
+								UStaticMesh* Selected = LoadedMeshes[SelectedMeshIndex - 1];
+
+								// 렌더러에서 Device를 가져와서 같이 넘겨줍니다!
+								ID3D11Device* Device = Core->GetRenderer()->GetDevice();
+								SMComp->SetStaticMeshData(Device, Selected->GetStaticMeshAsset());
+							}
+						}
+						if (!CurrentAsset.empty())
+						{
+							static TArray<FString> MaterialNames;
+							static bool bMatScanned = false;
+							if (!bMatScanned)
+							{
+								namespace fs = std::filesystem;
+								auto MatDir = FPaths::ProjectRoot() / "Assets" / "Materials";
+								if (fs::exists(MatDir))
 								{
-									if (entry.is_regular_file() && entry.path().extension() == ".json")
+									for (const auto& entry : fs::directory_iterator(MatDir))
 									{
-										FString Name = entry.path().stem().string();
-										MaterialNames.push_back(Name);
+										if (entry.is_regular_file() && entry.path().extension() == ".json")
+										{
+											FString Name = entry.path().stem().string();
+											MaterialNames.push_back(Name);
+										}
 									}
 								}
+								bMatScanned = true;
 							}
-							bMatScanned = true;
-						}
 
-						std::vector<const char*> MatItems;
-						MatItems.push_back("Default");
-						for (const auto& N : MaterialNames)
-							MatItems.push_back(N.c_str());
+							std::vector<const char*> MatItems;
+							MatItems.push_back("Default");
+							for (const auto& N : MaterialNames)
+								MatItems.push_back(N.c_str());
 
-						// ── Texture 콤보박스에 쓸 아이템 셋업 (루프 밖으로 빼기) ──
-						std::vector<const char*> TexItems;
-						TexItems.push_back("None");
-						for (const auto& T : TextureFiles)
-							TexItems.push_back(T.c_str());
+							// ── Texture 콤보박스에 쓸 아이템 셋업 (루프 밖으로 빼기) ──
+							std::vector<const char*> TexItems;
+							TexItems.push_back("None");
+							for (const auto& T : TextureFiles)
+								TexItems.push_back(T.c_str());
 
-						// ── 여기서부터 다중 슬롯 UI 루프 시작 ──
-					
+							// ── 여기서부터 다중 슬롯 UI 루프 시작 ──
+
 
 							uint32 NumSlots = SMComp->GetNumMaterials();
 							static AActor* LastSelectedActor = nullptr;

@@ -13,6 +13,7 @@ struct FObjMaterialInfo
 // .obj 파일에서 파싱한 Raw 데이터
 struct FObjInfo
 {
+	FString ObjDirectory;
 	// 위치/UV/노말 — 인덱스 풀에서 참조됨
 	TArray<FVector>  Positions;   // v
 	TArray<FVector2> UVs;         // vt

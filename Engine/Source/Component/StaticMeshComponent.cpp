@@ -16,31 +16,7 @@ void UStaticMeshComponent::Initialize()
 {
 }
 
-void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& FilePath)
-{
-	StaticMeshRenderData = FObjManager::LoadObjStaticMeshAsset(FilePath);
-	if (!StaticMeshRenderData) return;
 
-
-	// 텍스처 로드 (.obj → .png)
-	std::filesystem::path PngPath = FilePath;  
-	PngPath.replace_extension(".png");
-	if (std::filesystem::exists(FPaths::ToAbsolutePath(PngPath.string())))
-	{
-		LoadTexture(Device, PngPath.string());
-	}
-	else
-	{
-		// 텍스처 없으면 기본 머티리얼
-		std::shared_ptr<FMaterial> DefaultMat = FMaterialManager::Get().FindByName("M_StaticMesh");
-		if (!DefaultMat) DefaultMat = FMaterialManager::Get().FindByName("M_Default");
-		if (DefaultMat)
-		{
-			for (uint32 i = 0; i < GetNumMaterials(); ++i)
-				StaticMeshRenderData->SetDefaultMaterial(i, DefaultMat.get());  
-		}
-	}
-}
 
 FString UStaticMeshComponent::GetStaticMeshAsset() const
 {
@@ -56,11 +32,50 @@ void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& File
 	}
 }
 
-void UStaticMeshComponent::SetStaticMeshData(FStaticMeshRenderData* InMesh)
+void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRenderData* InMesh)
 {
 	StaticMeshRenderData = InMesh;
+
+	// 이전 메쉬가 쓰던 다이내믹 매테리얼 찌꺼기 초기화
+	DynamicMaterialOwners.clear();
+
+	if (!StaticMeshRenderData || !Device) return;
+
+	// LoadStaticMesh에 있던 자동 매핑 로직 이식
+	uint32 NumSlots = GetNumMaterials();
+	for (uint32 i = 0; i < NumSlots; ++i)
+	{
+		bool bTextureLoaded = false;
+
+		if (i < StaticMeshRenderData->ImportedTexturePaths.size())
+		{
+			FString TexPath = StaticMeshRenderData->ImportedTexturePaths[i];
+			if (!TexPath.empty() && std::filesystem::exists(TexPath))
+			{
+				LoadTextureToSlot(Device, TexPath, i);
+				bTextureLoaded = true;
+			}
+		}
+
+		// 텍스처가 없을 경우 기본 매테리얼 적용
+		if (!bTextureLoaded)
+		{
+			std::shared_ptr<FMaterial> DefaultMat = FMaterialManager::Get().FindByName("M_StaticMesh");
+			if (!DefaultMat) DefaultMat = FMaterialManager::Get().FindByName("M_Default");
+			if (DefaultMat)
+			{
+				SetMaterial(i, DefaultMat.get());
+			}
+		}
+	}
 }
 
+// 덤으로 LoadStaticMesh도 깔끔하게 정리할 수 있습니다.
+void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& FilePath)
+{
+	FStaticMeshRenderData* LoadedData = FObjManager::LoadObjStaticMeshAsset(FilePath);
+	SetStaticMeshData(Device, LoadedData);
+}
 void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString& FilePath, uint32 SlotIndex)
 {
 	if (SlotIndex >= GetNumMaterials()) return; // 유효하지 않은 슬롯 방어

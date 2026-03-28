@@ -5,4 +5,5 @@ class ENGINE_API FStaticMeshRenderData : public FMesh
 {
 public:
 	FStaticMeshRenderData() = default;
+	TArray<FString> ImportedTexturePaths;
 };

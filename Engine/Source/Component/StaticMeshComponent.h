@@ -15,7 +15,7 @@ public:
 	FString GetStaticMeshAsset() const;
 
 	void LoadTexture(ID3D11Device* Device, const FString& FilePath);
-	void SetStaticMeshData(FStaticMeshRenderData* InMesh);
+	void SetStaticMeshData(ID3D11Device* Device, FStaticMeshRenderData* InMesh);
 	void LoadTextureToSlot(ID3D11Device* Device, const FString& FilePath, uint32 SlotIndex);
 	FStaticMeshRenderData* GetStaticMesh() const { return StaticMeshRenderData; }
 	// UMeshComponent 인터페이스 override
