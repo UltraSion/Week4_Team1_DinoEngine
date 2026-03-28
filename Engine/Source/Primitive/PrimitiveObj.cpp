@@ -6,6 +6,30 @@
 
 namespace
 {
+	FString BuildObjCacheKey(const FString& FilePath, FPrimitiveObj::EImportAxisMode ImportAxisMode)
+	{
+		switch (ImportAxisMode)
+		{
+		case FPrimitiveObj::EImportAxisMode::YUpToZUp:
+			return FilePath + "|YUpToZUp";
+		case FPrimitiveObj::EImportAxisMode::ZUp:
+		default:
+			return FilePath + "|ZUp";
+		}
+	}
+
+	FVector ApplyImportAxisTransform(const FVector& InVector, FPrimitiveObj::EImportAxisMode ImportAxisMode)
+	{
+		switch (ImportAxisMode)
+		{
+		case FPrimitiveObj::EImportAxisMode::YUpToZUp:
+			return { InVector.X, -InVector.Z, InVector.Y };
+		case FPrimitiveObj::EImportAxisMode::ZUp:
+		default:
+			return InVector;
+		}
+	}
+
 	void RecenterMeshToOrigin(FMeshData& MeshData)
 	{
 		if (MeshData.Vertices.empty())
@@ -35,6 +59,8 @@ namespace
 	}
 }
 
+FPrimitiveObj::EImportAxisMode FPrimitiveObj::ImportAxisMode = FPrimitiveObj::EImportAxisMode::ZUp;
+
 FPrimitiveObj::FPrimitiveObj()
 {
 	MeshData = std::make_shared<FMeshData>();
@@ -50,7 +76,8 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 {
 	SetPrimitiveFileName(FilePath);
 
-	auto Cached = GetCached(FilePath);
+	const FString CacheKey = BuildObjCacheKey(FilePath, ImportAxisMode);
+	auto Cached = GetCached(CacheKey);
 	if (Cached)
 	{
 		MeshData = Cached;
@@ -188,8 +215,8 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 				for (int j = 0; j < 3; ++j)
 				{
 					FPrimitiveVertex V{};
-					V.Position = Positions[Tri[j].PosIdx];
-					V.Normal = Tri[j].bHasNrm ? Normals[Tri[j].NrmIdx] : FaceNormal;  
+					V.Position = ApplyImportAxisTransform(Positions[Tri[j].PosIdx], ImportAxisMode);
+					V.Normal = ApplyImportAxisTransform(Tri[j].bHasNrm ? Normals[Tri[j].NrmIdx] : FaceNormal, ImportAxisMode);  
 					V.UV = Tri[j].bHasUV ? UVs[Tri[j].UVIdx] : FVector2(0, 0);
 					V.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f); 
 
@@ -220,5 +247,15 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
 	MeshData->UpdateLocalBound();
 
-	RegisterMeshData(FilePath, MeshData);
+	RegisterMeshData(CacheKey, MeshData);
+}
+
+void FPrimitiveObj::SetImportAxisMode(EImportAxisMode InMode)
+{
+	ImportAxisMode = InMode;
+}
+
+FPrimitiveObj::EImportAxisMode FPrimitiveObj::GetImportAxisMode()
+{
+	return ImportAxisMode;
 }

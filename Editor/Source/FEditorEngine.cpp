@@ -269,6 +269,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 
 	TestActor->SetActorLocation(FVector::ZeroVector);
 	TestActor->LoadObj(Core->GetRenderer()->GetDevice(), FPaths::ToRelativePath(SelectedPath));
+	Core->SetSelectedActor(TestActor);
 
 	FCamera* Camera = CameraComponent->GetCamera();
 	if (Camera)

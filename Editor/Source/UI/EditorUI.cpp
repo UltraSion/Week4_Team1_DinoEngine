@@ -29,6 +29,7 @@
 #include "Actor/ObjActor.h"
 #include "Core/ShowFlags.h"
 #include "EditorViewportClient.h"
+#include "Primitive/PrimitiveObj.h"
 
 enum class EFileDialogType
 {
@@ -66,6 +67,69 @@ std::string GetFilePathUsingDialog(EFileDialogType Type)
 
 	return "";
 }
+
+#if IS_OBJ_VIEWER
+namespace
+{
+	AObjActor* FindObjViewerActor(FCore* Core)
+	{
+		if (!Core || !Core->GetLevel())
+		{
+			return nullptr;
+		}
+
+		if (AActor* SelectedActor = Core->GetSelectedActor())
+		{
+			if (SelectedActor->IsA<AObjActor>())
+			{
+				return static_cast<AObjActor*>(SelectedActor);
+			}
+		}
+
+		for (AActor* Actor : Core->GetLevel()->GetActors())
+		{
+			if (Actor && Actor->IsA<AObjActor>())
+			{
+				return static_cast<AObjActor*>(Actor);
+			}
+		}
+
+		return nullptr;
+	}
+
+	void ReloadObjViewerActor(FCore* Core)
+	{
+		if (!Core || !Core->GetRenderer())
+		{
+			return;
+		}
+
+		AObjActor* ObjActor = FindObjViewerActor(Core);
+		if (!ObjActor)
+		{
+			UE_LOG("[ObjViewer] No OBJ actor to reload");
+			return;
+		}
+
+		UPrimitiveComponent* PrimitiveComponent = ObjActor->GetComponentByClass<UPrimitiveComponent>();
+		if (!PrimitiveComponent)
+		{
+			return;
+		}
+
+		const FString PrimitiveFileName = PrimitiveComponent->GetPrimitiveFileName();
+		if (PrimitiveFileName.empty())
+		{
+			return;
+		}
+
+		ObjActor->LoadObj(Core->GetRenderer()->GetDevice(), PrimitiveFileName);
+		Core->SetSelectedActor(ObjActor);
+		UE_LOG("[ObjViewer] Reloaded OBJ with axis mode: %s",
+			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "YUpToZUp" : "ZUp");
+	}
+}
+#endif
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
@@ -674,6 +738,21 @@ void FEditorUI::Render()
 					VPC->SetLineThickness(Thickness);
 					SaveEditorSettings();
 				}
+
+#if IS_OBJ_VIEWER
+				ImGui::SeparatorText("OBJ Axis");
+				int AxisMode = (FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp) ? 1 : 0;
+				if (ImGui::RadioButton("Z-Up", AxisMode == 0))
+				{
+					FPrimitiveObj::SetImportAxisMode(FPrimitiveObj::EImportAxisMode::ZUp);
+					ReloadObjViewerActor(Core);
+				}
+				if (ImGui::RadioButton("Y-Up -> Z-Up", AxisMode == 1))
+				{
+					FPrimitiveObj::SetImportAxisMode(FPrimitiveObj::EImportAxisMode::YUpToZUp);
+					ReloadObjViewerActor(Core);
+				}
+#endif
 			}
 			ImGui::EndMenu();
 		}
