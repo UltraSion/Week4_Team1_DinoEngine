@@ -17,6 +17,7 @@ public:
 	void MoveUp(float Value);
 	void PanRight(float Value);
 	void PanUp(float Value);
+	void FootZoom(float Value);
 	void Rotate(float DeltaYaw, float DeltaPitch);
 
 	//Camera property getter

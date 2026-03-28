@@ -55,6 +55,17 @@ void UCameraComponent::PanUp(float Value)
 	Camera->SetPosition(Camera->GetPosition() + PanUp * (Value * Camera->GetSpeed()));
 }
 
+void UCameraComponent::FootZoom(float Value)
+{
+	if (Camera->IsOrthographic())
+	{
+		const float ZoomScale = (Value * 0.1f);
+		Camera->SetOrthoWidth(Camera->GetOrthoWidth() * ZoomScale);
+		return;
+	}
+	Camera->MoveForward(Value);
+}
+
 void UCameraComponent::Rotate(float DeltaYaw, float DeltaPitch)
 {
 	Camera->Rotate(DeltaYaw, DeltaPitch);

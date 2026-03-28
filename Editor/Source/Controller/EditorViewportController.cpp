@@ -63,6 +63,7 @@ void FEditorViewportController::SetupInputBindings()
 
 	CameraContext->AddMapping(&LookXAction, static_cast<int32>(EInputKey::MouseX));
 	CameraContext->AddMapping(&LookYAction, static_cast<int32>(EInputKey::MouseY));
+	CameraContext->AddMapping(&LookWheelAction, static_cast<int32>(EInputKey::MouseWheel));
 
 	EnhancedInput->AddMappingContext(CameraContext, 0);
 
@@ -99,13 +100,19 @@ void FEditorViewportController::SetupInputBindings()
 
 	EnhancedInput->BindAction(&LookXAction, ETriggerEvent::Triggered,
 		[this](const FInputActionValue& Value) {
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
-				CameraComponent->PanRight(-Value.Get() * CurrentDeltaTime);
+		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
+			CameraComponent->PanRight(-Value.Get() * CurrentDeltaTime);
 	});
 
 	EnhancedInput->BindAction(&LookYAction, ETriggerEvent::Triggered,
 		[this](const FInputActionValue& Value) {
-			if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
-				CameraComponent->PanUp(Value.Get() * CurrentDeltaTime);
+		if (InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
+			CameraComponent->PanUp(Value.Get() * CurrentDeltaTime);
 	});
+
+	EnhancedInput->BindAction(&LookWheelAction, ETriggerEvent::Triggered,
+		[this](const FInputActionValue& Value) {
+			//다른 카메라 움직임와 달리 처리하는 이유는 테스트 결과, 휠은 프레임에 독립적이기 때문입니다
+			CameraComponent->FootZoom(Value.Get());
+		});
 }
