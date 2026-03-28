@@ -170,6 +170,8 @@ void FEditorEngine::PostInitialize()
 
 	//뷰어 모드는 기본적으로 월드축을 끕니다. 참고로 키지도 못합니다.
 #if IS_OBJ_VIEWER
+	FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
+	EditorViewportClient->SetRenderMode(ERenderMode::Wireframe);
 	Core->GetViewportClient()->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
 	Core->GetViewportClient()->GetShowFlags().SetFlag(EEngineShowFlags::SF_Grid, false);
 	RunObjViewerStartupTest();
