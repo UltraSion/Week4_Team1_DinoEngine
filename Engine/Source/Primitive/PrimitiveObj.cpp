@@ -1,7 +1,39 @@
 #include "PrimitiveObj.h"
 #include "Core/Paths.h"
+#include <cfloat>
 #include <fstream>
 #include <sstream>
+
+namespace
+{
+	void RecenterMeshToOrigin(FMeshData& MeshData)
+	{
+		if (MeshData.Vertices.empty())
+		{
+			return;
+		}
+
+		FVector MinCoord(FLT_MAX, FLT_MAX, FLT_MAX);
+		FVector MaxCoord(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+		for (const FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			MinCoord.X = (std::min)(MinCoord.X, Vertex.Position.X);
+			MinCoord.Y = (std::min)(MinCoord.Y, Vertex.Position.Y);
+			MinCoord.Z = (std::min)(MinCoord.Z, Vertex.Position.Z);
+
+			MaxCoord.X = (std::max)(MaxCoord.X, Vertex.Position.X);
+			MaxCoord.Y = (std::max)(MaxCoord.Y, Vertex.Position.Y);
+			MaxCoord.Z = (std::max)(MaxCoord.Z, Vertex.Position.Z);
+		}
+
+		const FVector Center = (MaxCoord - MinCoord) * 0.5f + MinCoord;
+		for (FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			Vertex.Position -= Center;
+		}
+	}
+}
 
 FPrimitiveObj::FPrimitiveObj()
 {
@@ -184,6 +216,7 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 		MeshData->Sections.push_back(Sec);
 	}
 
+	RecenterMeshToOrigin(*MeshData);
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
 	MeshData->UpdateLocalBound();
 
