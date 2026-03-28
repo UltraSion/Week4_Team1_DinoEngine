@@ -268,7 +268,7 @@ void FPropertyWindow::Render(FCore* Core)
 
 						if (ImGui::Combo("Material", &SelectedMaterialIndex, MatItems.data(), (int)MatItems.size()))
 						{
-							if (Core && SMComp && SMComp->GetMesh() && SelectedMaterialIndex > 0)
+							if (Core && SMComp && SMComp->GetMeshData() && SelectedMaterialIndex > 0)
 							{
 								FString MatName = MaterialNames[SelectedMaterialIndex - 1];
 								auto Mat = FMaterialManager::Get().FindByName(MatName);

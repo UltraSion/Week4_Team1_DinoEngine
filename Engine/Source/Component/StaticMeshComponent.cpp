@@ -19,7 +19,7 @@ void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& F
 	auto SM = FStaticMesh::GetOrLoad(FilePath);
 	if (!SM) return;
 
-	Mesh = SM;
+	StaticMesh = SM.get();
 
 	// 텍스처 로드 (.obj → .png)
 	std::filesystem::path PngPath = FilePath;  
@@ -36,14 +36,14 @@ void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& F
 		if (DefaultMat)
 		{
 			for (uint32 i = 0; i < GetNumMaterials(); ++i)
-				Mesh->SetDefaultMaterial(i, DefaultMat.get());
+				StaticMesh->SetDefaultMaterial(i, DefaultMat.get());  
 		}
 	}
 }
 
 FString UStaticMeshComponent::GetStaticMeshAsset() const
 {
-	if (Mesh) return Mesh->GetAssetPath();
+	if (StaticMesh) return StaticMesh->GetAssetPath();
 	return "";
 }
 
@@ -97,9 +97,40 @@ void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& File
 	MT->TextureSRV = srv;
 	DynamicMaterialOwner->SetMaterialTexture(MT);
 
-	if (Mesh)
+	if (StaticMesh)
 	{
-		for (uint32 i = 0; i < Mesh->GetNumMaterialSlots(); ++i)
-			Mesh->SetDefaultMaterial(i, DynamicMaterialOwner.get());
-	}	
+		for (uint32 i = 0; i < StaticMesh->GetNumMaterialSlots(); ++i)
+			StaticMesh->SetDefaultMaterial(i, DynamicMaterialOwner.get());
+	}
+}
+
+FMeshData* UStaticMeshComponent::GetMeshData() const
+{
+	if (StaticMesh)
+		return StaticMesh->GetMeshData();
+	return nullptr;
+}
+
+const TArray<FMeshSection>& UStaticMeshComponent::GetSections() const
+{
+	if (StaticMesh)
+		return StaticMesh->GetSections();
+	static TArray<FMeshSection> Empty;
+	return Empty;
+}
+
+FMaterial* UStaticMeshComponent::GetMaterial(uint32 SlotIndex) const
+{
+	if (SlotIndex < OverrideMaterials.size() && OverrideMaterials[SlotIndex])
+		return OverrideMaterials[SlotIndex];
+	if (StaticMesh)
+		return StaticMesh->GetDefaultMaterial(SlotIndex);
+	return nullptr;
+}
+
+uint32 UStaticMeshComponent::GetNumMaterials() const
+{
+	if (StaticMesh)
+		return StaticMesh->GetNumMaterialSlots();
+	return 0;
 }

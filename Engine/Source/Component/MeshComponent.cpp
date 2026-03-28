@@ -8,13 +8,16 @@
 
 
 IMPLEMENT_RTTI(UMeshComponent, UPrimitiveComponent)
+const TArray<FMeshSection>& UMeshComponent::GetSections() const
+{
+	static TArray<FMeshSection> Empty;
+	return Empty;
+}
 FMaterial* UMeshComponent::GetMaterial(uint32 SlotIndex) const
 {
 	if (SlotIndex < OverrideMaterials.size() && OverrideMaterials[SlotIndex])
 		return OverrideMaterials[SlotIndex];
 
-	if (Mesh)
-		return Mesh->GetDefaultMaterial(SlotIndex);
 	return nullptr;
 }
 
@@ -26,22 +29,13 @@ void UMeshComponent::SetMaterial(uint32 SlotIndex, FMaterial* Mat)
 	OverrideMaterials[SlotIndex] = Mat;
 }
 
-uint32 UMeshComponent::GetNumMaterials() const
-{
-	if (Mesh) 
-		return Mesh->GetNumMaterialSlots();
-	return 0;
-}
 
 FBoxSphereBounds UMeshComponent::GetWorldBounds() const
 {
 	FVector Center = GetWorldLocation();
-
-	if (!Mesh || !Mesh->GetMeshData())
+	FMeshData* MD = GetMeshData();
+	if (!MD)
 		return { Center, 1.f, FVector(1, 1, 1) };
-
-
-	FMeshData* MD = Mesh->GetMeshData();
 	FVector LocalBoxExtent = (MD->GetMaxCoord() - MD->GetMinCoord()) * 0.5;
 	Center = GetWorldTransform().TransformPosition(MD->GetCenterCoord());
 	FVector S = GetWorldTransform().GetScaleVector();

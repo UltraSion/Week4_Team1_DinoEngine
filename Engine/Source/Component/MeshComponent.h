@@ -16,9 +16,9 @@ class ENGINE_API UMeshComponent : public UPrimitiveComponent
 	virtual uint32                    GetNumMaterials() const { return 0; }
 
 
-	FMaterial* GetMaterial(uint32 SlotIndex) const;
+	virtual FMaterial* GetMaterial(uint32 SlotIndex) const;
 	void SetMaterial(uint32 SlotIndex, FMaterial* Mat);
-	uint32 GetNumMaterials() const;
+
 
 	virtual FBoxSphereBounds GetWorldBounds() const;
 protected:
