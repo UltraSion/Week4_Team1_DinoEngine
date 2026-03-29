@@ -87,9 +87,8 @@ private:
 	FViewportContext* GetInputOwnerViewportContext() const;
 	FViewportContext* ResolveInputViewportContext(UINT Msg) const;
 	void RouteInputToViewport(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
-	void TickViewportContexts(float DeltaTime);
-	void RenderAllViewports();
-	bool AreAnyMouseButtonsDown() const;
+	//void TickViewportContexts(float DeltaTime);
+	//bool AreAnyMouseButtonsDown() const;
 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void OnResize(int32 Width, int32 Height);
 };

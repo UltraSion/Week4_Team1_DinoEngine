@@ -14,16 +14,6 @@ enum SplitOption
 	RB,
 };
 
-class SWindow;
-class ENGINE_API SWindowRoot : public SWindow
-{
-	SWindow* Child = nullptr;
-public:
-	SWindowRoot(SWindow* InChild = nullptr) : Child(InChild) {}
-	virtual ~SWindowRoot() { delete Child;  }
-	virtual void Draw() override { if (Child) Child->Draw(); }
-};
-
 class SSplitter;
 class ENGINE_API SWindow
 {

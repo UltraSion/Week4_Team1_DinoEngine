@@ -1,4 +1,5 @@
 #include "SWindow.h"
+#include <stdexcept>
 
 void SWindow::SetRect(const FRect& InRect)
 {
@@ -52,6 +53,9 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 		NewSplitter->SetSideRB(this);
 	}
 	NewSplitter->SetParent(Parent);
+
+	if(Parent != nullptr)
+		Parent->ReplaceSide(this, NewSplitter);
 	return NewSplitter;
 }
 
@@ -83,6 +87,23 @@ void SSplitter::OnResize()
 	{
 		SideRB->SetRect(GetSideRBRect());
 	}
+}
+
+void SSplitter::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
+{
+	if (OldSide == SideLT)
+	{
+		SetSideLT(NewSide);
+		return;
+	}
+	
+	if (OldSide == SideRB)
+	{
+		SetSideRB(NewSide);
+		return;
+	}
+	
+	throw std::runtime_error("OldSide is not part of this splitter.");
 }
 
 SSplitter::SSplitter(SWindow* InSideLT, SWindow* InSideRB, float InSplitRatio)

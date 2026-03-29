@@ -225,10 +225,10 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 				SetCapturingViewportContext(HoveredViewportContext);
 			}
 		}
-		else if ((Msg == WM_LBUTTONUP || Msg == WM_RBUTTONUP || Msg == WM_MBUTTONUP) && !AreAnyMouseButtonsDown())
-		{
-			SetCapturingViewportContext(nullptr);
-		}
+		//else if ((Msg == WM_LBUTTONUP || Msg == WM_RBUTTONUP || Msg == WM_MBUTTONUP) && !AreAnyMouseButtonsDown())
+		//{
+		//	SetCapturingViewportContext(nullptr);
+		//}
 	}
 
 	RouteInputToViewport(Hwnd, Msg, WParam, LParam);
@@ -236,7 +236,7 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 
 void FEngine::Tick(float DeltaTime)
 {
-	TickViewportContexts(DeltaTime);
+	//TickViewportContexts(DeltaTime);
 }
 
 std::unique_ptr<FViewportClient> FEngine::CreateViewportClient()
@@ -285,7 +285,6 @@ void FEngine::Render()
 
 	GRenderer->BeginFrame();
 	WindowManager.DrawWindows();
-	RenderAllViewports();
 	GRenderer->EndFrame();
 }
 
@@ -529,30 +528,22 @@ void FEngine::ConfigureViewportContext(size_t Index, FViewportContext& Context)
 	(void)Context;
 }
 
-void FEngine::TickViewportContexts(float DeltaTime)
-{
-	for (FViewportContext& ViewportContext : Viewports)
-	{
-		ViewportContext.Tick(Core.get(), DeltaTime);
-	}
-}
+//void FEngine::TickViewportContexts(float DeltaTime)
+//{
+//	for (FViewportContext& ViewportContext : Viewports)
+//	{
+//		ViewportContext.Tick(Core.get(), DeltaTime);
+//	}
+//}
 
-void FEngine::RenderAllViewports()
-{
-	for (FViewportContext& Context : Viewports)
-	{
-		Context.Render(Core.get(), CommandQueue);
-	}
-}
-
-bool FEngine::AreAnyMouseButtonsDown() const
-{
-	if (!InputManager)
-	{
-		return false;
-	}
-
-	return InputManager->IsMouseButtonDown(FInputManager::MOUSE_LEFT) ||
-		InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT) ||
-		InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE);
-}
+//bool FEngine::AreAnyMouseButtonsDown() const
+//{
+//	if (!InputManager)
+//	{
+//		return false;
+//	}
+//
+//	return InputManager->IsMouseButtonDown(FInputManager::MOUSE_LEFT) ||
+//		InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT) ||
+//		InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE);
+//}
