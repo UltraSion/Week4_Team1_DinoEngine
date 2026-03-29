@@ -126,7 +126,7 @@ namespace
 		ObjActor->LoadObj(Core->GetRenderer()->GetDevice(), PrimitiveFileName);
 		Core->SetSelectedActor(ObjActor);
 		UE_LOG("[ObjViewer] Reloaded OBJ with axis mode: %s",
-			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "YUpToZUp" : "ZUp");
+			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "Y-Up" : "Z-Up");
 	}
 }
 #endif
@@ -623,6 +623,9 @@ void FEditorUI::Render()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
+#if IS_OBJ_VIEWER
+#else
+#endif
 			if (ImGui::MenuItem("New Level"))
 			{
 				if (Core)

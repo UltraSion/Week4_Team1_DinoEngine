@@ -70,7 +70,9 @@ void UCameraComponent::FootZoom(float Value)
 		Camera->SetOrthoWidth(Camera->GetOrthoWidth() * ZoomScale);
 		return;
 	}
-	Camera->MoveForward(Value);
+#if IS_OBJ_VIEWER
+	Camera->MoveForward(Value*0.1f);
+#endif
 }
 
 void UCameraComponent::Rotate(float DeltaYaw, float DeltaPitch)
