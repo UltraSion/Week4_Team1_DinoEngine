@@ -22,6 +22,7 @@ protected:
 	FRect Rect;
 public:
 	void SetParent(SSplitter* InParent) { Parent = InParent; }
+	void GetParent(SSplitter*& OutParent) const { OutParent = Parent; }
 	void SetRect(const FRect& InRect);
 	virtual bool ISHover(FPoint coord) const;
 	virtual SWindow* GetWindow(FPoint coord);
