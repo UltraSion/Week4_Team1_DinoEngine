@@ -24,6 +24,9 @@ SWindow* SWindow::GetWindow(FPoint coord)
 
 SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption)
 {
+	if(InNewWindow == nullptr)
+		return nullptr;
+
 	SSplitter* NewSplitter = nullptr;
 
 	if (InDirection == SplitDirection::Horizontal)
@@ -57,6 +60,8 @@ void SSplitter::SetSideLT(SWindow* InSideLT)
 	SideLT = InSideLT;
 	if (InSideLT)
 		InSideLT->SetParent(this);
+
+	InSideLT->SetRect(GetSideLTRect());
 }
 
 void SSplitter::SetSideRB(SWindow* InSideRB)
@@ -64,6 +69,20 @@ void SSplitter::SetSideRB(SWindow* InSideRB)
 	SideRB = InSideRB;
 	if (InSideRB)
 		InSideRB->SetParent(this);
+
+	InSideRB->SetRect(GetSideRBRect());
+}
+
+void SSplitter::OnResize()
+{
+	if (SideLT)
+	{
+		SideLT->SetRect(GetSideLTRect());
+	}
+	if (SideRB)
+	{
+		SideRB->SetRect(GetSideRBRect());
+	}
 }
 
 SSplitter::SSplitter(SWindow* InSideLT, SWindow* InSideRB, float InSplitRatio)
@@ -124,21 +143,26 @@ void SSplitter::Draw()
 	SideRB->Draw();
 }
 
-void SSplitterH::OnResize()
+FRect SSplitterH::GetSideLTRect()
 {
-	float LTWidth = Rect.Size.X * SplitRatio;
-	float RBWidth = Rect.Size.X - LTWidth;
-
-	SideLT->SetRect({ Rect.Position, { LTWidth, Rect.Size.Y } });
-	SideRB->SetRect({ { Rect.Position.X + LTWidth, Rect.Position.Y }, { RBWidth, Rect.Size.Y } });
+	float Height = Rect.Size.Y * SplitRatio;
+	return FRect({ Rect.Position.X, Rect.Position.Y }, { Rect.Size.X , Height });
 }
 
-void SSplitterV::OnResize()
+FRect SSplitterH::GetSideRBRect()
 {
-	float LTHeight = Rect.Size.Y * SplitRatio;
-	float RBHeight = Rect.Size.Y - LTHeight;
-
-	SideLT->SetRect({ Rect.Position, { Rect.Size.X, LTHeight } });
-	SideRB->SetRect({ { Rect.Position.X, Rect.Position.Y + LTHeight}, { Rect.Size.X, RBHeight } });
+	float Height = Rect.Size.Y * (1 - SplitRatio);
+	return FRect({ Rect.Position.X, Rect.Position.Y + Height }, { Rect.Size.X , Height });
 }
 
+FRect SSplitterV::GetSideLTRect()
+{
+	float Width = Rect.Size.X * SplitRatio;
+	return FRect({ Rect.Position.X, Rect.Position.Y }, { Width, Rect.Size.Y });
+}
+
+FRect SSplitterV::GetSideRBRect()
+{
+	float Width = Rect.Size.X * (1 - SplitRatio);
+	return FRect({ Rect.Position.X + Width, Rect.Position.Y }, { Width, Rect.Size.Y });
+}

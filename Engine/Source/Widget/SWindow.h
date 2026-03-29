@@ -42,8 +42,11 @@ protected:
 public:
 	SWindow* GetSideLT() { return SideLT; }
 	SWindow* GetSideRB() { return SideRB; }
-	void SetSideLT(SWindow* InSideLT);
-	void SetSideRB(SWindow* InSideRB);
+	virtual void SetSideLT(SWindow* InSideLT);
+	virtual void SetSideRB(SWindow* InSideRB);
+	virtual FRect GetSideLTRect() = 0;
+	virtual FRect GetSideRBRect() = 0;
+	virtual void OnResize() override;
 	SSplitter(SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f);
 	~SSplitter();
 	float GetSplitRatio() { return SplitRatio; }
@@ -58,7 +61,8 @@ public:
 	SSplitterH(SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f) 
 		: SSplitter(InSideLT, InSideRB, InSplitRatio) {}
 
-	virtual void OnResize() override;
+	virtual FRect GetSideLTRect() override;
+	virtual FRect GetSideRBRect() override;
 };
 
 class SSplitterV : public SSplitter
@@ -67,6 +71,7 @@ public:
 	SSplitterV(SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f) 
 		: SSplitter(InSideLT, InSideRB, InSplitRatio) {}
 
-	virtual void OnResize() override;
+	virtual FRect GetSideLTRect() override;
+	virtual FRect GetSideRBRect() override;
 };
 
