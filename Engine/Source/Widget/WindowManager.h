@@ -10,7 +10,6 @@ class FViewportContext;
 class FInputManager;
 class FEnhancedInputManager;
 class FCore;
-struct FRenderCommandQueue;
 class SViewportWindow;
 
 class ENGINE_API FWindowManager
@@ -38,8 +37,8 @@ public:
 	}
 	void HandleMessage(FCore* Core, HWND MainWindowHwnd, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void ProcessCameraInput(FCore* Core, float DeltaTime);
-	void Tick(FCore* Core, float DeltaTime);
-	void DrawWindows(FCore* Core, FRenderCommandQueue& CommandQueue) const;
+	void Tick(float DeltaTime);
+	void DrawWindows() const;
 
 private:
 	void ClearViewportState();

@@ -201,24 +201,24 @@ void FWindowManager::ProcessCameraInput(FCore* Core, float DeltaTime)
 	}
 }
 
-void FWindowManager::Tick(FCore* Core, float DeltaTime)
+void FWindowManager::Tick(float DeltaTime)
 {
 	for (SWindow* Window : Windows)
 	{
 		if (Window)
 		{
-			Window->Tick(Core, DeltaTime);
+			Window->Tick(DeltaTime);
 		}
 	}
 }
 
-void FWindowManager::DrawWindows(FCore* Core, FRenderCommandQueue& CommandQueue) const
+void FWindowManager::DrawWindows() const
 {
 	for (SWindow* Window : Windows)
 	{
 		if (Window)
 		{
-			Window->Draw(Core, CommandQueue);
+			Window->Draw();
 		}
 	}
 }

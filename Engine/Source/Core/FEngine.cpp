@@ -136,7 +136,7 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 
 void FEngine::Tick(float DeltaTime)
 {
-	WindowManager.Tick(Core.get(), DeltaTime);
+	WindowManager.Tick(DeltaTime);
 }
 
 std::unique_ptr<FViewportClient> FEngine::CreateViewportClient()
@@ -182,6 +182,6 @@ void FEngine::Render()
 	}
 
 	GRenderer->BeginFrame();
-	WindowManager.DrawWindows(Core.get(), CommandQueue);
+	WindowManager.DrawWindows();
 	GRenderer->EndFrame();
 }

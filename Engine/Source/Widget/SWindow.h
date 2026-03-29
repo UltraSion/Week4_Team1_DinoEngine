@@ -1,9 +1,6 @@
 #pragma once
 #include "Math/Rect.h"
 
-class FCore;
-struct FRenderCommandQueue;
-
 enum SplitDirection
 {
 	Horizontal,
@@ -35,8 +32,8 @@ public:
 	virtual SWindow* GetWindow(FPoint coord);
 	FRect GetRect() const { return Rect; }
 	virtual void OnResize() {}
-	virtual void Tick(FCore* Core, float DeltaTime) {}
-	virtual void Draw(FCore* Core, FRenderCommandQueue& CommandQueue) {}
+	virtual void Tick(float DeltaTime) {}
+	virtual void Draw() {}
 	SSplitter* Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption);
 };
 
@@ -62,8 +59,8 @@ public:
 	~SSplitter() override;
 	float GetSplitRatio() { return SplitRatio; }
 	virtual void SetSplitRatio(float InSplitRatio);
-	virtual void Tick(FCore* Core, float DeltaTime) override;
-	virtual void Draw(FCore* Core, FRenderCommandQueue& CommandQueue) override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void Draw() override;
 };
 
 class SSplitterH : public SSplitter

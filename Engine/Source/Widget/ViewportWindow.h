@@ -13,8 +13,8 @@ public:
 	~SViewportWindow() override;
 
 	FViewportContext* GetViewportContext() const { return ViewportContext.get(); }
-	virtual void Tick(FCore* Core, float DeltaTime) override;
-	virtual void Draw(FCore* Core, FRenderCommandQueue& CommandQueue) override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void Draw() override;
 	virtual void OnResize() override;
 };
 

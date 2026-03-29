@@ -1,4 +1,5 @@
 #include "ViewportWindow.h"
+#include "Core/FEngine.h"
 
 SViewportWindow::SViewportWindow(std::unique_ptr<FViewportContext> InViewportContext)
 	: ViewportContext(std::move(InViewportContext))
@@ -13,19 +14,19 @@ SViewportWindow::~SViewportWindow()
 	}
 }
 
-void SViewportWindow::Tick(FCore* Core, float DeltaTime)
+void SViewportWindow::Tick(float DeltaTime)
 {
-	if (ViewportContext)
+	if (ViewportContext && GEngine)
 	{
-		ViewportContext->Tick(Core, DeltaTime);
+		ViewportContext->Tick(GEngine->GetCore(), DeltaTime);
 	}
 }
 
-void SViewportWindow::Draw(FCore* Core, FRenderCommandQueue& CommandQueue)
+void SViewportWindow::Draw()
 {
-	if (ViewportContext)
+	if (ViewportContext && GEngine)
 	{
-		ViewportContext->Render(Core, CommandQueue);
+		ViewportContext->Render(GEngine->GetCore(), GEngine->GetCommandQueue());
 	}
 }
 

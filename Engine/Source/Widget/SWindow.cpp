@@ -158,27 +158,27 @@ void SSplitter::SetSplitRatio(float InSplitRatio)
 	OnResize();
 }
 
-void SSplitter::Tick(FCore* Core, float DeltaTime)
+void SSplitter::Tick(float DeltaTime)
 {
 	if (SideLT)
 	{
-		SideLT->Tick(Core, DeltaTime);
+		SideLT->Tick(DeltaTime);
 	}
 	if (SideRB)
 	{
-		SideRB->Tick(Core, DeltaTime);
+		SideRB->Tick(DeltaTime);
 	}
 }
 
-void SSplitter::Draw(FCore* Core, FRenderCommandQueue& CommandQueue)
+void SSplitter::Draw()
 {
 	if (SideLT)
 	{
-		SideLT->Draw(Core, CommandQueue);
+		SideLT->Draw();
 	}
 	if (SideRB)
 	{
-		SideRB->Draw(Core, CommandQueue);
+		SideRB->Draw();
 	}
 }
 
