@@ -212,7 +212,7 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 			::ScreenToClient(MainWindow->GetHwnd(), &MousePoint);
 		}
 
-		RefreshViewportInteraction(MousePoint.x, MousePoint.y);
+		UpdateViewportInteractionState(MousePoint.x, MousePoint.y);
 		if (Msg == WM_LBUTTONDOWN || Msg == WM_RBUTTONDOWN || Msg == WM_MBUTTONDOWN)
 		{
 			FViewportContext* HoveredViewportContext = FindHoveredViewportContext(MousePoint.x, MousePoint.y);
@@ -228,21 +228,12 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 		}
 	}
 
-	FViewportContext* TargetViewportContext = ResolveInputViewportContext(Msg);
-	if (TargetViewportContext)
-	{
-		TargetViewportContext->HandleMessage(Core.get(), Hwnd, Msg, WParam, LParam);
-	}
+	RouteInputToViewport(Hwnd, Msg, WParam, LParam);
 }
 
 void FEngine::Tick(float DeltaTime)
 {
-	for (FViewportContext& ViewportContext : Viewports)
-	{
-		ViewportContext.Tick(Core.get(), DeltaTime);
-	}
-
-	Render();
+	TickViewportContexts(DeltaTime);
 }
 
 std::unique_ptr<FViewportClient> FEngine::CreateViewportClient()
@@ -290,14 +281,12 @@ void FEngine::Render()
 	}
 
 	GRenderer->BeginFrame();
-	for (FViewportContext& Context : Viewports)
-	{
-		Context.Render(Core.get(), CommandQueue);
-	}
-
+	RenderAllViewports();
 	GRenderer->EndFrame();
 }
 
+
+//Imgui Viewport 크기에 따라 조절
 void FEngine::UpdateViewportLayout(int32 Width, int32 Height)
 {
 	if (Viewports.empty())
@@ -359,20 +348,22 @@ void FEngine::UpdateViewportLayout(int32 Width, int32 Height)
 	const size_t ViewportCount = (std::min)(Viewports.size(), Rects.size());
 	for (size_t Index = 0; Index < ViewportCount; ++Index)
 	{
-		Viewports[Index].SetRect(LayoutOriginX + Rects[Index].X, LayoutOriginY + Rects[Index].Y, Rects[Index].Width, Rects[Index].Height);
-		Viewports[Index].SetRenderOffset(Rects[Index].X, Rects[Index].Y);
-		Viewports[Index].SetEnabled(Rects[Index].Width > 0 && Rects[Index].Height > 0);
+		Viewports[Index].ApplyLayout(
+			LayoutOriginX + Rects[Index].X,
+			LayoutOriginY + Rects[Index].Y,
+			Rects[Index].Width,
+			Rects[Index].Height,
+			Rects[Index].X,
+			Rects[Index].Y);
 	}
 
 	for (size_t Index = ViewportCount; Index < Viewports.size(); ++Index)
 	{
-		Viewports[Index].SetRect(0, 0, 0, 0);
-		Viewports[Index].SetRenderOffset(0, 0);
-		Viewports[Index].SetEnabled(false);
+		Viewports[Index].ApplyLayout(0, 0, 0, 0, 0, 0);
 	}
 }
 
-void FEngine::RefreshViewportInteraction(int32 WindowMouseX, int32 WindowMouseY)
+void FEngine::UpdateViewportInteractionState(int32 WindowMouseX, int32 WindowMouseY)
 {
 	HoveredViewportContext = FindHoveredViewportContext(WindowMouseX, WindowMouseY);
 	for (FViewportContext& ViewportContext : Viewports)
@@ -394,6 +385,17 @@ FViewportContext* FEngine::FindHoveredViewportContext(int32 WindowMouseX, int32 
 	}
 
 	return nullptr;
+}
+
+void FEngine::RouteInputToViewport(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+{
+	FViewportContext* TargetViewportContext = ResolveInputViewportContext(Msg);
+	if (!TargetViewportContext)
+	{
+		return;
+	}
+
+	TargetViewportContext->HandleMessage(Core.get(), Hwnd, Msg, WParam, LParam);
 }
 
 FViewportContext* FEngine::ResolveInputViewportContext(UINT Msg) const
@@ -488,6 +490,7 @@ void FEngine::SetActiveViewportContext(FViewportContext* InViewportContext)
 		return;
 	}
 
+	FViewportContext* PreviousActiveContext = ActiveViewportContext;
 	if (ActiveViewportContext)
 	{
 		ActiveViewportContext->SetActive(false);
@@ -498,6 +501,8 @@ void FEngine::SetActiveViewportContext(FViewportContext* InViewportContext)
 	{
 		ActiveViewportContext->SetActive(true);
 	}
+
+	OnActiveViewportContextChanged(ActiveViewportContext, PreviousActiveContext);
 }
 
 void FEngine::SetCapturingViewportContext(FViewportContext* InViewportContext)
@@ -523,6 +528,22 @@ void FEngine::ConfigureViewportContext(size_t Index, FViewportContext& Context)
 {
 	(void)Index;
 	(void)Context;
+}
+
+void FEngine::TickViewportContexts(float DeltaTime)
+{
+	for (FViewportContext& ViewportContext : Viewports)
+	{
+		ViewportContext.Tick(Core.get(), DeltaTime);
+	}
+}
+
+void FEngine::RenderAllViewports()
+{
+	for (FViewportContext& Context : Viewports)
+	{
+		Context.Render(Core.get(), CommandQueue);
+	}
 }
 
 bool FEngine::AreAnyMouseButtonsDown() const

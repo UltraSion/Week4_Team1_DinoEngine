@@ -63,15 +63,13 @@ void FEditorEngine::PostInitialize()
 	EditorUI.SetupWindow(MainWindow);
 	EditorUI.AttachToRenderer();
 
-	SyncViewportClient();
+	RefreshEditorViewportClients();
 	UE_LOG("EditorEngine initialized");
 }
 
 void FEditorEngine::Tick(float DeltaTime)
 {
 	FEngine::Tick(DeltaTime);
-
-	SyncViewportClient();
 }
 
 void FEditorEngine::Render()
@@ -81,17 +79,11 @@ void FEditorEngine::Render()
 
 std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 {
-	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors, EEditorViewportType::Perspective, ELevelType::Editor);
+	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, EEditorViewportType::Perspective, ELevelType::Editor);
 }
 
 void FEditorEngine::ConfigureViewportContext(size_t Index, FViewportContext& Context)
 {
-	FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(Context.GetViewportClient());
-	if (!EditorViewportClient)
-	{
-		return;
-	}
-
 	const EEditorViewportType ViewportTypes[] =
 	{
 		EEditorViewportType::Perspective,
@@ -102,35 +94,22 @@ void FEditorEngine::ConfigureViewportContext(size_t Index, FViewportContext& Con
 
 	if (Index < std::size(ViewportTypes))
 	{
-		Context.ViewportClient = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, SeletedActors, ViewportTypes[Index], ELevelType::Editor);
+		Context.ViewportClient = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, ViewportTypes[Index], ELevelType::Editor);
 	}
 }
 
-//FEditorViewportController* FEditorEngine::GetViewportController()
-//{
-//	return &ViewportController;
-//}
-
-void FEditorEngine::SyncViewportClient()
+void FEditorEngine::OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext)
 {
-	if (!Core)
-	{
-		return;
-	}
+	(void)PreviousActiveContext;
+	EditorUI.SetActiveViewportClient(ResolveEditorViewportClient(NewActiveContext));
+}
 
-	for (FViewportContext& ViewportContext : Viewports)
-	{
-		if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(ViewportContext.GetViewportClient()))
-		{
-			EditorViewportClient->SetSelection(SeletedActors);
-		}
-	}
+void FEditorEngine::RefreshEditorViewportClients()
+{
+	EditorUI.SetActiveViewportClient(ResolveEditorViewportClient(GetActiveViewportContext()));
+}
 
-	ActiveViewportClient = nullptr;
-	if (FViewportContext* ActiveViewportContext = GetActiveViewportContext())
-	{
-		ActiveViewportClient = ActiveViewportContext->GetViewportClient();
-	}
-
-	EditorUI.SetActiveViewportClient(dynamic_cast<FEditorViewportClient*>(ActiveViewportClient));
+FEditorViewportClient* FEditorEngine::ResolveEditorViewportClient(FViewportContext* ViewportContext) const
+{
+	return ViewportContext ? dynamic_cast<FEditorViewportClient*>(ViewportContext->GetViewportClient()) : nullptr;
 }

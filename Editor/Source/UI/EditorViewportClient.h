@@ -8,6 +8,9 @@
 class FEditorUI;
 class FWindow;
 class FFrustum;
+class AActor;
+class ULevel;
+class UWorld;
 struct FRenderCommandQueue;
 
 enum class ERenderMode
@@ -28,7 +31,7 @@ enum class EEditorViewportType : uint8_t
 class FEditorViewportClient : public FViewportClient
 {
 public:
-	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors, EEditorViewportType InViewportType, ELevelType InWorldType);
+	FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, EEditorViewportType InViewportType, ELevelType InWorldType);
 
 	void Attach(FCore* Core) override;
 	void Detach() override;
@@ -53,15 +56,21 @@ public:
 	void SetLineThickness(float InThickness);
 	bool IsGridVisible() const { return bShowGrid; }
 	void SetGridVisible(bool bVisible) { bShowGrid = bVisible; }
-	void SetSelection(TArray<AActor*>& SeletedActorArrayPtr);
 	void SetupInputBindings() override;
 
 private:
+	bool CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const;
+	void HandleEditorHotkeys(WPARAM WParam, bool bRightMouseDown);
+	void HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor);
+	void HandleMouseMove(AActor* SelectedActor);
+	void HandleMouseRelease();
+	AActor* GetSelectedActor() const;
+	AActor* GetGizmoTarget() const;
+
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
 	FPicker Picker;
 	mutable FGizmo Gizmo;
-	TArray<AActor*>& SeletedActors;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";

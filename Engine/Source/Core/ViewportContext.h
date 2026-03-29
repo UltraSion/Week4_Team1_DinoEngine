@@ -37,6 +37,7 @@ struct ENGINE_API FViewportContext
 	bool IsHovered() const { return Viewport && Viewport->IsHovered(); }
 	void SetActive(bool bInActive);
 	void SetCapturing(bool bInCapturing);
+	void ApplyLayout(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight, int32 InRenderTopLeftX, int32 InRenderTopLeftY);
 	void SetRect(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight);
 	void SetRenderOffset(int32 InRenderTopLeftX, int32 InRenderTopLeftY);
 	bool ContainsPoint(int32 WindowMouseX, int32 WindowMouseY) const;

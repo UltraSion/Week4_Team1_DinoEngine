@@ -2,9 +2,6 @@
 
 #include "Core/FEngine.h"
 #include "UI/EditorUI.h"
-#include "Controller/EditorViewportController.h"
-
-class AEditorCameraPawn;
 
 class FEditorEngine : public FEngine
 {
@@ -23,15 +20,13 @@ protected:
 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
 	std::unique_ptr<FViewportClient> CreateViewportClient() override;
 	void ConfigureViewportContext(size_t Index, FViewportContext& Context) override;
-
-	FEditorViewportController* GetViewportController();
+	void OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext) override;
 
 private:
-	void SyncViewportClient();
+	void RefreshEditorViewportClients();
+	FEditorViewportClient* ResolveEditorViewportClient(FViewportContext* ViewportContext) const;
 
 	FEditorUI EditorUI;
-	FViewportClient* ActiveViewportClient = nullptr;
 	//TArray<std::unique_ptr<FViewportClient>> AdditionalViewportClients;
 	//FEditorViewportController ViewportController;
-	TArray<AActor*> SeletedActors;
 };

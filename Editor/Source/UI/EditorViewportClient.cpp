@@ -38,10 +38,9 @@ namespace
 	}
 }
 
-FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, TArray<AActor*>& InSeletedActors, EEditorViewportType InViewportType, ELevelType InWorldType)
+FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, EEditorViewportType InViewportType, ELevelType InWorldType)
 	: EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
-	, SeletedActors(InSeletedActors)
 	, ViewportType(InViewportType)
 {
 	SetWorldType(InWorldType);
@@ -162,118 +161,124 @@ const char* FEditorViewportClient::GetViewportLabel() const
 
 void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-	//if (!Core || !EditorUI.IsViewportInteractive())
-	//{
-	//	return;
-	//}
+	(void)Hwnd;
+	(void)LParam;
 
-	//if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse && !EditorUI.IsViewportInteractive())
-	//{
-	//	return;
-	//}
-
-	ULevel* Level = ResolveLevel(Core);
-	UWorld* World = ResolveWorld(Core);
-	AActor* SelectedActor = Core->GetSelectedActor();
-	if (!Level || !World)
+	ULevel* Level = nullptr;
+	UWorld* World = nullptr;
+	if (!CanUseEditingTools(Core, Level, World))
 	{
 		return;
 	}
 
-	//const bool bHasViewportMouse = EditorUI.GetViewportMousePosition(
-	//	static_cast<int32>(static_cast<short>(LOWORD(LParam))),
-	//	static_cast<int32>(static_cast<short>(HIWORD(LParam))),
-	//	ScreenMouseX,
-	//	ScreenMouseY,
-	//	ScreenWidth,
-	//	ScreenHeight);
-
-	const bool bRightMouseDown = InputManager &&
-		InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
+	AActor* SelectedActor = GetSelectedActor();
+	const bool bRightMouseDown = InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
 
 	switch (Msg)
 	{
 	case WM_KEYDOWN:
-		if (bRightMouseDown)
-		{
-			return;
-		}
-
-		switch (WParam)
-		{
-		case 'W':
-			Gizmo.SetMode(EGizmoMode::Location);
-			return;
-		case 'E':
-			Gizmo.SetMode(EGizmoMode::Rotation);
-			return;
-		case 'R':
-			Gizmo.SetMode(EGizmoMode::Scale);
-			return;
-		case 'L':
-			Gizmo.ToggleCoordinateSpace();
-			UE_LOG("Gizmo Space: %s", Gizmo.GetCoordinateSpace() == EGizmoCoordinateSpace::Local ? "Local" : "World");
-			return;
-		default:
-			return;
-		}
-
+		HandleEditorHotkeys(WParam, bRightMouseDown);
+		return;
 	case WM_LBUTTONDOWN:
-		//if (!bHasViewportMouse)
-		//{
-		//	return;
-		//}
-
-		if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
-		{
-			return;
-		}
-
-		{
-			AActor* PickedActor = Picker.PickActor(World->GetAllActors(), &CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
-			Core->SetSelectedActor(PickedActor);
-			EditorUI.SyncSelectedActorProperty();
-		}
+		HandleSelectionClick(Core, World, SelectedActor);
 		return;
-
 	case WM_MOUSEMOVE:
-		//if (!bHasViewportMouse)
-		//{
-		//	Gizmo.ClearHover();
-		//	return;
-		//}
-
-		if (!Gizmo.IsDragging())
-		{
-			Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
-			return;
-		}
-
-		if (Gizmo.UpdateDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
-		{
-			EditorUI.SyncSelectedActorProperty();
-		}
+		HandleMouseMove(SelectedActor);
 		return;
-
 	case WM_LBUTTONUP:
-		if (Gizmo.IsDragging())
-		{
-			Gizmo.EndDrag();
-			//if (bHasViewportMouse)
-			//{
-			//	Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ScreenMouseX, ScreenMouseY, ScreenWidth, ScreenHeight);
-			//}
-			//else
-			//{
-			//	Gizmo.ClearHover();
-			//}
-			EditorUI.SyncSelectedActorProperty();
-		}
+		HandleMouseRelease();
 		return;
-
 	default:
 		return;
 	}
+}
+
+bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const
+{
+	OutLevel = ResolveLevel(Core);
+	OutWorld = ResolveWorld(Core);
+	return OutLevel != nullptr && OutWorld != nullptr;
+}
+
+void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseDown)
+{
+	if (bRightMouseDown)
+	{
+		return;
+	}
+
+	switch (WParam)
+	{
+	case 'W':
+		Gizmo.SetMode(EGizmoMode::Location);
+		return;
+	case 'E':
+		Gizmo.SetMode(EGizmoMode::Rotation);
+		return;
+	case 'R':
+		Gizmo.SetMode(EGizmoMode::Scale);
+		return;
+	case 'L':
+		Gizmo.ToggleCoordinateSpace();
+		UE_LOG("Gizmo Space: %s", Gizmo.GetCoordinateSpace() == EGizmoCoordinateSpace::Local ? "Local" : "World");
+		return;
+	default:
+		return;
+	}
+}
+
+void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
+{
+	if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
+	{
+		return;
+	}
+
+	AActor* PickedActor = Picker.PickActor(World->GetAllActors(), &CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
+	Core->SetSelectedActor(PickedActor);
+	EditorUI.SyncSelectedActorProperty();
+}
+
+void FEditorViewportClient::HandleMouseMove(AActor* SelectedActor)
+{
+	if (!Gizmo.IsDragging())
+	{
+		Gizmo.UpdateHover(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
+		return;
+	}
+
+	if (Gizmo.UpdateDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
+	{
+		EditorUI.SyncSelectedActorProperty();
+	}
+}
+
+void FEditorViewportClient::HandleMouseRelease()
+{
+	if (!Gizmo.IsDragging())
+	{
+		return;
+	}
+
+	Gizmo.EndDrag();
+	EditorUI.SyncSelectedActorProperty();
+}
+
+AActor* FEditorViewportClient::GetSelectedActor() const
+{
+	FCore* Core = EditorUI.GetCore();
+	return Core ? Core->GetSelectedActor() : nullptr;
+}
+
+AActor* FEditorViewportClient::GetGizmoTarget() const
+{
+	AActor* SelectedActor = GetSelectedActor();
+	if (!SelectedActor || SelectedActor->IsA<ASkySphereActor>())
+	{
+		return nullptr;
+	}
+
+	return SelectedActor;
 }
 
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
@@ -347,13 +352,8 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		OutQueue.AddCommand(GridCmd);
 	}
 
-	if (SeletedActors.empty())
-	{
-		return;
-	}
-
-	AActor* GizmoTarget = SeletedActors[0];
-	if (GizmoTarget && !GizmoTarget->IsA<ASkySphereActor>())
+	AActor* GizmoTarget = GetGizmoTarget();
+	if (GizmoTarget)
 	{
 		Gizmo.BuildRenderCommands(GizmoTarget, &CameraTransform, OutQueue);
 	}
@@ -411,11 +411,6 @@ void FEditorViewportClient::SetLineThickness(float InThickness)
 	{
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
-}
-
-void FEditorViewportClient::SetSelection(TArray<AActor*>& SeletedActorArrayPtr)
-{
-	SeletedActors = SeletedActorArrayPtr;
 }
 
 void FEditorViewportClient::SetupInputBindings()

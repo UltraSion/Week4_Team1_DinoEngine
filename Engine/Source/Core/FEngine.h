@@ -51,6 +51,7 @@ protected:
 	virtual std::unique_ptr<FViewportClient> CreateViewportClient();
 	virtual void ConfigureViewportContext(size_t Index, FViewportContext& Context);
 	virtual void UpdateViewportLayout(int32 Width, int32 Height);
+	virtual void OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext) {}
 
 	FWindowApplication* App = nullptr;
 	FWindow* MainWindow = nullptr;
@@ -75,10 +76,13 @@ private:
 	void CleanupViewportContexts();
 	void SetActiveViewportContext(FViewportContext* InViewportContext);
 	void SetCapturingViewportContext(FViewportContext* InViewportContext);
-	void RefreshViewportInteraction(int32 WindowMouseX, int32 WindowMouseY);
+	void UpdateViewportInteractionState(int32 WindowMouseX, int32 WindowMouseY);
 	FViewportContext* FindHoveredViewportContext(int32 WindowMouseX, int32 WindowMouseY);
 	FViewportContext* GetInputOwnerViewportContext() const;
 	FViewportContext* ResolveInputViewportContext(UINT Msg) const;
+	void RouteInputToViewport(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+	void TickViewportContexts(float DeltaTime);
+	void RenderAllViewports();
 	bool AreAnyMouseButtonsDown() const;
 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void OnResize(int32 Width, int32 Height);

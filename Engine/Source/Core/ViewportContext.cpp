@@ -103,6 +103,13 @@ void FViewportContext::SetCapturing(bool bInCapturing)
 	bCapturing = bInCapturing && AcceptsInput();
 }
 
+void FViewportContext::ApplyLayout(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight, int32 InRenderTopLeftX, int32 InRenderTopLeftY)
+{
+	SetRect(InTopLeftX, InTopLeftY, InWidth, InHeight);
+	SetRenderOffset(InRenderTopLeftX, InRenderTopLeftY);
+	SetEnabled(InWidth > 0 && InHeight > 0);
+}
+
 void FViewportContext::SetRect(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight)
 {
 	if (!Viewport)
