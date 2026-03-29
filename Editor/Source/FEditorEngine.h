@@ -19,7 +19,6 @@ protected:
 	void Render() override;
 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
 	std::unique_ptr<FViewportClient> CreateViewportClient() override;
-	void ConfigureViewportContext(size_t Index, FViewportContext& Context) override;
 	void OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext) override;
 
 private:
@@ -27,6 +26,4 @@ private:
 	FEditorViewportClient* ResolveEditorViewportClient(FViewportContext* ViewportContext) const;
 
 	FEditorUI EditorUI;
-	//TArray<std::unique_ptr<FViewportClient>> AdditionalViewportClients;
-	//FEditorViewportController ViewportController;
 };

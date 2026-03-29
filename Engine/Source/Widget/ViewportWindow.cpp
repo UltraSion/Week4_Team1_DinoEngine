@@ -1,27 +1,40 @@
 #include "ViewportWindow.h"
-#include "Core/FEngine.h"
 
-SViewportWindow::SViewportWindow(FViewportContext* InViewportContext) : ViewportContext(InViewportContext)
+SViewportWindow::SViewportWindow(std::unique_ptr<FViewportContext> InViewportContext)
+	: ViewportContext(std::move(InViewportContext))
 {
 }
 
 SViewportWindow::~SViewportWindow()
 {
-	ViewportContext->Cleanup();
-	delete ViewportContext;
-	ViewportContext = nullptr;
+	if (ViewportContext)
+	{
+		ViewportContext->Cleanup();
+	}
 }
 
-void SViewportWindow::Draw()
+void SViewportWindow::Tick(FCore* Core, float DeltaTime)
 {
-	ViewportContext->Render(GEngine->GetCore(), GEngine->GetCommandQueue());
+	if (ViewportContext)
+	{
+		ViewportContext->Tick(Core, DeltaTime);
+	}
+}
+
+void SViewportWindow::Draw(FCore* Core, FRenderCommandQueue& CommandQueue)
+{
+	if (ViewportContext)
+	{
+		ViewportContext->Render(Core, CommandQueue);
+	}
 }
 
 void SViewportWindow::OnResize()
 {
-	if (ViewportContext)
+	if (!ViewportContext)
+	{
 		return;
+	}
 
-	FRect Rect = GetRect();
-	ViewportContext->SetRect(Rect);
+	ViewportContext->SetRect(GetRect());
 }

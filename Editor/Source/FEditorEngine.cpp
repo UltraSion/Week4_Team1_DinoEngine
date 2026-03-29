@@ -82,22 +82,6 @@ std::unique_ptr<FViewportClient> FEditorEngine::CreateViewportClient()
 	return std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, EEditorViewportType::Perspective, ELevelType::Editor);
 }
 
-void FEditorEngine::ConfigureViewportContext(size_t Index, FViewportContext& Context)
-{
-	const EEditorViewportType ViewportTypes[] =
-	{
-		EEditorViewportType::Perspective,
-		EEditorViewportType::Top,
-		EEditorViewportType::Front,
-		EEditorViewportType::Right
-	};
-
-	if (Index < std::size(ViewportTypes))
-	{
-		Context.ViewportClient = std::make_unique<FEditorViewportClient>(EditorUI, MainWindow, ViewportTypes[Index], ELevelType::Editor);
-	}
-}
-
 void FEditorEngine::OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext)
 {
 	(void)PreviousActiveContext;

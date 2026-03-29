@@ -158,10 +158,28 @@ void SSplitter::SetSplitRatio(float InSplitRatio)
 	OnResize();
 }
 
-void SSplitter::Draw()
+void SSplitter::Tick(FCore* Core, float DeltaTime)
 {
-	SideLT->Draw();
-	SideRB->Draw();
+	if (SideLT)
+	{
+		SideLT->Tick(Core, DeltaTime);
+	}
+	if (SideRB)
+	{
+		SideRB->Tick(Core, DeltaTime);
+	}
+}
+
+void SSplitter::Draw(FCore* Core, FRenderCommandQueue& CommandQueue)
+{
+	if (SideLT)
+	{
+		SideLT->Draw(Core, CommandQueue);
+	}
+	if (SideRB)
+	{
+		SideRB->Draw(Core, CommandQueue);
+	}
 }
 
 FRect SSplitterH::GetSideLTRect()

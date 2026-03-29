@@ -2,16 +2,19 @@
 #include "EngineAPI.h"
 #include "SWindow.h"
 #include "Core/ViewportContext.h"
+#include <memory>
 
 class ENGINE_API SViewportWindow : public SWindow
 {
-	FViewportContext* ViewportContext = nullptr;
-
+	std::unique_ptr<FViewportContext> ViewportContext;
 
 public:
-	SViewportWindow(FViewportContext* InViewportContext);
-	virtual ~SViewportWindow();
-	virtual void Draw() override;
+	explicit SViewportWindow(std::unique_ptr<FViewportContext> InViewportContext);
+	~SViewportWindow() override;
+
+	FViewportContext* GetViewportContext() const { return ViewportContext.get(); }
+	virtual void Tick(FCore* Core, float DeltaTime) override;
+	virtual void Draw(FCore* Core, FRenderCommandQueue& CommandQueue) override;
 	virtual void OnResize() override;
 };
 

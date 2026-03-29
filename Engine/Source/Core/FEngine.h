@@ -7,18 +7,10 @@
 #include "ViewportClient.h"
 #include <memory>
 #include "Widget/WindowManager.h"
-#include "Widget/ViewportWindow.h"
 
 class FWindowApplication;
 class FWindow;
-
-enum class EViewportLayout : uint8_t
-{
-	Single,
-	Quad,
-	LeftRight,
-	TopBottom
-};
+class FWindowManager;
 
 class ENGINE_API FEngine
 {
@@ -36,11 +28,7 @@ public:
 	FCore* GetCore() const { return Core.get(); }
 	FRenderCommandQueue& GetCommandQueue() { return CommandQueue; }
 	FWindowApplication* GetApp() const { return App; }
-	FViewportContext* GetActiveViewportContext() const { return ActiveViewportContext; }
-	FViewportContext* GetHoveredViewportContext() const { return HoveredViewportContext; }
-	FViewportContext* GetCapturingViewportContext() const { return CapturingViewportContext; }
-	EViewportLayout GetViewportLayout() const { return ViewportLayout; }
-	void SetViewportLayout(EViewportLayout InLayout);
+	FViewportContext* GetActiveViewportContext() const { return WindowManager.GetActiveViewportContext(); }
 	void SetViewportLayoutBounds(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight);
 
 protected:
@@ -52,43 +40,17 @@ protected:
 	virtual void Render();
 	virtual ELevelType GetStartupLevelType() const { return ELevelType::Game; }
 	virtual std::unique_ptr<FViewportClient> CreateViewportClient();
-	virtual void ConfigureViewportContext(size_t Index, FViewportContext& Context);
-	virtual void UpdateViewportLayout(int32 Width, int32 Height);
 	virtual void OnActiveViewportContextChanged(FViewportContext* NewActiveContext, FViewportContext* PreviousActiveContext) {}
 
 	FWindowApplication* App = nullptr;
 	FWindow* MainWindow = nullptr;
 	std::unique_ptr<FCore> Core;
-	TArray<FViewportContext> Viewports;
 	FRenderCommandQueue CommandQueue;
 	FInputManager* InputManager = nullptr;
 	FEnhancedInputManager* EnhancedInput = nullptr;
-	EViewportLayout ViewportLayout = EViewportLayout::Quad;
-	FViewportContext* ActiveViewportContext = nullptr;
-	FViewportContext* HoveredViewportContext = nullptr;
-	FViewportContext* CapturingViewportContext = nullptr;
-	int32 ViewportLayoutOriginX = 0;
-	int32 ViewportLayoutOriginY = 0;
-	uint32 ViewportLayoutWidth = 0;
-	uint32 ViewportLayoutHeight = 0;
-	bool bHasCustomViewportLayoutBounds = false;
-
 	FWindowManager WindowManager;
 
 private:
-	FViewportContext CreateViewportContext(size_t Index);
-	FViewportContext* CreateViewportContext(FRect InRect);
-	void InitializeViewportContexts(size_t Count);
-	void CleanupViewportContexts();
-	void SetActiveViewportContext(FViewportContext* InViewportContext);
-	void SetCapturingViewportContext(FViewportContext* InViewportContext);
-	void UpdateViewportInteractionState(int32 WindowMouseX, int32 WindowMouseY);
-	FViewportContext* FindHoveredViewportContext(int32 WindowMouseX, int32 WindowMouseY);
-	FViewportContext* GetInputOwnerViewportContext() const;
-	FViewportContext* ResolveInputViewportContext(UINT Msg) const;
-	void RouteInputToViewport(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
-	//void TickViewportContexts(float DeltaTime);
-	//bool AreAnyMouseButtonsDown() const;
 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void OnResize(int32 Width, int32 Height);
 };
