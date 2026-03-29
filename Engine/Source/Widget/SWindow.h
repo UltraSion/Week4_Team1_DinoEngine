@@ -14,6 +14,16 @@ enum SplitOption
 	RB,
 };
 
+class SWindow;
+class ENGINE_API SWindowRoot : public SWindow
+{
+	SWindow* Child = nullptr;
+public:
+	SWindowRoot(SWindow* InChild = nullptr) : Child(InChild) {}
+	virtual ~SWindowRoot() { delete Child;  }
+	virtual void Draw() override { if (Child) Child->Draw(); }
+};
+
 class SSplitter;
 class ENGINE_API SWindow
 {
@@ -47,6 +57,7 @@ public:
 	virtual FRect GetSideLTRect() = 0;
 	virtual FRect GetSideRBRect() = 0;
 	virtual void OnResize() override;
+	void ReplaceSide(SWindow* OldSide, SWindow* NewSide);
 	SSplitter(SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f);
 	~SSplitter();
 	float GetSplitRatio() { return SplitRatio; }
