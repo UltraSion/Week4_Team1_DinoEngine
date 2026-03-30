@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include "Actor/StaticMeshActor.h"
+#include "Component/StaticMeshComponent.h"
 #include "Renderer/Renderer.h"
 #include <commdlg.h>
 #include <cmath>
