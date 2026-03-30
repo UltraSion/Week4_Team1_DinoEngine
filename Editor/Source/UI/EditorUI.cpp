@@ -769,6 +769,7 @@ void FEditorUI::Render()
 	Property.Render(Core);
 	Console.Render();
 	Stat.Render();
+	ViewportLegacy.Render(nullptr);
 	Outliner.Render(Core);
 	ControlPanel.Render(Core, ActiveViewportClient);
 	ContentBrowser.Render();
