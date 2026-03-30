@@ -197,6 +197,11 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	case WM_KEYDOWN:
 		HandleEditorHotkeys(WParam, bRightMouseDown);
 		return;
+#if IS_OBJ_VIEWER
+	case WM_LBUTTONDBLCLK:
+		ResetCameraToInitialState();
+		return;
+#endif
 	case WM_LBUTTONDOWN:
 		HandleSelectionClick(Core, World, SelectedActor);
 		return;
@@ -209,6 +214,29 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	default:
 		return;
 	}
+}
+
+void FEditorViewportClient::SaveInitialCameraState()
+{
+	InitialCameraPosition = CameraTransform.GetPosition();
+	InitialCameraYaw = CameraTransform.GetYaw();
+	InitialCameraPitch = CameraTransform.GetPitch();
+	InitialCameraFOV = CameraTransform.GetFOV();
+	bHasInitialCameraState = true;
+}
+
+void FEditorViewportClient::ResetCameraToInitialState()
+{
+#if IS_OBJ_VIEWER
+	if (!bHasInitialCameraState)
+	{
+		return;
+	}
+
+	CameraTransform.SetPosition(InitialCameraPosition);
+	CameraTransform.SetRotation(InitialCameraYaw, InitialCameraPitch);
+	CameraTransform.SetFOV(InitialCameraFOV);
+#endif
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const

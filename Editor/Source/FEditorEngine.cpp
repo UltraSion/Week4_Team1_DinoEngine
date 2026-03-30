@@ -167,6 +167,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 		Camera->SetRotation(45.0f, -30.0f);
 		Camera->SetFOV(50.0f);
 	}
+	ViewportClient->SaveInitialCameraState();
 
 	ViewportClient->SetRenderMode(ERenderMode::SolidWireframe);
 	ViewportClient->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);

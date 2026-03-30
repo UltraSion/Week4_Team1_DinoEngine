@@ -57,6 +57,9 @@ public:
 	bool IsGridVisible() const;
 	void SetGridVisible(bool bVisible);
 
+	void SaveInitialCameraState();
+	void ResetCameraToInitialState();
+
 private:
 	void ConfigureDefaultView();
 	bool CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const;
@@ -86,5 +89,10 @@ private:
 	float GridSize = 10.0f;
 	float LineThickness = 1.0f;
 	bool bShowGrid = true;
+	FVector InitialCameraPosition = FVector::ZeroVector;
+	float InitialCameraYaw = 0.0f;
+	float InitialCameraPitch = 0.0f;
+	float InitialCameraFOV = 45.0f;
+	bool bHasInitialCameraState = false;
 	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
 };

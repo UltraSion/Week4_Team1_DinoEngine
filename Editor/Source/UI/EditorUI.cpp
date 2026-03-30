@@ -351,6 +351,7 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 			const bool bIsMouseMessage =
 				Msg == WM_MOUSEMOVE ||
 				Msg == WM_LBUTTONDOWN ||
+				Msg == WM_LBUTTONDBLCLK ||
 				Msg == WM_LBUTTONUP ||
 				Msg == WM_RBUTTONDOWN ||
 				Msg == WM_RBUTTONUP ||
