@@ -805,7 +805,7 @@ void FRenderer::Release()
 	if (NormalSampler) NormalSampler->Release();
 	if (StencilWriteState) StencilWriteState->Release();
 	if (StencilTestState) StencilTestState->Release();
-	OutlinePS.reset(); DefaultMaterial.reset(); OverlayColorMaterial.reset();
+	OutlinePS.reset(); DefaultMaterial.reset(); OverlayColorMaterial.reset(); DefaultTextureMaterial.reset(); RenderStateManager.reset();
 	if (FolderIconSRV)FolderIconSRV->Release();
 	if (FileIconSRV)FileIconSRV->Release();
 	if (LineVertexBuffer) LineVertexBuffer->Release();

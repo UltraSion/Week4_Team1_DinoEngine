@@ -3,7 +3,9 @@
 #include "Object/StaticMesh.h"
 #include "Object/ObjectFactory.h"
 #include "Mesh/ObjManager.h"
+#include "Mesh/StaticMeshRenderData.h"
 #include "Debug/EngineLog.h"
+#include "AssetCooker.h" 
 #include <algorithm>
 
 FAssetManager& FAssetManager::Get()
@@ -30,13 +32,29 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 		return It->second;
 	}
 
-	//캐시에 없으므로 파일 로드 및 파싱 (Cook)
-	FStaticMeshRenderData* RenderData = FObjManager::LoadObjStaticMeshAsset(AssetData.AssetPath);
+	FString CookedPath = FAssetCooker::GetCookedPath(AssetData.AssetPath);
+
+	FStaticMeshRenderData* RenderData = nullptr;
+
+	//  쿡된 에셋이 유효하면 바이너리에서 로드 (OBJ 파싱 스킵)
+	if (!FAssetCooker::NeedsCook(AssetData.AssetPath, CookedPath))
+	{
+		RenderData = FAssetCooker::LoadCookedStaticMesh(CookedPath);
+	}
 	if (!RenderData)
 	{
-		return nullptr;
-	}
+		// 쿡 필요 또는 로드 실패 → 기존 파이프라인 (파싱 + 쿡)
+		RenderData = FObjManager::LoadObjStaticMeshAsset(AssetData.AssetPath);
 
+		if (!RenderData)
+		{
+			return nullptr;
+		}
+
+		//쿡 결과를 .dasset으로 저장 (다음번에는 바이너리 로드)
+		FAssetCooker::SaveCookedStaticMesh(RenderData, AssetData.AssetPath, CookedPath);
+	}
+	RenderData->SetAssetPath(AssetData.AssetPath);
 	//오브젝트 생성 및 GC 보호 플래그 설정
 	UStaticMesh* NewMesh = FObjectFactory::ConstructObject<UStaticMesh>(nullptr, AssetData.AssetName);
 	NewMesh->SetStaticMeshAsset(RenderData);

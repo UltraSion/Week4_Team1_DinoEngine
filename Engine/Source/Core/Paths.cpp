@@ -156,6 +156,11 @@ std::filesystem::path FPaths::ShaderCacheDir()
 	return Root / "Content/Shaders/";
 }
 
+std::filesystem::path FPaths::IntermediateDir()
+{
+	return Root / "Intermediate/";
+}
+
 /*
 FString FPaths::Combine(const FString& Base, const FString& Relative)
 {

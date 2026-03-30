@@ -258,6 +258,7 @@ void FMaterial::Release()
 	PixelShader.reset();
 	RasterizerState.reset();
 	DepthStencilState.reset();
+	MaterialTexture.reset();
 	BlendState.reset();
 	for (auto& CB : ConstantBuffers)
 	{

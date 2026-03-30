@@ -149,6 +149,7 @@ void FCore::Release()
 	}
 
 	CPrimitiveBase::ClearCache();
+	FObjManager::Clear();
 
 	if (GRenderer)
 	{

@@ -314,6 +314,7 @@
     <ClCompile Include="Source\Mesh\ObjManager.cpp" />
     <ClCompile Include="Source\Asset\AssetManager.cpp" />
     <ClCompile Include="Source\Asset\AssetRegistry.cpp" />
+    <ClCompile Include="Source\Asset\AssetCooker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">
@@ -651,7 +652,10 @@
     <ClInclude Include="Source\Mesh\ObjManager.h" />
     <ClInclude Include="Source\Asset\AssetManager.h" />
     <ClInclude Include="Source\Asset\AssetRegistry.h" />
-    <ClInclude Include="Source\Types\WeakObjectPtr.h" />
+    <ClInclude Include="Source\Asset\CookedAssetHeader.h" />
+    <ClInclude Include="Source\Asset\CookedStaticMesh.h" />
+    <ClInclude Include="Source\Asset\AssetCooker.h" />
+    <ClInclude Include="Source\Asset\CookedAsset.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
