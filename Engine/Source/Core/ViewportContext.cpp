@@ -257,6 +257,7 @@ void FViewportContext::Render(FCore* Core, FRenderCommandQueue& CommandQueue)
 		return;
 	}
 
+	CommandQueue.Clear();
 	TArray<AActor*> Actors = World->GetAllActors();
 	PrepareView(CommandQueue, Actors);
 

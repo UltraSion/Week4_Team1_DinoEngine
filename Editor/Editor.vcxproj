@@ -228,8 +228,10 @@
     <ClCompile Include="Source\UI\OutlinerWindow.cpp" />
     <ClCompile Include="Source\UI\PropertyWindow.cpp" />
     <ClCompile Include="Source\UI\StatWindow.cpp" />
+    <ClCompile Include="Source\UI\SWindow.cpp" />
     <ClCompile Include="Source\UI\Viewport.cpp" />
     <ClCompile Include="Source\UI\ViewportWindow.cpp" />
+    <ClCompile Include="Source\UI\WindowManager.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
@@ -254,8 +256,10 @@
     <ClInclude Include="Source\UI\OutlinerWindow.h" />
     <ClInclude Include="Source\UI\PropertyWindow.h" />
     <ClInclude Include="Source\UI\StatWindow.h" />
+    <ClInclude Include="Source\UI\SWindow.h" />
     <ClInclude Include="Source\UI\Viewport.h" />
     <ClInclude Include="Source\UI\ViewportWindow.h" />
+    <ClInclude Include="Source\UI\WindowManager.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_impl_dx11.h" />

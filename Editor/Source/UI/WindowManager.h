@@ -12,7 +12,7 @@ class FEnhancedInputManager;
 class FCore;
 class SViewportWindow;
 
-class ENGINE_API FWindowManager
+class FWindowManager
 {
 	TArray<SWindow*> Windows;
 	FInputManager* InputManager = nullptr;
@@ -28,6 +28,7 @@ public:
 	SWindow* GetWindowAtPoint(const FPoint& Point) const;
 	bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void Tick(float DeltaTime);
+	void RenderWindows() const;
 	void DrawWindows() const;
 	void AddWindow(SWindow* NewWindow);
 };
