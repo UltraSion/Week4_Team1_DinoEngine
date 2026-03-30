@@ -137,6 +137,13 @@ void FEditorViewportClient::ConfigureDefaultView()
 	}
 }
 
+void FEditorViewportClient::SetViewportType(EEditorViewportType InViewportType)
+{
+	ViewportType = InViewportType;
+	ConfigureDefaultView();
+	SaveInitialCameraState();
+}
+
 void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 {
 	ID3D11Device* Device = Renderer ? Renderer->GetDevice() : nullptr;
@@ -392,43 +399,136 @@ void FEditorViewportClient::DrawUI()
 	char windowName[128];
 	sprintf_s(windowName, "ViewportButtonFrame##%p", this);
 
-	if (ImGui::Begin(windowName, nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+	if (!ImGui::Begin(windowName, nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
 	{
-		char buttonName[128];
-		sprintf_s(buttonName, "H##%p", this);
-		if (ImGui::Button(buttonName))
+		ImGui::End();
+		return;
+	}
+
+	char buttonName[128];
+	sprintf_s(buttonName, "H##%p", this);
+	if (ImGui::Button(buttonName))
+	{
+		ViewportWindow->Split(
+			new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+			SplitDirection::Horizontal,
+			SplitOption::LT
+		);
+	}
+
+	ImGui::SameLine();
+	sprintf_s(buttonName, "V##%p", this);
+	if (ImGui::Button(buttonName))
+	{
+		ViewportWindow->Split(
+			new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+			SplitDirection::Vertical,
+			SplitOption::LT
+		);
+	}
+
+	ImGui::SameLine();
+	sprintf_s(buttonName, "+##%p", this);
+	if (ImGui::Button(buttonName))
+	{
+		FViewportContext* NewContext1 = GEngine->CreateContext(FRect());
+		FViewportContext* NewContext2 = GEngine->CreateContext(FRect());
+		FViewportContext* NewContext3 = GEngine->CreateContext(FRect());
+
+		if (FEditorViewportClient* NewViewportClient1 = dynamic_cast<FEditorViewportClient*>(NewContext1 ? NewContext1->GetViewportClient() : nullptr))
 		{
-			ViewportWindow->Split(
-				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-				SplitDirection::Horizontal,
-				SplitOption::LT
-			);
+			NewViewportClient1->SetViewportType(EEditorViewportType::Top);
 		}
 
-		ImGui::SameLine();
-		sprintf_s(buttonName, "V##%p", this);
-		if (ImGui::Button(buttonName))
+		if (FEditorViewportClient* NewViewportClient2 = dynamic_cast<FEditorViewportClient*>(NewContext2 ? NewContext2->GetViewportClient() : nullptr))
 		{
-			ViewportWindow->Split(
-				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-				SplitDirection::Vertical,
-				SplitOption::LT
-			);
+			NewViewportClient2->SetViewportType(EEditorViewportType::Front);
 		}
 
-		ImGui::SameLine();
-		sprintf_s(buttonName, "+##%p", this);
-		if (ImGui::Button(buttonName))
+		if (FEditorViewportClient* NewViewportClient3 = dynamic_cast<FEditorViewportClient*>(NewContext3 ? NewContext3->GetViewportClient() : nullptr))
 		{
-			ViewportWindow->Split4(
-				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-				SplitOption::LT
-			);
+			NewViewportClient3->SetViewportType(EEditorViewportType::Right);
+		}
+
+		ViewportWindow->Split4(
+			new SViewportWindow(FRect(), NewContext1),
+			new SViewportWindow(FRect(), NewContext2),
+			new SViewportWindow(FRect(), NewContext3),
+			SplitOption::RB
+		);
+	}
+
+	ImGui::SameLine();
+	DrawCameraOption(GetCamera());
+	ImGui::End();
+
+
+}
+
+void FEditorViewportClient::DrawCameraOption(FCamera* Camera)
+{
+	if (ImGui::CollapsingHeader("Camera"))
+	{
+		ImGui::SeparatorText("Camera");
+		if (Camera)
+		{
+			float Sensitivity = Camera->GetMouseSensitivity();
+			if (ImGui::SliderFloat("Mouse Sensitivity", &Sensitivity, 0.01f, 1.0f))
+			{
+				Camera->SetMouseSensitivity(Sensitivity);
+			}
+
+			float Speed = Camera->GetSpeed();
+			if (ImGui::SliderFloat("Move Speed", &Speed, 0.1f, 20.0f))
+			{
+				Camera->SetSpeed(Speed);
+			}
+
+			const FVector CameraPosition = Camera->GetPosition();
+			float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
+			if (ImGui::DragFloat3("Position", Position, 0.1f))
+			{
+				Camera->SetPosition({ Position[0], Position[1], Position[2] });
+			}
+
+			float CameraYaw = Camera->GetYaw();
+			float CameraPitch = Camera->GetPitch();
+			bool bRotationChanged = false;
+			bRotationChanged |= ImGui::DragFloat("Yaw", &CameraYaw, 0.5f);
+			bRotationChanged |= ImGui::DragFloat("Pitch", &CameraPitch, 0.5f, -89.0f, 89.0f);
+			if (bRotationChanged)
+			{
+				Camera->SetRotation(CameraYaw, CameraPitch);
+			}
+
+			int ProjectionModeIndex = (Camera->GetProjectionMode() == ECameraProjectionMode::Orthographic) ? 1 : 0;
+			const char* ProjectionModes[] = { "Perspective", "Orthographic" };
+			if (ImGui::Combo("Projection", &ProjectionModeIndex, ProjectionModes, IM_ARRAYSIZE(ProjectionModes)))
+			{
+				Camera->SetProjectionMode(
+					ProjectionModeIndex == 0
+					? ECameraProjectionMode::Perspective
+					: ECameraProjectionMode::Orthographic);
+			}
+
+			if (Camera->IsOrthographic())
+			{
+				float OrthoWidth = Camera->GetOrthoWidth();
+				if (ImGui::DragFloat("Ortho Width", &OrthoWidth, 0.5f, 1.0f, 1000.0f))
+				{
+					Camera->SetOrthoWidth(OrthoWidth);
+				}
+			}
+			else
+			{
+				float CameraFOV = Camera->GetFOV();
+				if (ImGui::SliderFloat("FOV", &CameraFOV, 10.0f, 120.0f))
+				{
+					Camera->SetFOV(CameraFOV);
+				}
+			}
 		}
 	}
-	ImGui::End();
 }
 
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)

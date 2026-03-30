@@ -44,8 +44,10 @@ public:
 	ERenderMode GetRenderMode() const { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
 	EEditorViewportType GetViewportType() const { return ViewportType; }
+	void SetViewportType(EEditorViewportType InViewportType);
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
 	virtual void DrawUI() override;
+	void DrawCameraOption(FCamera* Camera);
 
 	void HandleFileDoubleClick(const FString& FilePath);
 	void HandleFileDropOnViewport(const FString& FilePath);
