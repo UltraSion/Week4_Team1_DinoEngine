@@ -21,6 +21,7 @@ enum SplitOption
 };
 
 class SSplitter;
+class SSplitterC;
 
 class SWindow
 {
@@ -47,6 +48,7 @@ public:
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) { return false; }
 	virtual void ReplaceSide(SWindow* OldSide, SWindow* NewSide);
 	SSplitter* Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption);
+	SSplitterC* Split4(SWindow* InNewWindow1, SWindow* InNewWindow2, SWindow* InNewWindow3, SplitOption InSplitOption);
 };
 
 class SSplitter : public SWindow

@@ -139,6 +139,59 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 	return NewSplitter;
 }
 
+SSplitterC* SWindow::Split4(SWindow* InNewWindow1, SWindow* InNewWindow2, SWindow* InNewWindow3, SplitOption InSplitOption)
+{
+	if (InNewWindow1 == nullptr || InNewWindow2 == nullptr || InNewWindow3 == nullptr)
+	{
+		return nullptr;
+	}
+
+	SSplitterC* NewSplitter = new SSplitterC(GetRect());
+	if (NewSplitter == nullptr)
+	{
+		return nullptr;
+	}
+
+	NewSplitter->SetParent(Parent);
+	if (Parent)
+	{
+		Parent->ReplaceSide(this, NewSplitter);
+	}
+
+	switch (InSplitOption)
+	{
+	case SplitOption::LT:
+		NewSplitter->SetSideLT(this);
+		NewSplitter->SetSideRT(InNewWindow1);
+		NewSplitter->SetSideLB(InNewWindow2);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::RT:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(this);
+		NewSplitter->SetSideLB(InNewWindow2);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::LB:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(InNewWindow2);
+		NewSplitter->SetSideLB(this);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::RB:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(InNewWindow2);
+		NewSplitter->SetSideLB(InNewWindow3);
+		NewSplitter->SetSideRB(this);
+		break;
+	default:
+		delete NewSplitter;
+		return nullptr;
+	}
+
+	return NewSplitter;
+}
+
 void SSplitter::SetSideLT(SWindow* InSideLT)
 {
 	SideLT = InSideLT;
