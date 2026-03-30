@@ -77,6 +77,13 @@ void SWindow::SetRect(const FRect& InRect)
 	OnResize();
 }
 
+void SWindow::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
+{
+	(void)OldSide;
+	(void)NewSide;
+	throw std::runtime_error("This window does not support replacing child windows.");
+}
+
 bool SWindow::ISHover(FPoint coord) const
 {
 	return coord.X >= Rect.Position.X && coord.X <= Rect.Position.X + Rect.Size.X &&
@@ -495,4 +502,456 @@ FRect SSplitterH::GetSplitterRect() const
 void SSplitterH::Draw()
 {
 	SSplitter::Draw();
+}
+
+float SSplitterC::ClampHorizontalRatio(float InSplitRatio) const
+{
+	const float AvailableWidth = GetAvailableWidth();
+	if (AvailableWidth <= 0.0f)
+	{
+		return 0.5f;
+	}
+
+	const float MinRatio = (std::max)(0.0f, MinPaneSize) / AvailableWidth;
+	const float MaxRatio = 1.0f - MinRatio;
+	if (MinRatio >= MaxRatio)
+	{
+		return 0.5f;
+	}
+
+	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
+}
+
+float SSplitterC::ClampVerticalRatio(float InSplitRatio) const
+{
+	const float AvailableHeight = GetAvailableHeight();
+	if (AvailableHeight <= 0.0f)
+	{
+		return 0.5f;
+	}
+
+	const float MinRatio = (std::max)(0.0f, MinPaneSize) / AvailableHeight;
+	const float MaxRatio = 1.0f - MinRatio;
+	if (MinRatio >= MaxRatio)
+	{
+		return 0.5f;
+	}
+
+	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
+}
+
+float SSplitterC::GetAvailableWidth() const
+{
+	return (std::max)(0.0f, Rect.Size.X - SplitterThickness);
+}
+
+float SSplitterC::GetAvailableHeight() const
+{
+	return (std::max)(0.0f, Rect.Size.Y - SplitterThickness);
+}
+
+void SSplitterC::SetSideLT(SWindow* InSideLT)
+{
+	SideLT = InSideLT;
+	if (InSideLT)
+	{
+		InSideLT->SetParent(this);
+		InSideLT->SetRect(GetSideLTRect());
+	}
+}
+
+void SSplitterC::SetSideLB(SWindow* InSideLB)
+{
+	SideLB = InSideLB;
+	if (InSideLB)
+	{
+		InSideLB->SetParent(this);
+		InSideLB->SetRect(GetSideLBRect());
+	}
+}
+
+void SSplitterC::SetSideRT(SWindow* InSideRT)
+{
+	SideRT = InSideRT;
+	if (InSideRT)
+	{
+		InSideRT->SetParent(this);
+		InSideRT->SetRect(GetSideRTRect());
+	}
+}
+
+void SSplitterC::SetSideRB(SWindow* InSideRB)
+{
+	SideRB = InSideRB;
+	if (InSideRB)
+	{
+		InSideRB->SetParent(this);
+		InSideRB->SetRect(GetSideRBRect());
+	}
+}
+
+FRect SSplitterC::GetSideLTRect()
+{
+	const float LeftWidth = GetAvailableWidth() * SplitRatioHorizontal;
+	const float TopHeight = GetAvailableHeight() * SplitRatioVertical;
+	return FRect(Rect.Position, { LeftWidth, TopHeight });
+}
+
+FRect SSplitterC::GetSideLBRect()
+{
+	const float LeftWidth = GetAvailableWidth() * SplitRatioHorizontal;
+	const float TopHeight = GetAvailableHeight() * SplitRatioVertical;
+	const float BottomHeight = GetAvailableHeight() - TopHeight;
+	return FRect(
+		{ Rect.Position.X, Rect.Position.Y + TopHeight + SplitterThickness },
+		{ LeftWidth, BottomHeight });
+}
+
+FRect SSplitterC::GetSideRTRect()
+{
+	const float LeftWidth = GetAvailableWidth() * SplitRatioHorizontal;
+	const float RightWidth = GetAvailableWidth() - LeftWidth;
+	const float TopHeight = GetAvailableHeight() * SplitRatioVertical;
+	return FRect(
+		{ Rect.Position.X + LeftWidth + SplitterThickness, Rect.Position.Y },
+		{ RightWidth, TopHeight });
+}
+
+FRect SSplitterC::GetSideRBRect()
+{
+	const float LeftWidth = GetAvailableWidth() * SplitRatioHorizontal;
+	const float RightWidth = GetAvailableWidth() - LeftWidth;
+	const float TopHeight = GetAvailableHeight() * SplitRatioVertical;
+	const float BottomHeight = GetAvailableHeight() - TopHeight;
+	return FRect(
+		{ Rect.Position.X + LeftWidth + SplitterThickness, Rect.Position.Y + TopHeight + SplitterThickness },
+		{ RightWidth, BottomHeight });
+}
+
+void SSplitterC::OnResize()
+{
+	SplitRatioHorizontal = ClampHorizontalRatio(SplitRatioHorizontal);
+	SplitRatioVertical = ClampVerticalRatio(SplitRatioVertical);
+
+	if (SideLT)
+	{
+		SideLT->SetRect(GetSideLTRect());
+	}
+	if (SideLB)
+	{
+		SideLB->SetRect(GetSideLBRect());
+	}
+	if (SideRT)
+	{
+		SideRT->SetRect(GetSideRTRect());
+	}
+	if (SideRB)
+	{
+		SideRB->SetRect(GetSideRBRect());
+	}
+}
+
+void SSplitterC::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
+{
+	if (OldSide == SideLT)
+	{
+		SetSideLT(NewSide);
+		return;
+	}
+	if (OldSide == SideLB)
+	{
+		SetSideLB(NewSide);
+		return;
+	}
+	if (OldSide == SideRT)
+	{
+		SetSideRT(NewSide);
+		return;
+	}
+	if (OldSide == SideRB)
+	{
+		SetSideRB(NewSide);
+		return;
+	}
+
+	throw std::runtime_error("OldSide is not part of this quad splitter.");
+}
+
+SSplitterC::SSplitterC(FRect InRect, SWindow* InSideLT, SWindow* InSideLB, SWindow* InSideRT, SWindow* InSideRB, float InSplitRatioHorizontal, float InSplitRatioVertical)
+	: SWindow(InRect)
+	, SideLT(InSideLT)
+	, SideLB(InSideLB)
+	, SideRT(InSideRT)
+	, SideRB(InSideRB)
+	, SplitRatioVertical(InSplitRatioVertical)
+	, SplitRatioHorizontal(InSplitRatioHorizontal)
+{
+	OnResize();
+
+	if (SideLT)
+	{
+		SideLT->SetParent(this);
+	}
+	if (SideLB)
+	{
+		SideLB->SetParent(this);
+	}
+	if (SideRT)
+	{
+		SideRT->SetParent(this);
+	}
+	if (SideRB)
+	{
+		SideRB->SetParent(this);
+	}
+}
+
+SSplitterC::~SSplitterC()
+{
+	delete SideLT;
+	delete SideLB;
+	delete SideRT;
+	delete SideRB;
+	SideLT = nullptr;
+	SideLB = nullptr;
+	SideRT = nullptr;
+	SideRB = nullptr;
+}
+
+void SSplitterC::SetSplitRatioVertical(float InSplitRatio)
+{
+	const float ClampedSplitRatio = ClampVerticalRatio(InSplitRatio);
+	if (SplitRatioVertical == ClampedSplitRatio)
+	{
+		return;
+	}
+
+	SplitRatioVertical = ClampedSplitRatio;
+	OnResize();
+}
+
+void SSplitterC::SetSplitRatioHorizontal(float InSplitRatio)
+{
+	const float ClampedSplitRatio = ClampHorizontalRatio(InSplitRatio);
+	if (SplitRatioHorizontal == ClampedSplitRatio)
+	{
+		return;
+	}
+
+	SplitRatioHorizontal = ClampedSplitRatio;
+	OnResize();
+}
+
+void SSplitterC::Tick(float DeltaTime)
+{
+	if (SideLT)
+	{
+		SideLT->Tick(DeltaTime);
+	}
+	if (SideLB)
+	{
+		SideLB->Tick(DeltaTime);
+	}
+	if (SideRT)
+	{
+		SideRT->Tick(DeltaTime);
+	}
+	if (SideRB)
+	{
+		SideRB->Tick(DeltaTime);
+	}
+}
+
+void SSplitterC::Render()
+{
+	if (SideLT)
+	{
+		SideLT->Render();
+	}
+	if (SideLB)
+	{
+		SideLB->Render();
+	}
+	if (SideRT)
+	{
+		SideRT->Render();
+	}
+	if (SideRB)
+	{
+		SideRB->Render();
+	}
+}
+
+bool SSplitterC::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+{
+	if (bDragging && IsMouseMessage(Msg))
+	{
+		return true;
+	}
+
+	auto DispatchToChild = [&](SWindow* Child) -> bool
+	{
+		return Child && Child->HandleMessage(Core, Hwnd, Msg, WParam, LParam);
+	};
+
+	if (IsMouseMessage(Msg))
+	{
+		const FPoint MousePoint(static_cast<float>(GET_X_LPARAM(LParam)), static_cast<float>(GET_Y_LPARAM(LParam)));
+		if (SideLT && SideLT->ISHover(MousePoint))
+		{
+			return DispatchToChild(SideLT);
+		}
+		if (SideLB && SideLB->ISHover(MousePoint))
+		{
+			return DispatchToChild(SideLB);
+		}
+		if (SideRT && SideRT->ISHover(MousePoint))
+		{
+			return DispatchToChild(SideRT);
+		}
+		if (SideRB && SideRB->ISHover(MousePoint))
+		{
+			return DispatchToChild(SideRB);
+		}
+
+		return false;
+	}
+
+	return
+		DispatchToChild(SideLT) ||
+		DispatchToChild(SideLB) ||
+		DispatchToChild(SideRT) ||
+		DispatchToChild(SideRB);
+}
+
+FRect SSplitterC::GetVerticalSplitterRect() const
+{
+	const float LeftWidth = GetAvailableWidth() * SplitRatioHorizontal;
+	return FRect(
+		{ Rect.Position.X + LeftWidth, Rect.Position.Y },
+		{ SplitterThickness, Rect.Size.Y });
+}
+
+FRect SSplitterC::GetHorizontalSplitterRect() const
+{
+	const float TopHeight = GetAvailableHeight() * SplitRatioVertical;
+	return FRect(
+		{ Rect.Position.X, Rect.Position.Y + TopHeight },
+		{ Rect.Size.X, SplitterThickness });
+}
+
+void SSplitterC::DrawSplitterHandles()
+{
+	struct FHandleDesc
+	{
+		const char* NameSuffix;
+		FRect Rect;
+		ImGuiMouseCursor Cursor;
+		EDragHandle Handle;
+	};
+
+	const FHandleDesc Handles[] =
+	{
+		{ "Vertical", GetVerticalSplitterRect(), ImGuiMouseCursor_ResizeEW, EDragHandle::Vertical },
+		{ "Horizontal", GetHorizontalSplitterRect(), ImGuiMouseCursor_ResizeNS, EDragHandle::Horizontal },
+	};
+
+	for (const FHandleDesc& HandleDesc : Handles)
+	{
+		if (HandleDesc.Rect.Size.X <= 0.0f || HandleDesc.Rect.Size.Y <= 0.0f)
+		{
+			continue;
+		}
+
+		char OverlayName[64];
+		std::snprintf(OverlayName, sizeof(OverlayName), "##QuadSplitterOverlay_%s_%p", HandleDesc.NameSuffix, static_cast<void*>(this));
+
+		ImGui::SetNextWindowPos(ToScreenPosition(HandleDesc.Rect.Position), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(HandleDesc.Rect.Size.X, HandleDesc.Rect.Size.Y), ImGuiCond_Always);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+		if (ImGui::Begin(OverlayName, nullptr, GetSplitterOverlayWindowFlags()))
+		{
+			ImGui::PushID(this);
+			ImGui::PushID(static_cast<int>(HandleDesc.Handle));
+			ImGui::InvisibleButton("##Handle", ImVec2(HandleDesc.Rect.Size.X, HandleDesc.Rect.Size.Y));
+
+			const bool bHovered = ImGui::IsItemHovered();
+			const bool bActive = ImGui::IsItemActive();
+			if (bActive)
+			{
+				ActiveHandle = HandleDesc.Handle;
+				bDragging = true;
+			}
+			else if (ActiveHandle == HandleDesc.Handle)
+			{
+				ActiveHandle = EDragHandle::None;
+			}
+
+			if (bHovered || bActive)
+			{
+				ImGui::SetMouseCursor(HandleDesc.Cursor);
+			}
+
+			if (bActive)
+			{
+				if (HandleDesc.Handle == EDragHandle::Vertical)
+				{
+					const float AvailableWidth = GetAvailableWidth();
+					if (AvailableWidth > 0.0f)
+					{
+						SetSplitRatioHorizontal(SplitRatioHorizontal + (ImGui::GetIO().MouseDelta.x / AvailableWidth));
+					}
+				}
+				else if (HandleDesc.Handle == EDragHandle::Horizontal)
+				{
+					const float AvailableHeight = GetAvailableHeight();
+					if (AvailableHeight > 0.0f)
+					{
+						SetSplitRatioVertical(SplitRatioVertical + (ImGui::GetIO().MouseDelta.y / AvailableHeight));
+					}
+				}
+			}
+
+			ImDrawList* DrawList = ImGui::GetWindowDrawList();
+			DrawList->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), GetSplitterColor(bHovered, bActive));
+
+			ImGui::PopID();
+			ImGui::PopID();
+		}
+
+		ImGui::End();
+		ImGui::PopStyleVar(2);
+	}
+
+	if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+	{
+		bDragging = false;
+		ActiveHandle = EDragHandle::None;
+	}
+}
+
+void SSplitterC::Draw()
+{
+	OnResize();
+
+	if (SideLT)
+	{
+		SideLT->Draw();
+	}
+	if (SideLB)
+	{
+		SideLB->Draw();
+	}
+	if (SideRT)
+	{
+		SideRT->Draw();
+	}
+	if (SideRB)
+	{
+		SideRB->Draw();
+	}
+
+	DrawSplitterHandles();
 }

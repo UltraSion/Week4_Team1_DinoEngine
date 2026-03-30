@@ -9,19 +9,22 @@ enum SplitDirection
 {
 	Horizontal,
 	Vertical,
+	Cross,
 };
 
 enum SplitOption
 {
 	LT,
-	RB,
+	RT, 
+	LB,
+	RB,	
 };
 
 class SSplitter;
 
 class SWindow
 {
-	SSplitter* Parent = nullptr;
+	SWindow* Parent = nullptr;
 
 protected:
 	FRect Rect;
@@ -31,8 +34,8 @@ public:
 	SWindow(FRect InRect) : Rect(InRect) {}
 	virtual ~SWindow() = default;
 
-	void SetParent(SSplitter* InParent) { Parent = InParent; }
-	SSplitter* GetParent() const { return Parent; }
+	void SetParent(SWindow* InParent) { Parent = InParent; }
+	SWindow* GetParent() const { return Parent; }
 	void SetRect(const FRect& InRect);
 	virtual bool ISHover(FPoint coord) const;
 	virtual SWindow* GetWindow(FPoint coord);
@@ -42,6 +45,7 @@ public:
 	virtual void Render() {}
 	virtual void Draw() {}
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) { return false; }
+	virtual void ReplaceSide(SWindow* OldSide, SWindow* NewSide);
 	SSplitter* Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption);
 };
 
@@ -74,7 +78,7 @@ public:
 	virtual FRect GetSideLTRect() = 0;
 	virtual FRect GetSideRBRect() = 0;
 	virtual void OnResize() override;
-	void ReplaceSide(SWindow* OldSide, SWindow* NewSide);
+	void ReplaceSide(SWindow* OldSide, SWindow* NewSide) override;
 	SSplitter(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f);
 	~SSplitter() override;
 	float GetSplitRatio() { return SplitRatio; }
@@ -126,3 +130,61 @@ public:
 	virtual void Draw() override;
 };
 
+class SSplitterC : public SWindow
+{
+	SWindow* SideLT = nullptr;
+	SWindow* SideLB = nullptr;
+	SWindow* SideRT = nullptr;
+	SWindow* SideRB = nullptr;
+	float MinPaneSize = 80.0f;
+	float SplitterThickness = 6.0f;
+	bool bDragging = false;
+	enum class EDragHandle : unsigned char
+	{
+		None,
+		Vertical,
+		Horizontal,
+	};
+	EDragHandle ActiveHandle = EDragHandle::None;
+
+	float SplitRatioVertical = 0.5f;
+	float SplitRatioHorizontal = 0.5f;
+
+	float ClampHorizontalRatio(float InSplitRatio) const;
+	float ClampVerticalRatio(float InSplitRatio) const;
+	float GetAvailableWidth() const;
+	float GetAvailableHeight() const;
+	FRect GetVerticalSplitterRect() const;
+	FRect GetHorizontalSplitterRect() const;
+	void DrawSplitterHandles();
+
+public:
+	SWindow* GetSideLT() { return SideLT; }
+	SWindow* GetSideLB() { return SideLB; }
+	SWindow* GetSideRT() { return SideRT; }
+	SWindow* GetSideRB() { return SideRB; }
+	virtual void SetSideLT(SWindow* InSideLT);
+	virtual void SetSideLB(SWindow* InSideLB);
+	virtual void SetSideRT(SWindow* InSideRT);
+	virtual void SetSideRB(SWindow* InSideRB);
+	virtual FRect GetSideLTRect();
+	virtual FRect GetSideLBRect();
+	virtual FRect GetSideRTRect();
+	virtual FRect GetSideRBRect();
+	virtual void OnResize() override;
+	void ReplaceSide(SWindow* OldSide, SWindow* NewSide) override;
+	SSplitterC(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideLB = nullptr, SWindow* InSideRT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatioHorizontal = 0.5f, float InSplitRatioVertical = 0.5f);
+	~SSplitterC() override;
+	float GetSplitRatioVertical() { return SplitRatioVertical; }
+	float GetSplitRatioHorizontal() { return SplitRatioHorizontal; }
+	virtual void SetSplitRatioVertical(float InSplitRatio);
+	virtual void SetSplitRatioHorizontal(float InSplitRatio);
+	void SetMinPaneSize(float InMinPaneSize) { MinPaneSize = InMinPaneSize; OnResize(); }
+	float GetMinPaneSize() const { return MinPaneSize; }
+	void SetSplitterThickness(float InSplitterThickness) { SplitterThickness = InSplitterThickness; OnResize(); }
+	float GetSplitterThickness() const { return SplitterThickness; }
+	virtual void Tick(float DeltaTime) override;
+	virtual void Render() override;
+	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
+	virtual void Draw() override;
+};

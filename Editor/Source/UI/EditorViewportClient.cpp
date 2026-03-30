@@ -386,13 +386,36 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 
 void FEditorViewportClient::DrawUI()
 {
-	ImGui::Begin("ViewportSplitTest", nullptr);
-	ImGui::PushID(this);
-	if (ImGui::Button("Test Button"))
+	FRect WindowRect = ViewportWindow->GetRect();
+	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X, WindowRect.Position.Y));
+
+	char windowName[128];
+	sprintf_s(windowName, "ViewportButtonFrame##%p", this);
+
+	if (ImGui::Begin(windowName, nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
 	{
-		ViewportWindow->Split(new SViewportWindow(FRect(), GEngine->CreateContext(FRect())), SplitDirection::Horizontal, SplitOption::LT);
+		char buttonName[128];
+		sprintf_s(buttonName, "H##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			ViewportWindow->Split(
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				SplitDirection::Horizontal,
+				SplitOption::LT
+			);
+		}
+
+		ImGui::SameLine();
+		sprintf_s(buttonName, "V##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			ViewportWindow->Split(
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				SplitDirection::Vertical,
+				SplitOption::LT
+			);
+		}
 	}
-	ImGui::PopID();
 	ImGui::End();
 }
 

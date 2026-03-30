@@ -244,7 +244,7 @@ void FEditorUI::AttachToRenderer()
 			ImGuiIO& IO = ImGui::GetIO();
 			IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 			IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			//IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; --------------------------> 만악의 근원
 			IO.IniFilename = "imgui_editor.ini";
 
 			ImFontConfig FontConfig;
