@@ -5,6 +5,7 @@
 #include "Actor/StaticMeshActor.h"
 #include "Actor/SkySphereActor.h"
 #include "Component/PrimitiveComponent.h"
+#include "Component/MeshComponent.h"
 #include "Core/Core.h"
 #include "Core/Paths.h"
 #include "Debug/EngineLog.h"
@@ -689,7 +690,6 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
-	return;
 	for (UActorComponent* Component : SelectedActor->GetComponents())
 	{
 		if (!Component->IsA(UPrimitiveComponent::StaticClass()))
@@ -698,7 +698,19 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		}
 
 		UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
-		if (PrimitiveComponent->GetPrimitive())
+		if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
+		{
+			UMeshComponent* MeshComponent = static_cast<UMeshComponent*>(PrimitiveComponent);
+			if (FMeshData* MeshData = MeshComponent->GetMeshData())
+			{
+				Renderer->RenderOutline(
+					MeshData,
+					MeshComponent->GetWorldTransform());
+			}
+			continue;
+		}
+
+		if (PrimitiveComponent->GetPrimitive() && PrimitiveComponent->GetPrimitive()->GetMeshData())
 		{
 			Renderer->RenderOutline(
 				PrimitiveComponent->GetPrimitive()->GetMeshData(),
