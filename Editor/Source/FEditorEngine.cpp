@@ -12,6 +12,7 @@
 #include "Component/StaticMeshComponent.h"
 #include "Debug/EngineLog.h"
 #include "Math/MathUtility.h"
+#include "Mesh/ObjImporter.h"
 #include "Platform/Windows/Window.h"
 #include "imgui_impl_win32.h"
 
@@ -212,6 +213,9 @@ void FEditorEngine::RunObjViewerStartupTest()
 		return;
 	}
 
+#if IS_OBJ_VIEWER
+	FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
+#endif
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
