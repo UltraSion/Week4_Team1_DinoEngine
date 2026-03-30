@@ -11,7 +11,8 @@
 #include "Debug/EngineLog.h"
 #include "Platform/Windows/Window.h"
 #include "imgui_impl_win32.h"
-
+#include "Actor/StaticMeshActor.h"
+#include "Renderer/Renderer.h"
 #include <commdlg.h>
 #include <filesystem>
 
@@ -148,7 +149,12 @@ void FEditorEngine::RunObjViewerStartupTest()
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
-
+	AStaticMeshActor* MeshActor = Level->SpawnActor<AStaticMeshActor>("ObjViewerMesh");
+	if (MeshActor)
+	{
+		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath.string());
+		Core->SetSelectedActor(MeshActor);
+	}
 	EditorUI.SyncSelectedActorProperty();
 
 	if (FCamera* Camera = ViewportClient->GetCamera())

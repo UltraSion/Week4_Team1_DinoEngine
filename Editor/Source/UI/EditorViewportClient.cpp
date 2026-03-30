@@ -2,7 +2,7 @@
 
 #include "EditorUI.h"
 #include "Actor/Actor.h"
-
+#include "Actor/StaticMeshActor.h"
 #include "Actor/SkySphereActor.h"
 #include "Component/PrimitiveComponent.h"
 #include "Core/Core.h"
@@ -370,7 +370,21 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 
 	const FRay Ray = Picker.ScreenToRay(&CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
 
+	const FVector SpawnLocation = Ray.Origin + Ray.Direction * 10.0f;
 
+	AStaticMeshActor* MeshActor = Level->SpawnActor<AStaticMeshActor>(
+		std::filesystem::path(FilePath).stem().string());
+	if (MeshActor)
+	{
+		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), FilePath);
+		if (USceneComponent* Root = MeshActor->GetRootComponent())
+		{
+			FTransform Transform = Root->GetRelativeTransform();
+			Transform.SetLocation(SpawnLocation);
+			Root->SetRelativeTransform(Transform);
+		}
+		Core->SetSelectedActor(MeshActor);
+	}
 
 
 	EditorUI.SyncSelectedActorProperty();

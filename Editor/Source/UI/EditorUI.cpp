@@ -18,7 +18,10 @@
 #include "Serializer/SceneSerializer.h"
 #include "UI/EditorViewportClient.h"
 #include "World/Level.h"
-
+#include "Actor/StaticMeshActor.h"
+#include "Renderer/Renderer.h"
+#include "World/Level.h"
+#include "Component/StaticMeshComponent.h"
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
@@ -82,6 +85,34 @@ namespace
 
 
 
+		ULevel* Level = Core->GetLevel();
+		if (!Level)
+			return;
+
+		// 기존 StaticMeshActor에서 메시 경로 보존
+		FString MeshPath;
+		for (AActor* Actor : Level->GetActors())
+		{
+			if (AStaticMeshActor* MeshActor = dynamic_cast<AStaticMeshActor*>(Actor))
+			{
+				if (UStaticMeshComponent* Comp = MeshActor->GetStaticMeshComponent())
+					MeshPath = Comp->GetStaticMeshAsset();
+				break;
+			}
+		}
+
+		if (MeshPath.empty())
+			return;
+
+		Core->SetSelectedActor(nullptr);
+		Level->ClearActors();
+
+		AStaticMeshActor* NewActor = Level->SpawnActor<AStaticMeshActor>("ObjViewerMesh");
+		if (NewActor)
+		{
+			NewActor->LoadStaticMesh(GRenderer->GetDevice(), MeshPath);
+			Core->SetSelectedActor(NewActor);
+		}
 
 	
 	
