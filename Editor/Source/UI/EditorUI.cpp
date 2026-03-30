@@ -353,12 +353,16 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 		if (Msg == WM_KEYDOWN || Msg == WM_KEYUP || Msg == WM_SYSKEYDOWN || Msg == WM_SYSKEYUP)
 		{
 			// 사용자가 텍스트 창에 글씨를 쓰고 있거나, ImGui 창이 포커스를 먹고 있다면 엔진으로 안 넘김
+			if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+				return false;
+
+			//그 외의 경우 (뷰포트 조작 중) 에는 엔진(FCore -> InputManager)이 처리하도록 false 반환
 			if (IO.WantCaptureKeyboard || IO.WantTextInput)
 			{
-				return true; // ImGui가 꿀꺽
+				return true; // ImGui
 			}
-			//그 외의 경우 (뷰포트 조작 중) 에는 엔진(FCore -> InputManager)이 처리하도록 false 반환
-			return false;
+			
+			return false;// 뷰포트 조작 중이 아닐 때는 기본적으로 엔진도 입력을 받도록 허용
 		}
 
 		// 마우스 입력 처리
