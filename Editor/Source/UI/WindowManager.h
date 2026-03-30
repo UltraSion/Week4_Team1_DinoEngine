@@ -17,6 +17,24 @@ class FWindowManager
 	TArray<SWindow*> Windows;
 	FInputManager* InputManager = nullptr;
 	FEnhancedInputManager* EnhancedInputManager = nullptr;
+	SWindow* HoveredWindow = nullptr;
+	SWindow* PressedWindow = nullptr;
+	SWindow* MouseCaptureWindow = nullptr;
+	SWindow* KeyboardFocusWindow = nullptr;
+	SViewportWindow* ActiveViewportWindow = nullptr;
+
+	FPoint ScreenToClient(HWND Hwnd, const FPoint& ScreenPoint) const;
+	bool TryGetClientMousePoint(HWND Hwnd, UINT Msg, LPARAM LParam, FPoint& OutPoint) const;
+	SViewportWindow* FindViewportWindow(SWindow* Window) const;
+	void SetHoveredWindow(SWindow* NewHoveredWindow);
+	void SetPressedWindow(SWindow* NewPressedWindow);
+	void SetMouseCaptureWindow(HWND Hwnd, SWindow* NewMouseCaptureWindow);
+	void ReleaseMouseCapture(HWND Hwnd);
+	void SetKeyboardFocusWindow(SWindow* NewKeyboardFocusWindow);
+	void SetActiveViewportWindow(SViewportWindow* NewActiveViewportWindow);
+	bool HasAnyMouseButtonPressed() const;
+	bool RouteMouseMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+	bool RouteKeyboardMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 
 public:
 	~FWindowManager();

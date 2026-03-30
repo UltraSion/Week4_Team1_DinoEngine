@@ -835,6 +835,28 @@ void SSplitterC::Render()
 	}
 }
 
+SWindow* SSplitterC::GetWindow(FPoint coord)
+{
+	if (SideLT && SideLT->ISHover(coord))
+	{
+		return SideLT->GetWindow(coord);
+	}
+	if (SideLB && SideLB->ISHover(coord))
+	{
+		return SideLB->GetWindow(coord);
+	}
+	if (SideRT && SideRT->ISHover(coord))
+	{
+		return SideRT->GetWindow(coord);
+	}
+	if (SideRB && SideRB->ISHover(coord))
+	{
+		return SideRB->GetWindow(coord);
+	}
+
+	return nullptr;
+}
+
 bool SSplitterC::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
 	if (bDragging && IsMouseMessage(Msg))

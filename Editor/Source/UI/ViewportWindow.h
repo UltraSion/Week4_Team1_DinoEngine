@@ -11,6 +11,7 @@ class SViewportWindow : public SWindow
 public:
 	explicit SViewportWindow(FRect InRect, FViewportContext* InViewportContext);
 	~SViewportWindow() override;
+	FViewportContext* GetViewportContext() const { return ViewportContext; }
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void Render() override;

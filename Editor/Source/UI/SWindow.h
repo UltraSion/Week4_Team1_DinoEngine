@@ -134,6 +134,8 @@ public:
 
 class SSplitterC : public SWindow
 {
+	virtual SWindow* GetWindow(FPoint coord) override;
+
 	SWindow* SideLT = nullptr;
 	SWindow* SideLB = nullptr;
 	SWindow* SideRT = nullptr;
