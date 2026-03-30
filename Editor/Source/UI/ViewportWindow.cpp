@@ -5,6 +5,7 @@
 SViewportWindow::SViewportWindow(FRect InRect, FViewportContext* InViewportContext)
 	: SWindow(InRect), ViewportContext(InViewportContext)
 {
+	InViewportContext->GetViewportClient()->SetViewportWindow(this);
 }
 
 SViewportWindow::~SViewportWindow()
@@ -34,15 +35,7 @@ void SViewportWindow::Render()
 
 void SViewportWindow::Draw()
 {
-	ImGui::Begin("ViewportSplitTest", nullptr);
-	ImGui::PushID(this);
-	if(ImGui::Button("Test Button"))
-	{
-		FRect Rect = GetRect();
-		Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Vertical, SplitOption::LT);
-	}
-	ImGui::PopID();
-	ImGui::End();
+	ViewportContext->GetViewportClient()->DrawUI();
 }
 
 void SViewportWindow::OnResize()

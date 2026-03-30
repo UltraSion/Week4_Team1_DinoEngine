@@ -11,6 +11,7 @@ class AActor;
 class ULevel;
 class UWorld;
 struct FRenderCommandQueue;
+class SViewportWindow;
 
 enum class ERenderMode
 {
@@ -44,6 +45,7 @@ public:
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
 	EEditorViewportType GetViewportType() const { return ViewportType; }
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
+	virtual void DrawUI() override;
 
 	void HandleFileDoubleClick(const FString& FilePath);
 	void HandleFileDropOnViewport(const FString& FilePath);
@@ -57,7 +59,6 @@ public:
 	void SetLineThickness(float InThickness);
 	bool IsGridVisible() const;
 	void SetGridVisible(bool bVisible);
-
 	void SaveInitialCameraState();
 	void ResetCameraToInitialState();
 
