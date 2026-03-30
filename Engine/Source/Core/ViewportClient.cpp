@@ -131,8 +131,18 @@ void FViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 	(void)Renderer;
 }
 
+void FViewportClient::DrawUI()
+{
+}
+
+void FViewportClient::SetViewportWindow(SViewportWindow* InViewportWindow)
+{
+	ViewportWindow = InViewportWindow;
+}
+
 void FGameViewportClient::Attach(FCore* Core)
 {
+	(void)Core;
 	if (GRenderer)
 	{
 		GRenderer->ClearViewportCallbacks();

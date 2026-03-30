@@ -82,6 +82,16 @@ bool FViewportContext::AcceptsInput() const
 	return bAcceptsInput && IsEnabled();
 }
 
+FViewport* FViewportContext::GetViewport() const
+{
+	return Viewport;
+}
+
+FViewportClient* FViewportContext::GetViewportClient() const
+{
+	return ViewportClient;
+}
+
 void FViewportContext::SetAcceptsInput(bool bInAcceptsInput)
 {
 	bAcceptsInput = bInAcceptsInput;
@@ -257,6 +267,7 @@ void FViewportContext::Render(FCore* Core, FRenderCommandQueue& CommandQueue)
 		return;
 	}
 
+	CommandQueue.Clear();
 	TArray<AActor*> Actors = World->GetAllActors();
 	PrepareView(CommandQueue, Actors);
 

@@ -58,7 +58,7 @@ public:
 	bool Execute(const char* CommandLine, FString& OutResult);
 	void GetAllNames(std::function<void(const FString&)> Callback) const;
 
-	using FConsoleCommand = std::function<void(FString&)>;
+	using FConsoleCommand = std::function<void(const FString&, FString&)>;
 	void RegisterCommand(const FString& Name, FConsoleCommand InCommand, const FString& Help = "");
 
 private:

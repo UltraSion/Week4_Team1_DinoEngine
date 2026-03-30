@@ -1,5 +1,6 @@
 #include "Viewport.h"
 
+#include "FEditorEngine.h"
 #include "EditorViewportClient.h"
 #include "Core/Core.h"
 #include "Renderer/Renderer.h"
@@ -66,9 +67,11 @@ void FViewportLegacy::Render(HWND Hwnd)
 		ImGui::End();
 		return;
 	}
+	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
 
 	if (ImGui::BeginMenuBar())
 	{
+
 		/*FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
 		if (EditorViewportClient)
 		{
@@ -99,8 +102,22 @@ void FViewportLegacy::Render(HWND Hwnd)
 	}
 
 	const ImVec2 ContentSize = ImGui::GetContentRegionAvail();
+	const ImVec2 ContentMin = ImGui::GetCursorScreenPos();
 	const uint32 NewWidth = ContentSize.x > 1.0f ? static_cast<uint32>(ContentSize.x) : 0;
 	const uint32 NewHeight = ContentSize.y > 1.0f ? static_cast<uint32>(ContentSize.y) : 0;
+
+	//if (GRenderer)
+	//{
+	//	if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+	//	{
+	//		POINT ViewportClientPoint = {
+	//			static_cast<LONG>(ContentMin.x),
+	//			static_cast<LONG>(ContentMin.y)
+	//		};
+	//		::ScreenToClient(GRenderer->GetHwnd(), &ViewportClientPoint);
+	//		EditorEngine->SetViewportLayoutBounds(ViewportClientPoint.x, ViewportClientPoint.y, NewWidth, NewHeight);
+	//	}
+	//}
 
 	if (NewWidth == 0 || NewHeight == 0)
 	{
@@ -127,6 +144,7 @@ void FViewportLegacy::Render(HWND Hwnd)
 			LevelViewport.MinDepth = 0.0f;
 			LevelViewport.MaxDepth = 1.0f;
 			GRenderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
+			dynamic_cast<FEditorEngine*>(GEngine)->SetViewportLayoutBounds(0, 0, NewWidth, NewHeight);
 		}
 		else
 		{

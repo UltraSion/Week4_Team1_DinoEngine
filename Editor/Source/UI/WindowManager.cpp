@@ -111,6 +111,17 @@ void FWindowManager::Tick(float DeltaTime)
 	}
 }
 
+void FWindowManager::RenderWindows() const
+{
+	for (SWindow* Window : Windows)
+	{
+		if (Window)
+		{
+			Window->Render();
+		}
+	}
+}
+
 void FWindowManager::DrawWindows() const
 {
 	for (SWindow* Window : Windows)

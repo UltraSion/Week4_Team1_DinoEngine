@@ -8,6 +8,7 @@
 #include "Primitive/PrimitiveBase.h"
 #include <cassert>
 #include <algorithm>
+#include <cctype>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
@@ -257,6 +258,48 @@ bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 			DefaultTextureMaterial->GetConstantBuffer(SlotIndex)->SetData(White, sizeof(White));
 		}
 		FMaterialManager::Get().Register("M_Default_Texture", DefaultTextureMaterial);
+	}
+
+	/** Overlay 색상용 Material 생성 */
+	{
+		auto VS = FShaderMap::Get().GetOrCreateVertexShader(Device, VSPath.c_str());
+		std::wstring OverlayColorPSPath = ShaderDirW + L"OverlayColorPixelShader.hlsl";
+		auto PS = FShaderMap::Get().GetOrCreatePixelShader(Device, OverlayColorPSPath.c_str());
+		OverlayColorMaterial = std::make_shared<FMaterial>();
+		OverlayColorMaterial->SetOriginName("M_OverlayColor");
+		OverlayColorMaterial->SetVertexShader(VS);
+		OverlayColorMaterial->SetPixelShader(PS);
+
+		FRasterizerStateOption RasterizerOption;
+		RasterizerOption.FillMode = D3D11_FILL_SOLID;
+		RasterizerOption.CullMode = D3D11_CULL_NONE;
+		OverlayColorMaterial->SetRasterizerOption(RasterizerOption);
+		OverlayColorMaterial->SetRasterizerState(RenderStateManager->GetOrCreateRasterizerState(RasterizerOption));
+
+		FDepthStencilStateOption DepthOption;
+		DepthOption.DepthEnable = false;
+		DepthOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		OverlayColorMaterial->SetDepthStencilOption(DepthOption);
+		OverlayColorMaterial->SetDepthStencilState(RenderStateManager->GetOrCreateDepthStencilState(DepthOption));
+
+		FBlendStateOption BlendOption;
+		BlendOption.BlendEnable = true;
+		BlendOption.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		BlendOption.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		BlendOption.BlendOp = D3D11_BLEND_OP_ADD;
+		BlendOption.SrcBlendAlpha = D3D11_BLEND_ONE;
+		BlendOption.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+		BlendOption.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		OverlayColorMaterial->SetBlendOption(BlendOption);
+		OverlayColorMaterial->SetBlendState(RenderStateManager->GetOrCreateBlendState(BlendOption));
+
+		int32 SlotIndex = OverlayColorMaterial->CreateConstantBuffer(Device, 16);
+		if (SlotIndex >= 0)
+		{
+			OverlayColorMaterial->RegisterParameter("BaseColor", SlotIndex, 0, 16);
+			FVector4 White(1.0f, 1.0f, 1.0f, 1.0f);
+			OverlayColorMaterial->SetParameterData("BaseColor", &White, 16);
+		}
 	}
 
 	if (!TextRenderer.Initialize(this)) return false;
@@ -598,11 +641,85 @@ void FRenderer::DrawCube(const FVector& Center, const FVector& BoxExtent, const 
 	DrawLine(v[0], v[1], Color); DrawLine(v[4], v[5], Color); DrawLine(v[6], v[7], Color); DrawLine(v[2], v[3], Color);
 }
 
+void FRenderer::DrawOverlayRect(float X, float Y, float Width, float Height, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight)
+{
+	if (!OverlayColorMaterial || Width <= 0.0f || Height <= 0.0f)
+	{
+		return;
+	}
+
+	FMeshData QuadMesh;
+	QuadMesh.Topology = EMeshTopology::EMT_TriangleList;
+
+	FPrimitiveVertex V0, V1, V2, V3;
+	V0.Position = FVector(0.0f, 0.0f, Height);
+	V1.Position = FVector(0.0f, Width, Height);
+	V2.Position = FVector(0.0f, Width, 0.0f);
+	V3.Position = FVector(0.0f, 0.0f, 0.0f);
+	V0.Color = V1.Color = V2.Color = V3.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+	V0.Normal = V1.Normal = V2.Normal = V3.Normal = FVector(0.0f, 0.0f, 1.0f);
+
+	QuadMesh.Vertices = { V0, V1, V2, V3 };
+	QuadMesh.Indices = { 0, 1, 2, 0, 2, 3 };
+
+	OverlayColorMaterial->SetParameterData("BaseColor", &Color, 16);
+
+	const float WorldY = X - static_cast<float>(ViewportWidth) * 0.5f;
+	const float WorldZ = static_cast<float>(ViewportHeight) * 0.5f - Y - Height;
+	const FMatrix WorldMatrix = FMatrix::MakeTranslation(FVector(0.0f, WorldY, WorldZ));
+	DrawImmediateMesh(&QuadMesh, OverlayColorMaterial.get(), WorldMatrix, ViewportWidth, ViewportHeight);
+}
+
+void FRenderer::DrawOverlayRectOutline(float X, float Y, float Width, float Height, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight)
+{
+	constexpr float Thickness = 1.0f;
+	DrawOverlayRect(X, Y, Width, Thickness, Color, ViewportWidth, ViewportHeight);
+	DrawOverlayRect(X, Y + Height - Thickness, Width, Thickness, Color, ViewportWidth, ViewportHeight);
+	DrawOverlayRect(X, Y, Thickness, Height, Color, ViewportWidth, ViewportHeight);
+	DrawOverlayRect(X + Width - Thickness, Y, Thickness, Height, Color, ViewportWidth, ViewportHeight);
+}
+
+void FRenderer::DrawOverlayText(const FString& Text, float X, float Y, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight)
+{
+	if (Text.empty())
+	{
+		return;
+	}
+
+	FMeshData TextMesh;
+	if (!TextRenderer.BuildTextMesh(Text, TextMesh))
+	{
+		return;
+	}
+	TextMesh.UpdateLocalBound();
+
+	FMaterial* FontMaterial = TextRenderer.GetFontMaterial();
+	if (!FontMaterial)
+	{
+		return;
+	}
+
+	FontMaterial->SetParameterData("TextColor", &Color, 16);
+
+	constexpr float TextScale = 16.0f;
+	const FVector Min = TextMesh.GetMinCoord();
+	const FVector Max = TextMesh.GetMaxCoord();
+	const float WorldY = X - static_cast<float>(ViewportWidth) * 0.5f - Min.Y * TextScale;
+	const float WorldZ = static_cast<float>(ViewportHeight) * 0.5f - Y - Max.Z * TextScale;
+	const FMatrix WorldMatrix =
+		FMatrix::MakeScale(FVector(1.0f, TextScale, TextScale)) *
+		FMatrix::MakeTranslation(FVector(0.0f, WorldY, WorldZ));
+	DrawImmediateMesh(&TextMesh, FontMaterial, WorldMatrix, ViewportWidth, ViewportHeight);
+}
+
 void FRenderer::ExecuteLineCommands()
 {
 	if (LineVertices.empty()) return;
 	ShaderManager.Bind(DeviceContext);
 	DefaultMaterial->Bind(DeviceContext);
+	RenderStateManager->BindState(DefaultMaterial->GetRasterizerState());
+	RenderStateManager->BindState(DefaultMaterial->GetDepthStencilState());
+	RenderStateManager->BindState(DefaultMaterial->GetBlendState());
 	UINT Size = static_cast<UINT>(LineVertices.size() * sizeof(FPrimitiveVertex));
 	if (LineVertexBuffer && LineVertexBufferSize < Size) { LineVertexBuffer->Release(); LineVertexBuffer = nullptr; }
 	if (!LineVertexBuffer)
@@ -626,6 +743,60 @@ void FRenderer::ExecuteLineCommands()
 	LineVertices.clear();
 }
 
+void FRenderer::DrawImmediateMesh(FMeshData* MeshData, FMaterial* Material, const FMatrix& WorldMatrix, int32 ViewportWidth, int32 ViewportHeight)
+{
+	if (!MeshData || !Material || ViewportWidth <= 0 || ViewportHeight <= 0)
+	{
+		return;
+	}
+
+	if (!MeshData->UpdateVertexAndIndexBuffer(Device))
+	{
+		return;
+	}
+
+	const FMatrix PrevView = ViewMatrix;
+	const FMatrix PrevProjection = ProjectionMatrix;
+	ViewMatrix = FMatrix::Identity;
+	ProjectionMatrix = FMatrix::MakeOrthographicLH(static_cast<float>(ViewportWidth), static_cast<float>(ViewportHeight), 0.0f, 1.0f);
+
+	SetConstantBuffers();
+	UpdateFrameConstantBuffer();
+	Material->Bind(DeviceContext);
+	RenderStateManager->BindState(Material->GetRasterizerState());
+	RenderStateManager->BindState(Material->GetDepthStencilState());
+	RenderStateManager->BindState(Material->GetBlendState());
+
+	if (Material->GetOriginName() == "M_Font")
+	{
+		ID3D11ShaderResourceView* FontSRV = TextRenderer.GetAtlasSRV();
+		ID3D11SamplerState* FontSampler = TextRenderer.GetAtlasSampler();
+		DeviceContext->PSSetShaderResources(0, 1, &FontSRV);
+		DeviceContext->PSSetSamplers(0, 1, &FontSampler);
+	}
+	else
+	{
+		DeviceContext->PSSetSamplers(0, 1, &NormalSampler);
+	}
+
+	MeshData->Bind(DeviceContext);
+	DeviceContext->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(MeshData->Topology));
+	UpdateObjectConstantBuffer(WorldMatrix);
+
+	if (!MeshData->Indices.empty())
+	{
+		DeviceContext->DrawIndexed(static_cast<UINT>(MeshData->Indices.size()), 0, 0);
+	}
+	else if (!MeshData->Vertices.empty())
+	{
+		DeviceContext->Draw(static_cast<UINT>(MeshData->Vertices.size()), 0);
+	}
+
+	ViewMatrix = PrevView;
+	ProjectionMatrix = PrevProjection;
+	UpdateFrameConstantBuffer();
+}
+
 void FRenderer::Release()
 {
 	ClearViewportCallbacks(); ClearLevelRenderTarget();
@@ -634,7 +805,7 @@ void FRenderer::Release()
 	if (NormalSampler) NormalSampler->Release();
 	if (StencilWriteState) StencilWriteState->Release();
 	if (StencilTestState) StencilTestState->Release();
-	OutlinePS.reset(); DefaultMaterial.reset();
+	OutlinePS.reset(); DefaultMaterial.reset(); OverlayColorMaterial.reset();
 	if (FolderIconSRV)FolderIconSRV->Release();
 	if (FileIconSRV)FileIconSRV->Release();
 	if (LineVertexBuffer) LineVertexBuffer->Release();

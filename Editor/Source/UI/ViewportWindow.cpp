@@ -5,6 +5,7 @@
 SViewportWindow::SViewportWindow(FRect InRect, FViewportContext* InViewportContext)
 	: SWindow(InRect), ViewportContext(InViewportContext)
 {
+	InViewportContext->GetViewportClient()->SetViewportWindow(this);
 }
 
 SViewportWindow::~SViewportWindow()
@@ -24,22 +25,17 @@ void SViewportWindow::Tick(float DeltaTime)
 	}
 }
 
-void SViewportWindow::Draw()
+void SViewportWindow::Render()
 {
 	if (ViewportContext && GEngine)
 	{
 		ViewportContext->Render(GEngine->GetCore(), GEngine->GetCommandQueue());
 	}
+}
 
-	//ImGui::Begin("Viewport", nullptr);
-	//ImGui::PushID(this);
-	//if(ImGui::Button("Test Button"))
-	//{
-	//	FRect Rect = GetRect();
-	//	Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Horizontal, SplitOption::LT);
-	//}
-	//ImGui::PopID();
-	//ImGui::End();
+void SViewportWindow::Draw()
+{
+	ViewportContext->GetViewportClient()->DrawUI();
 }
 
 void SViewportWindow::OnResize()

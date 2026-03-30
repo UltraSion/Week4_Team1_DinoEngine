@@ -1,5 +1,6 @@
 #include "EditorUI.h"
 
+#include "FEditorEngine.h"
 #include "Actor/Actor.h"
 
 #include "Camera/Camera.h"
@@ -11,6 +12,7 @@
 #include "Core/Paths.h"
 #include "Core/ShowFlags.h"
 #include "Debug/EngineLog.h"
+#include "FEditorEngine.h"
 #include "Object/Object.h"
 #include "Platform/Windows/Window.h"
 #include "Primitive/PrimitiveObj.h"
@@ -155,7 +157,7 @@ void FEditorUI::Initialize(FCore* InCore)
 		{
 			if (ActiveViewportClient)
 			{
-				ActiveViewportClient->HandleFileDoubleClick(FilePath);
+				ActiveViewportClient->HandleFileDoubleClick(FilePath); //-> 이부분을 수정
 			}
 		};
 
@@ -201,7 +203,7 @@ void FEditorUI::Initialize(FCore* InCore)
 			}
 			else if (ActiveViewportClient)
 			{
-				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath);
+				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath); // -> 이것도 수정
 			}
 		};
 }
@@ -233,7 +235,7 @@ void FEditorUI::AttachToRenderer()
 			ImGuiIO& IO = ImGui::GetIO();
 			IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 			IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			//IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; --------------------------> 만악의 근원
 			IO.IniFilename = "imgui_editor.ini";
 
 			ImFontConfig FontConfig;
@@ -333,106 +335,63 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 	{
 		return;
 	}
-
 	bWindowSetup = true;
 
 	MainWindow->AddMessageFilter([this](HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) -> bool
+	{
+		if (!bViewportClientActive)
 		{
-			if (!bViewportClientActive)
+			return false;
+		}
+
+		//ImGui에게 먼저 메시지를 던져보고, ImGui가 소유하면 넘겨줍니다.
+		const bool bHandledByImGui = ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam) != 0;
+
+		ImGuiIO& IO = ImGui::GetIO();
+
+		// 키보드 입력 처리
+		if (Msg == WM_KEYDOWN || Msg == WM_KEYUP || Msg == WM_SYSKEYDOWN || Msg == WM_SYSKEYUP)
+		{
+			// 사용자가 텍스트 창에 글씨를 쓰고 있거나, ImGui 창이 포커스를 먹고 있다면 엔진으로 안 넘김
+			if (IO.WantCaptureKeyboard || IO.WantTextInput)
 			{
-				return false;
+				return true; // ImGui가 꿀꺽
+			}
+			//그 외의 경우 (뷰포트 조작 중) 에는 엔진(FCore -> InputManager)이 처리하도록 false 반환
+			return false;
+		}
+
+		// 마우스 입력 처리
+		if (Msg == WM_MOUSEMOVE || Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK || Msg == WM_LBUTTONUP ||
+			Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONUP || Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONUP ||
+			Msg == WM_MOUSEWHEEL || Msg == WM_MOUSEHWHEEL)
+		{
+			// 마우스가 ImGui UI(버튼, 패널 등) 위에 올려져 있으면 엔진으로 클릭 안 넘김
+			if (IO.WantCaptureMouse)
+			{
+				// 단, 마우스 우클릭으로 카메라 회전 중일 때는 밖으로 나가도 계속 드래그를 유지해야 하므로 예외 처리
+				if (ImGui::IsMouseDragging(ImGuiMouseButton_Right) || ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+				{
+					return false; // 엔진으로 넘겨서 드래그 계속 처리!
+				}
+				return true; // ImGui가 소유
 			}
 
-			const bool bIsMouseMessage =
-				Msg == WM_MOUSEMOVE ||
-				Msg == WM_LBUTTONDOWN ||
-				Msg == WM_LBUTTONDBLCLK ||
-				Msg == WM_LBUTTONUP ||
-				Msg == WM_RBUTTONDOWN ||
-				Msg == WM_RBUTTONUP ||
-				Msg == WM_MBUTTONDOWN ||
-				Msg == WM_MBUTTONUP ||
-				Msg == WM_MOUSEWHEEL ||
-				Msg == WM_MOUSEHWHEEL;
+			// 뷰포트 위에서 마우스를 굴리거나 클릭할 때는 무조건 엔진으로 넘깁니다
+			return false;
+		}
 
-			const bool bIsKeyboardMessage =
-				Msg == WM_KEYDOWN ||
-				Msg == WM_KEYUP ||
-				Msg == WM_SYSKEYDOWN ||
-				Msg == WM_SYSKEYUP;
+		// 문자 입력 등 기타 메시지
+		const bool bIsImeMessage = Msg == WM_IME_STARTCOMPOSITION || Msg == WM_IME_COMPOSITION || Msg == WM_IME_ENDCOMPOSITION || Msg == WM_IME_NOTIFY || Msg == WM_IME_SETCONTEXT || Msg == WM_IME_CHAR;
+		const bool bIsCharMessage = Msg == WM_CHAR || Msg == WM_SYSCHAR || Msg == WM_UNICHAR;
 
-			const bool bIsImeMessage =
-				Msg == WM_IME_STARTCOMPOSITION ||
-				Msg == WM_IME_COMPOSITION ||
-				Msg == WM_IME_ENDCOMPOSITION ||
-				Msg == WM_IME_NOTIFY ||
-				Msg == WM_IME_SETCONTEXT ||
-				Msg == WM_IME_CHAR;
+		if (bIsImeMessage || bIsCharMessage)
+		{
+			if (!IO.WantTextInput) return true; // 텍스트 입력 중 아니면 무시
+		}
 
-			const bool bIsCharMessage =
-				Msg == WM_CHAR ||
-				Msg == WM_SYSCHAR ||
-				Msg == WM_UNICHAR;
-
-			if (bIsImeMessage || bIsCharMessage)
-			{
-				if (ImGui::GetCurrentContext())
-				{
-					const ImGuiIO& IO = ImGui::GetIO();
-					if (!IO.WantTextInput)
-					{
-						return true;
-					}
-				}
-				else
-				{
-					return true;
-				}
-			}
-
-			bool bViewportInteractive = false;
-			if (GEngine)
-			{
-				POINT ClientPoint = {};
-				if (bIsMouseMessage)
-				{
-					ClientPoint.x = GET_X_LPARAM(LParam);
-					ClientPoint.y = GET_Y_LPARAM(LParam);
-				}
-				else if (bIsKeyboardMessage)
-				{
-					POINT ScreenPoint = {};
-					if (::GetCursorPos(&ScreenPoint))
-					{
-						ClientPoint = ScreenPoint;
-						::ScreenToClient(Hwnd, &ClientPoint);
-					}
-				}
-
-				if (bIsMouseMessage || bIsKeyboardMessage)
-				{
-					bViewportInteractive =
-						GEngine->GetWindowManager().GetWindowAtPoint(
-							FPoint(static_cast<float>(ClientPoint.x), static_cast<float>(ClientPoint.y))) != nullptr;
-				}
-			}
-
-			const bool bHandledByImGui = ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam) != 0;
-			if (bViewportInteractive && (bIsMouseMessage || bIsKeyboardMessage))
-			{
-				if (bIsMouseMessage && !ViewportLegacy.bImageHovered)
-				{
-					return true;
-				}
-				if (bIsKeyboardMessage && !ViewportLegacy.bImageHovered)
-				{
-					return true;
-				}
-				return false;
-			}
-
-			return bHandledByImGui;
-		});
+		return bHandledByImGui;
+	});
 }
 
 void FEditorUI::BuildDefaultLayout(uint32 DockID)
@@ -458,7 +417,6 @@ void FEditorUI::BuildDefaultLayout(uint32 DockID)
 	ImGuiID DockRightBottom = 0;
 	ImGui::DockBuilderSplitNode(DockRight, ImGuiDir_Up, 0.50f, &DockRightTop, &DockRightBottom);
 	ImGui::DockBuilderDockWindow("Viewport", DockCenter);
-	ImGui::DockBuilderDockWindow("Stats", DockLeft);
 	ImGui::DockBuilderDockWindow("Properties", DockRightTop);
 	ImGui::DockBuilderDockWindow("Control Panel", DockRightBottom);
 	ImGui::DockBuilderDockWindow("Console", DockBottom);
@@ -531,19 +489,21 @@ void FEditorUI::Render()
 		{
 			SyncSelectedActorProperty();
 		}
-
-		const FTimer& Timer = Core->GetTimer();
-		Stat.SetFPS(Timer.GetDisplayFPS());
-		Stat.SetFrameTimeMs(Timer.GetFrameTimeMs());
 	}
-
-	Stat.SetObjectCount(UObject::TotalAllocationCounts);
-	Stat.SetHeapUsage(UObject::TotalAllocationBytes);
 
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
 		{
+#if IS_OBJ_VIEWER
+			if (ImGui::MenuItem("New Obj"))
+			{
+				if (FEditorEngine* EditorEngine = static_cast<FEditorEngine*>(GEngine))
+				{
+					EditorEngine->OpenNewObj();
+				}
+			}
+#else
 			if (ImGui::MenuItem("New Level"))
 			{
 				if (Core)
@@ -602,21 +562,21 @@ void FEditorUI::Render()
 					}
 				}
 			}
-
+#endif
 			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("View"))
 		{
-			const bool bHasActiveViewport = ActiveViewportClient != nullptr;
+			const bool bHasActiveViewport = ActiveViewportClient != nullptr; // -> 수정
 			if (!bHasActiveViewport)
 			{
 				ImGui::BeginDisabled();
 			}
 
-			if (ActiveViewportClient)
+			if (ActiveViewportClient) // -> 수정
 			{
-				FShowFlags& ShowFlags = ActiveViewportClient->GetShowFlags();
+				FShowFlags& ShowFlags = ActiveViewportClient->GetShowFlags(); // -> 수정
 				auto ShowFlagCheckbox = [&ShowFlags](const char* Label, EEngineShowFlags Flag)
 					{
 						bool bValue = ShowFlags.HasFlag(Flag);
@@ -626,33 +586,39 @@ void FEditorUI::Render()
 						}
 					};
 
-				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel());
+				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel()); // -> 수정
 
-				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode());
+				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode()); // -> 수정
 				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0";
 				if (ImGui::Combo("Render Mode", &RenderMode, RenderModes))
 				{
-					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode));
+					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
 				}
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
 				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
-#if !IS_OBJ_VIEWER //뷰 모드에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
+#if !IS_OBJ_VIEWER //뷰어에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
 #endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
-				float GridSize = ActiveViewportClient->GetGridSize();
+				bool bShowGrid = ActiveViewportClient->IsGridVisible(); // -> 수정
+				if (ImGui::Checkbox("Show Grid", &bShowGrid))
+				{
+					ActiveViewportClient->SetGridVisible(bShowGrid);
+				}
+
+				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
 				{
 					ActiveViewportClient->SetGridSize(GridSize);
 				}
 
-				float Thickness = ActiveViewportClient->GetLineThickness();
+				float Thickness = ActiveViewportClient->GetLineThickness(); // -> 수정
 				if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
 				{
-					ActiveViewportClient->SetLineThickness(Thickness);
+					ActiveViewportClient->SetLineThickness(Thickness); // -> 수정
 				}
 
 #if IS_OBJ_VIEWER //뷰어에서 y-up과 z-up 전환 기능을 추가로 제공합니다.
@@ -765,7 +731,12 @@ void FEditorUI::Render()
 	Property.Render(Core);
 	Console.Render();
 	Stat.Render();
-	ViewportLegacy.Render(nullptr);
+	// Viewport draw data keeps the SRV pointer until ImGui render submission,
+	// so rendering the same legacy viewport twice in one frame can invalidate
+	// the first draw command if the offscreen target is recreated in-between.
+	//ViewportLegacy.Render(nullptr);
+	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
+
 	Outliner.Render(Core);
 	ControlPanel.Render(Core, ActiveViewportClient);
 	ContentBrowser.Render();

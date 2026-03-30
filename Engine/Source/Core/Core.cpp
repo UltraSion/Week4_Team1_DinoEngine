@@ -10,7 +10,9 @@
 #include "Input/EnhancedInputManager.h"
 #include "Input/InputManager.h"
 #include "Math/Frustum.h"
+#include "Memory/MemoryBase.h"
 #include "Mesh/ObjManager.h"
+#include "Object/Object.h"
 #include "Object/ObjectFactory.h"
 #include "Object/ObjectGlobals.h"
 #include "Object/ObjectManager.h"
@@ -22,9 +24,55 @@
 #include "World/Level.h"
 
 #include <filesystem>
+#include <cstdio>
+#include <algorithm>
+#include <cctype>
 #include "Mesh/ObjManager.h"
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
+
+namespace
+{
+	FString TrimConsoleArg(const FString& InValue)
+	{
+		const size_t Start = InValue.find_first_not_of(" \t");
+		if (Start == FString::npos)
+		{
+			return "";
+		}
+
+		const size_t End = InValue.find_last_not_of(" \t");
+		return InValue.substr(Start, End - Start + 1);
+	}
+
+	FString ToLowerCopy(const FString& InValue)
+	{
+		FString Result = InValue;
+		std::transform(Result.begin(), Result.end(), Result.begin(),
+			[](unsigned char C) { return static_cast<char>(std::tolower(C)); });
+		return Result;
+	}
+
+	const char* GetStatModeName(FCore::EStatOverlayMode InMode)
+	{
+		switch (InMode)
+		{
+		case FCore::EStatOverlayMode::FPS:
+			return "fps";
+		case FCore::EStatOverlayMode::Memory:
+			return "memory";
+		case FCore::EStatOverlayMode::None:
+		default:
+			return "none";
+		}
+	}
+
+	float BytesToKiB(uint32 Bytes)
+	{
+		return static_cast<float>(Bytes) / 1024.0f;
+	}
+
+}
 FCore::~FCore()
 {
 	Release();
@@ -242,7 +290,7 @@ void FCore::RegisterConsoleVariables()
 		});
 	GCInterval = static_cast<double>(GCIntervalVar->GetFloat());
 
-	CVM.RegisterCommand("ForceGC", [this](FString& OutResult)
+	CVM.RegisterCommand("ForceGC", [this](const FString&, FString& OutResult)
 		{
 			if (ObjManager)
 			{
@@ -255,4 +303,97 @@ void FCore::RegisterConsoleVariables()
 				OutResult = "ForceGC: ObjectManager is not available.";
 			}
 		}, "Force immediate garbage collection");
+
+	CVM.RegisterCommand("stat", [this](const FString& InArgs, FString& OutResult)
+		{
+			const FString Args = ToLowerCopy(TrimConsoleArg(InArgs));
+			if (Args.empty())
+			{
+				OutResult = FString("stat = ") + GetStatModeName(StatOverlayMode) + "  (usage: stat fps | stat memory | stat none)";
+				return;
+			}
+
+			if (Args == "fps")
+			{
+				StatOverlayMode = EStatOverlayMode::FPS;
+			}
+			else if (Args == "memory")
+			{
+				StatOverlayMode = EStatOverlayMode::Memory;
+			}
+			else if (Args == "none")
+			{
+				StatOverlayMode = EStatOverlayMode::None;
+			}
+			else
+			{
+				OutResult = "usage: stat fps | stat memory | stat none";
+				return;
+			}
+
+			OutResult = FString("stat = ") + GetStatModeName(StatOverlayMode);
+		}, "Show overlay stats: stat fps | stat memory | stat none");
+}
+
+void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 ViewportHeight) const
+{
+	if (!Renderer || StatOverlayMode == EStatOverlayMode::None || ViewportWidth <= 0 || ViewportHeight <= 0)
+	{
+		return;
+	}
+
+	constexpr float Margin = 16.0f;
+	constexpr float Padding = 10.0f;
+	constexpr float LineSpacing = 6.0f;
+	const FVector4 BackgroundColor(0.05f, 0.05f, 0.05f, 0.78f);
+	const FVector4 BorderColor(1.0f, 1.0f, 1.0f, 0.10f);
+	const FVector4 TitleColor(0.95f, 0.95f, 0.95f, 1.0f);
+	const FVector4 ValueColor(0.80f, 0.90f, 1.0f, 1.0f);
+
+	TArray<FString> Lines;
+	float BoxWidth = 300.0f;
+
+	if (StatOverlayMode == EStatOverlayMode::FPS)
+	{
+		char Buffer[128] = {};
+		Lines.push_back("STAT FPS");
+		snprintf(Buffer, sizeof(Buffer), "FPS        : %.1f", Timer.GetDisplayFPS());
+		Lines.push_back(Buffer);
+		snprintf(Buffer, sizeof(Buffer), "Frame Time : %.3f ms", Timer.GetFrameTimeMs());
+		Lines.push_back(Buffer);
+		BoxWidth = 280.0f;
+	}
+	else if (StatOverlayMode == EStatOverlayMode::Memory)
+	{
+		const FMallocStats& MallocStats = GetGMalloc()->MallocStats;
+		char Buffer[160] = {};
+		Lines.push_back("STAT MEMORY");
+		snprintf(Buffer, sizeof(Buffer), "UObject Count     : %u", UObject::TotalAllocationCounts);
+		Lines.push_back(Buffer);
+		snprintf(Buffer, sizeof(Buffer), "UObject Bytes     : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
+		Lines.push_back(Buffer);
+		snprintf(Buffer, sizeof(Buffer), "Heap Usage        : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
+		Lines.push_back(Buffer);
+		snprintf(Buffer, sizeof(Buffer), "Heap Allocations  : %u", MallocStats.CurrentAllocationCount);
+		Lines.push_back(Buffer);
+		BoxWidth = 360.0f;
+	}
+
+	if (Lines.empty())
+	{
+		return;
+	}
+
+	const float LineHeight = Renderer->GetOverlayTextLineHeight();
+	const float BoxHeight = Padding * 2.0f + LineHeight * static_cast<float>(Lines.size()) + LineSpacing * static_cast<float>(Lines.size() - 1);
+	Renderer->DrawOverlayRect(Margin, Margin, BoxWidth, BoxHeight, BackgroundColor, ViewportWidth, ViewportHeight);
+	Renderer->DrawOverlayRectOutline(Margin, Margin, BoxWidth, BoxHeight, BorderColor, ViewportWidth, ViewportHeight);
+
+	float CursorY = Margin + Padding;
+	for (size_t Index = 0; Index < Lines.size(); ++Index)
+	{
+		const FVector4& TextColor = (Index == 0) ? TitleColor : ValueColor;
+		Renderer->DrawOverlayText(Lines[Index], Margin + Padding, CursorY, TextColor, ViewportWidth, ViewportHeight);
+		CursorY += LineHeight + LineSpacing;
+	}
 }

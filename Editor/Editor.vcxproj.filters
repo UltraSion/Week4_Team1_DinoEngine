@@ -101,6 +101,8 @@
     </ClCompile>
     <ClCompile Include="EditorGlobals.cpp" />
     <ClCompile Include="Source\UI\ViewportWindow.cpp" />
+    <ClCompile Include="Source\UI\SWindow.cpp" />
+    <ClCompile Include="Source\UI\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -174,6 +176,8 @@
     </ClInclude>
     <ClInclude Include="EditorGlobals.h" />
     <ClInclude Include="Source\UI\ViewportWindow.h" />
+    <ClInclude Include="Source\UI\WindowManager.h" />
+    <ClInclude Include="Source\UI\SWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">
