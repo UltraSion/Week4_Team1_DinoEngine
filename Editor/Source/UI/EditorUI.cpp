@@ -785,7 +785,9 @@ void FEditorUI::Render()
 	// Viewport draw data keeps the SRV pointer until ImGui render submission,
 	// so rendering the same legacy viewport twice in one frame can invalidate
 	// the first draw command if the offscreen target is recreated in-between.
-	ViewportLegacy.Render(nullptr);
+	//ViewportLegacy.Render(nullptr);
+	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
+
 	Outliner.Render(Core);
 	ControlPanel.Render(Core, ActiveViewportClient);
 	ContentBrowser.Render();

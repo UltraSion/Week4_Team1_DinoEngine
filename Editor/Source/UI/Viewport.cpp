@@ -67,9 +67,11 @@ void FViewportLegacy::Render(HWND Hwnd)
 		ImGui::End();
 		return;
 	}
+	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
 
 	if (ImGui::BeginMenuBar())
 	{
+
 		/*FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
 		if (EditorViewportClient)
 		{
@@ -98,9 +100,6 @@ void FViewportLegacy::Render(HWND Hwnd)
 		}*/
 		ImGui::EndMenuBar();
 	}
-	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
-
-
 
 	const ImVec2 ContentSize = ImGui::GetContentRegionAvail();
 	const ImVec2 ContentMin = ImGui::GetCursorScreenPos();

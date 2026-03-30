@@ -57,7 +57,10 @@ protected:
 	SWindow* SideLT = nullptr;
 	SWindow* SideRB = nullptr;
 
-	//float ClampSplitRatio(float InSplitRatio) const;
+	float ClampSplitRatio(float InSplitRatio) const;
+	float GetAvailablePrimaryAxisSize() const;
+	void InitializeSplitterLayout();
+	void DrawSplitterHandle();
 	virtual float GetPrimaryAxisSize() const = 0;
 	virtual float GetMouseDeltaForSplit() const = 0;
 	virtual ImGuiMouseCursor GetSplitterMouseCursor() const = 0;
@@ -91,7 +94,10 @@ class SSplitterV : public SSplitter
 {
 public:
 	SSplitterV(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
-		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio) {}
+		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio)
+	{
+		InitializeSplitterLayout();
+	}
 
 	virtual FRect GetSideLTRect() override;
 	virtual FRect GetSideRBRect() override;
@@ -106,7 +112,10 @@ class SSplitterH : public SSplitter
 {
 public:
 	SSplitterH(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
-		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio) {}
+		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio)
+	{
+		InitializeSplitterLayout();
+	}
 
 	virtual FRect GetSideLTRect() override;
 	virtual FRect GetSideRBRect() override;
@@ -114,6 +123,6 @@ public:
 	virtual float GetMouseDeltaForSplit() const override;
 	virtual ImGuiMouseCursor GetSplitterMouseCursor() const override;
 	virtual FRect GetSplitterRect() const override;
-	//virtual void Draw() override;
+	virtual void Draw() override;
 };
 

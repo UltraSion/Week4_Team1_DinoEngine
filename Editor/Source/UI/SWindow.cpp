@@ -54,6 +54,21 @@ namespace
 
 		return ImVec2(MainViewport->Pos.x + Position.X, MainViewport->Pos.y + Position.Y);
 	}
+
+	ImU32 GetSplitterColor(bool bHovered, bool bActive)
+	{
+		if (bActive)
+		{
+			return IM_COL32(110, 170, 255, 220);
+		}
+
+		if (bHovered)
+		{
+			return IM_COL32(150, 150, 150, 200);
+		}
+
+		return IM_COL32(90, 90, 90, 160);
+	}
 }
 
 void SWindow::SetRect(const FRect& InRect)
@@ -80,7 +95,7 @@ SWindow* SWindow::GetWindow(FPoint coord)
 
 SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption)
 {
-	if(InNewWindow == nullptr)
+	if (InNewWindow == nullptr)
 		return nullptr;
 
 	SSplitter* NewSplitter = nullptr;
@@ -98,7 +113,7 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 		return nullptr;
 
 	NewSplitter->SetParent(Parent);
-	if(Parent)
+	if (Parent)
 	{
 		Parent->ReplaceSide(this, NewSplitter);
 	}
@@ -113,8 +128,6 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 		NewSplitter->SetSideLT(InNewWindow);
 		NewSplitter->SetSideRB(this);
 	}
-
-
 
 	return NewSplitter;
 }
@@ -158,26 +171,19 @@ void SSplitter::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 		SetSideLT(NewSide);
 		return;
 	}
-	
+
 	if (OldSide == SideRB)
 	{
 		SetSideRB(NewSide);
 		return;
 	}
-	
+
 	throw std::runtime_error("OldSide is not part of this splitter.");
 }
 
 SSplitter::SSplitter(FRect InRect, SWindow* InSideLT, SWindow* InSideRB, float InSplitRatio)
 	: SWindow(InRect), SideLT(InSideLT), SideRB(InSideRB), SplitRatio(InSplitRatio)
 {
-	SetSplitRatio(InSplitRatio);
-
-	if(InSideLT)
-		SetSideLT(InSideLT);
-
-	if(InSideRB)
-		SetSideRB(InSideRB);
 }
 
 SSplitter::~SSplitter()
@@ -207,36 +213,57 @@ SWindow* SSplitter::GetWindow(FPoint coord)
 	return nullptr;
 }
 
-//float SSplitter::ClampSplitRatio(float InSplitRatio) const
-//{
-//	const float AxisSize = GetPrimaryAxisSize();
-//	if (AxisSize <= 0.0f)
-//	{
-//		return 0.5f;
-//	}
-//
-//	const float AvailableAxis = AxisSize - SplitterThickness;
-//	if (AvailableAxis <= 0.0f)
-//	{
-//		return 0.5f;
-//	}
-//
-//	const float ClampedMinPaneSize = (std::max)(0.0f, MinPaneSize);
-//	float MinRatio = ClampedMinPaneSize / AvailableAxis;
-//	float MaxRatio = 1.0f - MinRatio;
-//
-//	if (MinRatio > 0.5f)
-//	{
-//		MinRatio = 0.5f;
-//		MaxRatio = 0.5f;
-//	}
-//
-//	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
-//}
+float SSplitter::ClampSplitRatio(float InSplitRatio) const
+{
+	const float AvailableAxis = GetAvailablePrimaryAxisSize();
+	if (AvailableAxis <= 0.0f)
+	{
+		return 0.5f;
+	}
+
+	const float ClampedMinPaneSize = (std::max)(0.0f, MinPaneSize);
+	float MinRatio = ClampedMinPaneSize / AvailableAxis;
+	float MaxRatio = 1.0f - MinRatio;
+
+	if (MinRatio >= MaxRatio)
+	{
+		return 0.5f;
+	}
+
+	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
+}
+
+float SSplitter::GetAvailablePrimaryAxisSize() const
+{
+	return (std::max)(0.0f, GetPrimaryAxisSize() - SplitterThickness);
+}
+
+void SSplitter::InitializeSplitterLayout()
+{
+	SplitRatio = ClampSplitRatio(SplitRatio);
+
+	if (SideLT)
+	{
+		SideLT->SetParent(this);
+		SideLT->SetRect(GetSideLTRect());
+	}
+
+	if (SideRB)
+	{
+		SideRB->SetParent(this);
+		SideRB->SetRect(GetSideRBRect());
+	}
+}
 
 void SSplitter::SetSplitRatio(float InSplitRatio)
 {
-	SplitRatio = InSplitRatio;
+	const float ClampedSplitRatio = ClampSplitRatio(InSplitRatio);
+	if (SplitRatio == ClampedSplitRatio)
+	{
+		return;
+	}
+
+	SplitRatio = ClampedSplitRatio;
 	OnResize();
 }
 
@@ -266,6 +293,13 @@ void SSplitter::Render()
 
 void SSplitter::Draw()
 {
+	const float ClampedSplitRatio = ClampSplitRatio(SplitRatio);
+	if (SplitRatio != ClampedSplitRatio)
+	{
+		SplitRatio = ClampedSplitRatio;
+		OnResize();
+	}
+
 	if (SideLT)
 	{
 		SideLT->Draw();
@@ -274,10 +308,17 @@ void SSplitter::Draw()
 	{
 		SideRB->Draw();
 	}
+
+	DrawSplitterHandle();
 }
 
 bool SSplitter::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
+	if (bDragging && IsMouseMessage(Msg))
+	{
+		return true;
+	}
+
 	if (IsMouseMessage(Msg))
 	{
 		const FPoint MousePoint(static_cast<float>(GET_X_LPARAM(LParam)), static_cast<float>(GET_Y_LPARAM(LParam)));
@@ -305,6 +346,63 @@ bool SSplitter::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, L
 	}
 
 	return false;
+}
+
+void SSplitter::DrawSplitterHandle()
+{
+	const FRect SplitterRect = GetSplitterRect();
+	if (SplitterRect.Size.X <= 0.0f || SplitterRect.Size.Y <= 0.0f)
+	{
+		bDragging = false;
+		return;
+	}
+
+	char OverlayName[64];
+	std::snprintf(OverlayName, sizeof(OverlayName), "##SplitterOverlay_%p", static_cast<void*>(this));
+
+	ImGui::SetNextWindowPos(ToScreenPosition(SplitterRect.Position), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(SplitterRect.Size.X, SplitterRect.Size.Y), ImGuiCond_Always);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+	if (ImGui::Begin(OverlayName, nullptr, GetSplitterOverlayWindowFlags()))
+	{
+		ImGui::PushID(this);
+		ImGui::InvisibleButton("##Handle", ImVec2(SplitterRect.Size.X, SplitterRect.Size.Y));
+
+		const bool bHovered = ImGui::IsItemHovered();
+		const bool bActive = ImGui::IsItemActive();
+		bDragging = bActive;
+
+		if (bHovered || bActive)
+		{
+			ImGui::SetMouseCursor(GetSplitterMouseCursor());
+		}
+
+		if (bActive)
+		{
+			const float AvailableAxis = GetAvailablePrimaryAxisSize();
+			if (AvailableAxis > 0.0f)
+			{
+				// SplitRatio = FirstPaneSize / AvailableAxis.
+				// Converting drag delta from pixels to ratio is just delta / AvailableAxis.
+				const float DeltaRatio = GetMouseDeltaForSplit() / AvailableAxis;
+				SetSplitRatio(SplitRatio + DeltaRatio);
+			}
+			else
+			{
+				SetSplitRatio(0.5f);
+			}
+		}
+
+		ImDrawList* DrawList = ImGui::GetWindowDrawList();
+		DrawList->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), GetSplitterColor(bHovered, bActive));
+
+		ImGui::PopID();
+	}
+
+	ImGui::End();
+	ImGui::PopStyleVar(2);
 }
 
 FRect SSplitterV::GetSideLTRect()
@@ -365,6 +463,11 @@ FRect SSplitterV::GetSplitterRect() const
 		{ Rect.Size.X, SplitterThickness });
 }
 
+void SSplitterV::Draw()
+{
+	SSplitter::Draw();
+}
+
 float SSplitterH::GetPrimaryAxisSize() const
 {
 	return Rect.Size.X;
@@ -387,4 +490,9 @@ FRect SSplitterH::GetSplitterRect() const
 	return FRect(
 		{ Rect.Position.X + LeftWidth, Rect.Position.Y },
 		{ SplitterThickness, Rect.Size.Y });
+}
+
+void SSplitterH::Draw()
+{
+	SSplitter::Draw();
 }
