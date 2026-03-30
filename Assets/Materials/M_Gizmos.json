@@ -5,7 +5,7 @@
   "RenderState": {
     "FillMode": 3,
     "CullMode": 1,
-    "DepthTest": true,
+    "DepthTest": false,
 	"DepthFunc": "LessEqual",
     "StencilEnable": true,
     "StencilReadMask": 0,
