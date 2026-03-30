@@ -98,6 +98,9 @@ void FViewportLegacy::Render(HWND Hwnd)
 		}*/
 		ImGui::EndMenuBar();
 	}
+	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
+
+
 
 	const ImVec2 ContentSize = ImGui::GetContentRegionAvail();
 	const ImVec2 ContentMin = ImGui::GetCursorScreenPos();

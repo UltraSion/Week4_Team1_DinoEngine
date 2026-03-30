@@ -240,10 +240,20 @@ void SSplitter::Tick(float DeltaTime)
 	}
 }
 
+void SSplitter::Render()
+{
+	if (SideLT)
+	{
+		SideLT->Render();
+	}
+	if (SideRB)
+	{
+		SideRB->Render();
+	}
+}
+
 void SSplitter::Draw()
 {
-	DrawSplitterHandle();
-
 	if (SideLT)
 	{
 		SideLT->Draw();
@@ -252,20 +262,6 @@ void SSplitter::Draw()
 	{
 		SideRB->Draw();
 	}
-}
-
-void SSplitter::DrawSplitterHandle()
-{
-	if (Rect.Size.X <= 0.0f || Rect.Size.Y <= 0.0f)
-	{
-		return;
-	}
-
-	if (ImGui::Button("##SplitterButton", ImVec2(GetSplitterRect().Size.X, GetSplitterRect().Size.Y)))
-	{
-		bDragging = true;
-	}
-	//ImGui::PopStyleVar(3);
 }
 
 bool SSplitter::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -299,14 +295,14 @@ bool SSplitter::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, L
 	return false;
 }
 
-FRect SSplitterH::GetSideLTRect()
+FRect SSplitterV::GetSideLTRect()
 {
 	const float AvailableHeight = (std::max)(0.0f, Rect.Size.Y - SplitterThickness);
 	const float Height = AvailableHeight * SplitRatio;
 	return FRect({ Rect.Position.X, Rect.Position.Y }, { Rect.Size.X , Height });
 }
 
-FRect SSplitterH::GetSideRBRect()
+FRect SSplitterV::GetSideRBRect()
 {
 	const float AvailableHeight = (std::max)(0.0f, Rect.Size.Y - SplitterThickness);
 	const float TopHeight = AvailableHeight * SplitRatio;
@@ -316,14 +312,14 @@ FRect SSplitterH::GetSideRBRect()
 		{ Rect.Size.X , BottomHeight });
 }
 
-FRect SSplitterV::GetSideLTRect()
+FRect SSplitterH::GetSideLTRect()
 {
 	const float AvailableWidth = (std::max)(0.0f, Rect.Size.X - SplitterThickness);
 	const float Width = AvailableWidth * SplitRatio;
 	return FRect({ Rect.Position.X, Rect.Position.Y }, { Width, Rect.Size.Y });
 }
 
-FRect SSplitterV::GetSideRBRect()
+FRect SSplitterH::GetSideRBRect()
 {
 	const float AvailableWidth = (std::max)(0.0f, Rect.Size.X - SplitterThickness);
 	const float LeftWidth = AvailableWidth * SplitRatio;
@@ -333,22 +329,22 @@ FRect SSplitterV::GetSideRBRect()
 		{ RightWidth, Rect.Size.Y });
 }
 
-float SSplitterH::GetPrimaryAxisSize() const
+float SSplitterV::GetPrimaryAxisSize() const
 {
 	return Rect.Size.Y;
 }
 
-float SSplitterH::GetMouseDeltaForSplit() const
+float SSplitterV::GetMouseDeltaForSplit() const
 {
 	return ImGui::GetIO().MouseDelta.y;
 }
 
-ImGuiMouseCursor SSplitterH::GetSplitterMouseCursor() const
+ImGuiMouseCursor SSplitterV::GetSplitterMouseCursor() const
 {
 	return ImGuiMouseCursor_ResizeNS;
 }
 
-FRect SSplitterH::GetSplitterRect() const
+FRect SSplitterV::GetSplitterRect() const
 {
 	const float AvailableHeight = (std::max)(0.0f, Rect.Size.Y - SplitterThickness);
 	const float TopHeight = AvailableHeight * SplitRatio;
@@ -357,22 +353,22 @@ FRect SSplitterH::GetSplitterRect() const
 		{ Rect.Size.X, SplitterThickness });
 }
 
-float SSplitterV::GetPrimaryAxisSize() const
+float SSplitterH::GetPrimaryAxisSize() const
 {
 	return Rect.Size.X;
 }
 
-float SSplitterV::GetMouseDeltaForSplit() const
+float SSplitterH::GetMouseDeltaForSplit() const
 {
 	return ImGui::GetIO().MouseDelta.x;
 }
 
-ImGuiMouseCursor SSplitterV::GetSplitterMouseCursor() const
+ImGuiMouseCursor SSplitterH::GetSplitterMouseCursor() const
 {
 	return ImGuiMouseCursor_ResizeEW;
 }
 
-FRect SSplitterV::GetSplitterRect() const
+FRect SSplitterH::GetSplitterRect() const
 {
 	const float AvailableWidth = (std::max)(0.0f, Rect.Size.X - SplitterThickness);
 	const float LeftWidth = AvailableWidth * SplitRatio;

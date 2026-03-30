@@ -156,7 +156,7 @@ void FEditorEngine::Render()
 	}
 
 	GRenderer->BeginFrame();
-	WindowManager.DrawWindows();
+	WindowManager.RenderWindows();
 	GRenderer->EndFrame();
 }
 

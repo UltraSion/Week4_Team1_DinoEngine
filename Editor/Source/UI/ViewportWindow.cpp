@@ -24,19 +24,22 @@ void SViewportWindow::Tick(float DeltaTime)
 	}
 }
 
-void SViewportWindow::Draw()
+void SViewportWindow::Render()
 {
 	if (ViewportContext && GEngine)
 	{
 		ViewportContext->Render(GEngine->GetCore(), GEngine->GetCommandQueue());
 	}
+}
 
+void SViewportWindow::Draw()
+{
 	ImGui::Begin("ViewportSplitTest", nullptr);
 	ImGui::PushID(this);
 	if(ImGui::Button("Test Button"))
 	{
 		FRect Rect = GetRect();
-		Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Horizontal, SplitOption::LT);
+		Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Vertical, SplitOption::LT);
 	}
 	ImGui::PopID();
 	ImGui::End();

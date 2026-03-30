@@ -39,6 +39,7 @@ public:
 	FRect GetRect() const { return Rect; }
 	virtual void OnResize() {}
 	virtual void Tick(float DeltaTime) {}
+	virtual void Render() {}
 	virtual void Draw() {}
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) { return false; }
 	SSplitter* Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption);
@@ -81,14 +82,15 @@ public:
 	void SetSplitterThickness(float InSplitterThickness) { SplitterThickness = InSplitterThickness; OnResize(); }
 	float GetSplitterThickness() const { return SplitterThickness; }
 	virtual void Tick(float DeltaTime) override;
+	virtual void Render() override;
 	virtual void Draw() override;
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
 };
 
-class SSplitterH : public SSplitter
+class SSplitterV : public SSplitter
 {
 public:
-	SSplitterH(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
+	SSplitterV(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
 		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio) {}
 
 	virtual FRect GetSideLTRect() override;
@@ -99,10 +101,10 @@ public:
 	virtual FRect GetSplitterRect() const override;
 };
 
-class SSplitterV : public SSplitter
+class SSplitterH : public SSplitter
 {
 public:
-	SSplitterV(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
+	SSplitterH(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f)
 		: SSplitter(InRect, InSideLT, InSideRB, InSplitRatio) {}
 
 	virtual FRect GetSideLTRect() override;
