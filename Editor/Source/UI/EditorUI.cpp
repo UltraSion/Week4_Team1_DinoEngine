@@ -165,7 +165,7 @@ void FEditorUI::Initialize(FCore* InCore)
 		{
 			if (ActiveViewportClient)
 			{
-				ActiveViewportClient->HandleFileDoubleClick(FilePath);
+				ActiveViewportClient->HandleFileDoubleClick(FilePath); //-> 이부분을 수정
 			}
 		};
 
@@ -211,7 +211,7 @@ void FEditorUI::Initialize(FCore* InCore)
 			}
 			else if (ActiveViewportClient)
 			{
-				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath);
+				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath); // -> 이것도 수정
 			}
 		};
 }
@@ -605,15 +605,15 @@ void FEditorUI::Render()
 
 		if (ImGui::BeginMenu("View"))
 		{
-			const bool bHasActiveViewport = ActiveViewportClient != nullptr;
+			const bool bHasActiveViewport = ActiveViewportClient != nullptr; // -> 수정
 			if (!bHasActiveViewport)
 			{
 				ImGui::BeginDisabled();
 			}
 
-			if (ActiveViewportClient)
+			if (ActiveViewportClient) // -> 수정
 			{
-				FShowFlags& ShowFlags = ActiveViewportClient->GetShowFlags();
+				FShowFlags& ShowFlags = ActiveViewportClient->GetShowFlags(); // -> 수정
 				auto ShowFlagCheckbox = [&ShowFlags](const char* Label, EEngineShowFlags Flag)
 					{
 						bool bValue = ShowFlags.HasFlag(Flag);
@@ -623,13 +623,13 @@ void FEditorUI::Render()
 						}
 					};
 
-				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel());
+				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel()); // -> 수정
 
-				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode());
+				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode()); // -> 수정
 				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0";
 				if (ImGui::Combo("Render Mode", &RenderMode, RenderModes))
 				{
-					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode));
+					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
 				}
 
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
@@ -641,22 +641,22 @@ void FEditorUI::Render()
 #endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
-				bool bShowGrid = ActiveViewportClient->IsGridVisible();
+				bool bShowGrid = ActiveViewportClient->IsGridVisible(); // -> 수정
 				if (ImGui::Checkbox("Show Grid", &bShowGrid))
 				{
 					ActiveViewportClient->SetGridVisible(bShowGrid);
 				}
 
-				float GridSize = ActiveViewportClient->GetGridSize();
+				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
 				{
 					ActiveViewportClient->SetGridSize(GridSize);
 				}
 
-				float Thickness = ActiveViewportClient->GetLineThickness();
+				float Thickness = ActiveViewportClient->GetLineThickness(); // -> 수정
 				if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
 				{
-					ActiveViewportClient->SetLineThickness(Thickness);
+					ActiveViewportClient->SetLineThickness(Thickness); // -> 수정
 				}
 
 #if IS_OBJ_VIEWER
@@ -770,6 +770,7 @@ void FEditorUI::Render()
 	Console.Render();
 	Stat.Render();
 	Outliner.Render(Core);
+	ViewportLegacy.Render(nullptr);
 	ControlPanel.Render(Core, ActiveViewportClient);
 	ContentBrowser.Render();
 #endif
