@@ -340,6 +340,11 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
+#if IS_OBJ_VIEWER
+	// 뷰어 모드에서는 픽킹을 통한 선택 변경을 막습니다.
+	return;
+#endif
+
 	if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 	{
 		return;

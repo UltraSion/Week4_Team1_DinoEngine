@@ -734,62 +734,113 @@ void FEditorUI::Render()
 #if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
 	if (Core)
 	{
-		AActor* SelectedActor = Core->GetSelectedActor();
-		if (AStaticMeshActor* MeshActor = dynamic_cast<AStaticMeshActor*>(SelectedActor))
+		ULevel* Level = Core->GetLevel();
+		if (Level)
 		{
-			UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
-			if (MeshComp)
+			AStaticMeshActor* MeshActor = nullptr;
+			for (AActor* Actor : Level->GetActors())
 			{
-				FStaticMeshRenderData* MeshData = MeshComp->GetStaticMesh();
-				if (MeshData)
+				if (AStaticMeshActor* FoundActor = dynamic_cast<AStaticMeshActor*>(Actor))
 				{
-					FMeshData* CPUData = MeshData->GetMeshData();
-					if (CPUData)
+					MeshActor = FoundActor;
+					break;
+				}
+			}
+
+			if (MeshActor)
+			{
+				UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
+				if (MeshComp)
+				{
+					FStaticMeshRenderData* MeshData = MeshComp->GetStaticMesh();
+					if (MeshData)
 					{
-						ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
-						ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
-						if (ImGui::Begin("OBJ Information", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+						FMeshData* CPUData = MeshData->GetMeshData();
+						if (CPUData)
 						{
-							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
-							ImGui::Text("Asset Information");
-							ImGui::PopStyleColor();
-							ImGui::Text("Path: %s", MeshData->GetAssetPath().c_str());
-							ImGui::Separator();
-
-							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
-							ImGui::Text("Mesh Statistics");
-							ImGui::PopStyleColor();
-							ImGui::Text("Vertices: %d", (int)CPUData->Vertices.size());
-							ImGui::Text("Indices:  %d", (int)CPUData->Indices.size());
-							ImGui::Text("Triangles: %d", (int)CPUData->Indices.size() / 3);
-							ImGui::Text("Sections: %d", (int)CPUData->Sections.size());
-							ImGui::Separator();
-
-							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
-							ImGui::Text("Bounding Box");
-							ImGui::PopStyleColor();
-							FVector Min = CPUData->GetMinCoord();
-							FVector Max = CPUData->GetMaxCoord();
-							FVector Center = CPUData->GetCenterCoord();
-							ImGui::Text("Min:    (%.2f, %.2f, %.2f)", Min.X, Min.Y, Min.Z);
-							ImGui::Text("Max:    (%.2f, %.2f, %.2f)", Max.X, Max.Y, Max.Z);
-							ImGui::Text("Center: (%.2f, %.2f, %.2f)", Center.X, Center.Y, Center.Z);
-							ImGui::Text("Size:   (%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
-							ImGui::Text("Radius: %.2f", CPUData->GetLocalBoundRadius());
-							ImGui::Separator();
-
-							if (MeshData->ImportedTexturePaths.size() > 0)
+							ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
+							ImGui::SetNextWindowSize(ImVec2(350, 500), ImGuiCond_FirstUseEver);
+							
+							ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+							if (ImGui::Begin("OBJ Information", nullptr, WindowFlags))
 							{
-								ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
-								ImGui::Text("Textures");
-								ImGui::PopStyleColor();
-								for (int i = 0; i < (int)MeshData->ImportedTexturePaths.size(); ++i)
+								// 텍스트 색상 정의
+								ImVec4 HeaderColor = ImVec4(0.4f, 0.7f, 1.0f, 1.0f);
+								ImVec4 LabelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+								ImVec4 ValueColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+								// 애셋 정보 섹션
+								if (ImGui::CollapsingHeader("Asset Information", ImGuiTreeNodeFlags_DefaultOpen))
 								{
-									ImGui::Text("[%d] %s", i, MeshData->ImportedTexturePaths[i].c_str());
+									ImGui::Indent();
+									ImGui::TextColored(LabelColor, "Path:");
+									ImGui::SameLine();
+									ImGui::TextWrapped("%s", MeshData->GetAssetPath().c_str());
+									ImGui::Unindent();
+								}
+
+								// 메시 통계 섹션
+								if (ImGui::CollapsingHeader("Mesh Statistics", ImGuiTreeNodeFlags_DefaultOpen))
+								{
+									ImGui::Indent();
+									auto StatRow = [&](const char* Label, int Value) {
+										ImGui::TextColored(LabelColor, "%s:", Label);
+										ImGui::SameLine(120);
+										ImGui::TextColored(ValueColor, "%d", Value);
+									};
+
+									StatRow("Vertices", (int)CPUData->Vertices.size());
+									StatRow("Indices", (int)CPUData->Indices.size());
+									StatRow("Triangles", (int)CPUData->Indices.size() / 3);
+									StatRow("Sections", (int)CPUData->Sections.size());
+									ImGui::Unindent();
+								}
+
+								// 바운딩 박스 섹션
+								if (ImGui::CollapsingHeader("Bounding Box", ImGuiTreeNodeFlags_DefaultOpen))
+								{
+									ImGui::Indent();
+									FVector Min = CPUData->GetMinCoord();
+									FVector Max = CPUData->GetMaxCoord();
+									FVector Center = CPUData->GetCenterCoord();
+									
+									auto VectorRow = [&](const char* Label, const FVector& V) {
+										ImGui::TextColored(LabelColor, "%s:", Label);
+										ImGui::SameLine(80);
+										ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", V.X, V.Y, V.Z);
+									};
+
+									VectorRow("Min", Min);
+									VectorRow("Max", Max);
+									VectorRow("Center", Center);
+									
+									ImGui::TextColored(LabelColor, "Size:");
+									ImGui::SameLine(80);
+									ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
+									
+									ImGui::TextColored(LabelColor, "Radius:");
+									ImGui::SameLine(80);
+									ImGui::TextColored(ValueColor, "%.2f", CPUData->GetLocalBoundRadius());
+									ImGui::Unindent();
+								}
+
+								// 텍스처 정보 섹션
+								if (!MeshData->ImportedTexturePaths.empty())
+								{
+									if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
+									{
+										ImGui::Indent();
+										for (int i = 0; i < (int)MeshData->ImportedTexturePaths.size(); ++i)
+										{
+											ImGui::Bullet();
+											ImGui::TextWrapped("%s", MeshData->ImportedTexturePaths[i].c_str());
+										}
+										ImGui::Unindent();
+									}
 								}
 							}
+							ImGui::End();
 						}
-						ImGui::End();
 					}
 				}
 			}
