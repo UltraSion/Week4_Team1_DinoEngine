@@ -609,7 +609,9 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 			Transform.SetLocation(SpawnLocation);
 			Root->SetRelativeTransform(Transform);
 		}
+#if !IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
+#endif
 	}
 
 
@@ -683,6 +685,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 
 	//Stat Overlay를 띄웁니다.
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
+
+#if IS_OBJ_VIEWER
+	return;
+#endif
 
 	AActor* SelectedActor = Core->GetSelectedActor();
 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())

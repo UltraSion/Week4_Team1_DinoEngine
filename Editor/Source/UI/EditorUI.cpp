@@ -608,12 +608,6 @@ void FEditorUI::Render()
 #endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
-				bool bShowGrid = ActiveViewportClient->IsGridVisible(); // -> 수정
-				if (ImGui::Checkbox("Show Grid", &bShowGrid))
-				{
-					ActiveViewportClient->SetGridVisible(bShowGrid);
-				}
-
 				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
 				{
@@ -824,20 +818,6 @@ void FEditorUI::Render()
 									ImGui::Unindent();
 								}
 
-								// 텍스처 정보 섹션
-								if (!MeshData->ImportedTexturePaths.empty())
-								{
-									if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
-									{
-										ImGui::Indent();
-										for (int i = 0; i < (int)MeshData->ImportedTexturePaths.size(); ++i)
-										{
-											ImGui::Bullet();
-											ImGui::TextWrapped("%s", MeshData->ImportedTexturePaths[i].c_str());
-										}
-										ImGui::Unindent();
-									}
-								}
 							}
 							ImGui::End();
 						}

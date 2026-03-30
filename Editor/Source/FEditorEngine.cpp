@@ -219,7 +219,9 @@ void FEditorEngine::RunObjViewerStartupTest()
 	if (MeshActor)
 	{
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath.string());
+#if !IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
+#endif
 	}
 	EditorUI.SyncSelectedActorProperty();
 
