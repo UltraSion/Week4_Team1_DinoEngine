@@ -30,7 +30,7 @@
 #include "Mesh/ObjManager.h"
 #include "Asset/AssetManager.h"
 
-namespace
+namespace //양쪽 공백 제거, 소문자 변환, OverlayMode, BytesToKiB
 {
 	FString TrimConsoleArg(const FString& InValue)
 	{
@@ -70,8 +70,8 @@ namespace
 	{
 		return static_cast<float>(Bytes) / 1024.0f;
 	}
-
 }
+
 FCore::~FCore()
 {
 	Release();
@@ -348,6 +348,13 @@ void FCore::RegisterConsoleVariables()
 		}, "Show overlay stats: stat fps | stat memory | stat none");
 }
 
+/**
+ * StatOverlay를 렌더링합니다. StatOverlayMode에 따라 FPS 또는 Memory 정보를 화면에 표시합니다.
+ * 
+ * \param Renderer
+ * \param ViewportWidth
+ * \param ViewportHeight
+ */
 void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 ViewportHeight) const
 {
 	if (!Renderer || StatOverlayMode == EStatOverlayMode::None || ViewportWidth <= 0 || ViewportHeight <= 0)
@@ -370,26 +377,26 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 	{
 		char Buffer[128] = {};
 		Lines.push_back("STAT FPS");
-		snprintf(Buffer, sizeof(Buffer), "FPS        : %.1f", Timer.GetDisplayFPS());
+		snprintf(Buffer, sizeof(Buffer), "FPS                    : %.1f", Timer.GetDisplayFPS());
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Frame Time : %.3f ms", Timer.GetFrameTimeMs());
+		snprintf(Buffer, sizeof(Buffer), "Frame Time : %.2f ms", Timer.GetFrameTimeMs());
 		Lines.push_back(Buffer);
-		BoxWidth = 280.0f;
+		BoxWidth = 320.0f;
 	}
 	else if (StatOverlayMode == EStatOverlayMode::Memory)
 	{
 		const FMallocStats& MallocStats = GetGMalloc()->MallocStats;
 		char Buffer[160] = {};
 		Lines.push_back("STAT MEMORY");
-		snprintf(Buffer, sizeof(Buffer), "UObject Count     : %u", UObject::TotalAllocationCounts);
+		snprintf(Buffer, sizeof(Buffer), "UObject Count         : %u", UObject::TotalAllocationCounts);
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "UObject Bytes     : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "UObject Bytes         : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Usage        : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "Heap Usage                 : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Allocations  : %u", MallocStats.CurrentAllocationCount);
+		snprintf(Buffer, sizeof(Buffer), "Heap Allocations: %u", MallocStats.CurrentAllocationCount);
 		Lines.push_back(Buffer);
-		BoxWidth = 360.0f;
+		BoxWidth = 500.0f;
 	}
 
 	if (Lines.empty())
