@@ -630,21 +630,14 @@ void FEditorUI::Render()
 				{
 					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode));
 				}
-#if IS_OBJ_VIEWER //뷰 모드에서는 월드축을 렌더링하지 않으며 불필요한 기능을 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
-#endif
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-#if IS_OBJ_VIEWER 
+				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
+#if !IS_OBJ_VIEWER //뷰 모드에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
-				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 #endif
-
-				bool bShowGrid = ActiveViewportClient->IsGridVisible();
-				if (ImGui::Checkbox("Show Grid", &bShowGrid))
-				{
-					ActiveViewportClient->SetGridVisible(bShowGrid);
-				}
+				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
 
 				float GridSize = ActiveViewportClient->GetGridSize();
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
