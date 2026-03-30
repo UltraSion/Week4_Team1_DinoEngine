@@ -6,8 +6,41 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include <cfloat>
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
+
+namespace
+{
+	void RecenterMeshToOrigin(FMeshData& MeshData)
+	{
+		if (MeshData.Vertices.empty())
+		{
+			return;
+		}
+
+		FVector MinCoord(FLT_MAX, FLT_MAX, FLT_MAX);
+		FVector MaxCoord(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+		for (const FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			MinCoord.X = (std::min)(MinCoord.X, Vertex.Position.X);
+			MinCoord.Y = (std::min)(MinCoord.Y, Vertex.Position.Y);
+			MinCoord.Z = (std::min)(MinCoord.Z, Vertex.Position.Z);
+
+			MaxCoord.X = (std::max)(MaxCoord.X, Vertex.Position.X);
+			MaxCoord.Y = (std::max)(MaxCoord.Y, Vertex.Position.Y);
+			MaxCoord.Z = (std::max)(MaxCoord.Z, Vertex.Position.Z);
+		}
+
+		const FVector Center = (MaxCoord - MinCoord) * 0.5f + MinCoord;
+		for (FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			Vertex.Position -= Center;
+		}
+	}
+}
+
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
@@ -223,6 +256,10 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	}
 
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
+#if IS_OBJ_VIEWER
+	// Viewer에서는 오브젝트 중심을 원점으로 옮겨 orbit 회전 중심을 안정화합니다.
+	RecenterMeshToOrigin(*MeshData);
+#endif
 	MeshData->UpdateLocalBound();
 
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();

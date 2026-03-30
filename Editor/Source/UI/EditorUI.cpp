@@ -75,54 +75,6 @@ namespace
 
 		return "";
 	}
-
-	//아래는 뷰어에서만 제공되는 기능입니다
-
-
-	void ReloadObjViewerActor(FCore* Core)
-	{
-		if (!Core || !GRenderer)
-		{
-			return;
-		}
-
-
-
-		ULevel* Level = Core->GetLevel();
-		if (!Level)
-			return;
-
-		// 기존 StaticMeshActor에서 메시 경로 보존
-		FString MeshPath;
-		for (AActor* Actor : Level->GetActors())
-		{
-			if (AStaticMeshActor* MeshActor = dynamic_cast<AStaticMeshActor*>(Actor))
-			{
-				if (UStaticMeshComponent* Comp = MeshActor->GetStaticMeshComponent())
-					MeshPath = Comp->GetStaticMeshAsset();
-				break;
-			}
-		}
-
-		if (MeshPath.empty())
-			return;
-
-		Core->SetSelectedActor(nullptr);
-		Level->ClearActors();
-
-		AStaticMeshActor* NewActor = Level->SpawnActor<AStaticMeshActor>("ObjViewerMesh");
-		if (NewActor)
-		{
-			NewActor->LoadStaticMesh(GRenderer->GetDevice(), MeshPath);
-			Core->SetSelectedActor(NewActor);
-		}
-
-	
-	
-		UE_LOG(
-			"[ObjViewer] Reloaded OBJ with axis mode: %s",
-			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "Y-Up" : "Z-Up");
-	}
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
@@ -619,21 +571,6 @@ void FEditorUI::Render()
 				{
 					ActiveViewportClient->SetLineThickness(Thickness); // -> 수정
 				}
-
-#if IS_OBJ_VIEWER //뷰어에서 y-up과 z-up 전환 기능을 추가로 제공합니다.
-				ImGui::SeparatorText("OBJ Axis");
-				int AxisMode = (FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp) ? 1 : 0;
-				if (ImGui::RadioButton("Z-Up", AxisMode == 0))
-				{
-					FPrimitiveObj::SetImportAxisMode(FPrimitiveObj::EImportAxisMode::ZUp);
-					ReloadObjViewerActor(Core);
-				}
-				if (ImGui::RadioButton("Y-Up -> Z-Up", AxisMode == 1))
-				{
-					FPrimitiveObj::SetImportAxisMode(FPrimitiveObj::EImportAxisMode::YUpToZUp);
-					ReloadObjViewerActor(Core);
-				}
-#endif
 			}
 
 			if (!bHasActiveViewport)
