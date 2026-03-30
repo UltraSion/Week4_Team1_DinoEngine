@@ -37,14 +37,14 @@ void UObjComponent::LoadTexture(ID3D11Device* Device, const FString& FilePath)
 
 	/** 텍스쳐 로드 */
 	int width = 0, height = 0, channels = 0;
-
-	unsigned char* data = stbi_load(
-		FPaths::ToAbsolutePath(FilePath).c_str(),
-		&width,
-		&height,
-		&channels,
-		STBI_rgb_alpha // 강제 RGBA
-	);
+	FILE* f = nullptr;
+	_wfopen_s(&f, std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring().c_str(), L"rb");
+	unsigned char* data = nullptr;
+	if (f)
+	{
+		data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+		fclose(f);
+	}
 
 	if (!data)
 	{

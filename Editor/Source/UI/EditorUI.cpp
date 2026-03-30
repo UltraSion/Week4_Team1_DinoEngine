@@ -1,7 +1,7 @@
 #include "EditorUI.h"
 
 #include "Actor/Actor.h"
-#include "Actor/ObjActor.h"
+
 #include "Camera/Camera.h"
 #include "Component/CameraComponent.h"
 #include "Component/PrimitiveComponent.h"
@@ -71,31 +71,7 @@ namespace
 	}
 
 	//아래는 뷰어에서만 제공되는 기능입니다
-	AObjActor* FindObjViewerActor(FCore* Core)
-	{
-		if (!Core || !Core->GetLevel())
-		{
-			return nullptr;
-		}
 
-		if (AActor* SelectedActor = Core->GetSelectedActor())
-		{
-			if (SelectedActor->IsA<AObjActor>())
-			{
-				return static_cast<AObjActor*>(SelectedActor);
-			}
-		}
-
-		for (AActor* Actor : Core->GetLevel()->GetActors())
-		{
-			if (Actor && Actor->IsA<AObjActor>())
-			{
-				return static_cast<AObjActor*>(Actor);
-			}
-		}
-
-		return nullptr;
-	}
 
 	void ReloadObjViewerActor(FCore* Core)
 	{
@@ -104,27 +80,11 @@ namespace
 			return;
 		}
 
-		AObjActor* ObjActor = FindObjViewerActor(Core);
-		if (!ObjActor)
-		{
-			UE_LOG("[ObjViewer] No OBJ actor to reload");
-			return;
-		}
 
-		UPrimitiveComponent* PrimitiveComponent = ObjActor->GetComponentByClass<UPrimitiveComponent>();
-		if (!PrimitiveComponent)
-		{
-			return;
-		}
 
-		const FString PrimitiveFileName = PrimitiveComponent->GetPrimitiveFileName();
-		if (PrimitiveFileName.empty())
-		{
-			return;
-		}
 
-		ObjActor->LoadObj(GRenderer->GetDevice(), PrimitiveFileName);
-		Core->SetSelectedActor(ObjActor);
+	
+	
 		UE_LOG(
 			"[ObjViewer] Reloaded OBJ with axis mode: %s",
 			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "Y-Up" : "Z-Up");
@@ -425,6 +385,14 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 			const bool bHandledByImGui = ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam) != 0;
 			if (bViewportInteractive && (bIsMouseMessage || bIsKeyboardMessage))
 			{
+				if (bIsMouseMessage && !ViewportLegacy.bImageHovered)
+				{
+					return true;
+				}
+				if (bIsKeyboardMessage && !ViewportLegacy.bImageHovered)
+				{
+					return true;
+				}
 				return false;
 			}
 

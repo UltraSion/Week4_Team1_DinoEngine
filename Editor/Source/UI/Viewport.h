@@ -12,7 +12,7 @@ public:
 	~FViewportLegacy();
 
 	void Render(HWND Hwnd);
-
+	bool bImageHovered = false;
 private:
 	void ReleaseLevelView();
 	void ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height);

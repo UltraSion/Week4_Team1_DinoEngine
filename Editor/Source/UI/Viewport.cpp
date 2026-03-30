@@ -142,6 +142,7 @@ void FViewportLegacy::Render(HWND Hwnd)
 	if (ShaderResourceView)
 	{
 		ImGui::Image(reinterpret_cast<ImTextureID>(ShaderResourceView), ImVec2(static_cast<float>(NewWidth), static_cast<float>(NewHeight)));
+		bImageHovered = ImGui::IsItemHovered();
 	}
 
 	ImGui::End();

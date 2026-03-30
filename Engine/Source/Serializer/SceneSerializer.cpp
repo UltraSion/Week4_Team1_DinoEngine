@@ -9,7 +9,7 @@
 #include "Actor/AttachTestActor.h"
 #include "Actor/CubeActor.h"
 #include "Actor/SphereActor.h"
-#include "Actor/ObjActor.h"
+
 #include "Component/PrimitiveComponent.h"
 #include "World/Level.h"
 #include "Object/ObjectFactory.h" 
@@ -31,7 +31,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 		Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
 	}
 
-	// Materials (·ÎµåµÈ Material ÆÄÀÏ °æ·Î¸¦ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î·Î ÀúÀå)
+	// Materials (ë¡œë“œëœ Material íŒŒì¼ ê²½ë¡œë¥¼ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œë¡œ ì €ì¥)
 	TArray<FString> LoadedPaths = FMaterialManager::Get().GetLoadedPaths();
 	if (!LoadedPaths.empty())
 	{
@@ -39,7 +39,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 		FString Root = FPaths::ProjectRoot().string();
 		for (const FString& AbsPath : LoadedPaths)
 		{
-			// Àı´ë °æ·Î ¡æ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î
+			// ì ˆëŒ€ ê²½ë¡œ â†’ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œ
 			std::filesystem::path Rel = std::filesystem::relative(AbsPath, Root);
 			Materials.push_back(Rel.generic_string());
 		}
@@ -147,19 +147,7 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 			}
 		}
 
-		if (Value.contains("PrimitiveFileName"))
-		{
-			if (Actor->IsA(AObjActor::StaticClass()))
-			{
-				const FString PrimitiveFileName = Value["PrimitiveFileName"].get<FString>();
-				if (PrimitiveFileName != "")
-				{
-					AObjActor* ObjActor = static_cast<AObjActor*>(Actor);
-					if (ObjActor)
-						ObjActor->LoadObj(Device, PrimitiveFileName);
-				}
-			}
-		}
+
 		if (Value.contains("ObjStaticMeshAsset"))
 		{
 			if (Actor->IsA(AStaticMeshActor::StaticClass()))

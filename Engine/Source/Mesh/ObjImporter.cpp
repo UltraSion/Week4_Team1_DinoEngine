@@ -11,7 +11,7 @@
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
-	std::ifstream File(FPaths::ToAbsolutePath(FilePath));
+	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)));
 	if (!File.is_open()) return false;
 	OutInfo.ObjDirectory = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path().string();
 	std::string Line;

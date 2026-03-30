@@ -78,9 +78,6 @@
     <ClCompile Include="Source\Actor\CubeActor.cpp">
       <Filter>Source\Actor</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Actor\ObjActor.cpp">
-      <Filter>Source\Actor</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Actor\PlaneActor.cpp">
       <Filter>Source\Actor</Filter>
     </ClCompile>
@@ -103,9 +100,6 @@
       <Filter>Source\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Component\LineBatchComponent.cpp">
-      <Filter>Source\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Component\ObjComponent.cpp">
       <Filter>Source\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Component\PlaneComponent.cpp">
@@ -339,9 +333,6 @@
     <ClInclude Include="Source\Actor\CubeActor.h">
       <Filter>Source\Actor</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Actor\ObjActor.h">
-      <Filter>Source\Actor</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Actor\PlaneActor.h">
       <Filter>Source\Actor</Filter>
     </ClInclude>
@@ -367,9 +358,6 @@
       <Filter>Source\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Component\LineBatchComponent.h">
-      <Filter>Source\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Component\ObjComponent.h">
       <Filter>Source\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Component\PlaneComponent.h">

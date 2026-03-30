@@ -41,7 +41,6 @@
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Actor\AttachTestActor.h" />
     <ClInclude Include="Source\Actor\CubeActor.h" />
-    <ClInclude Include="Source\Actor\ObjActor.h" />
     <ClInclude Include="Source\Actor\PlaneActor.h" />
     <ClInclude Include="Source\Actor\SkySphereActor.h" />
     <ClInclude Include="Source\Actor\SphereActor.h" />
@@ -51,7 +50,6 @@
     <ClInclude Include="Source\Component\CameraComponent.h" />
     <ClInclude Include="Source\Component\CubeComponent.h" />
     <ClInclude Include="Source\Component\LineBatchComponent.h" />
-    <ClInclude Include="Source\Component\ObjComponent.h" />
     <ClInclude Include="Source\Component\PlaneComponent.h" />
     <ClInclude Include="Source\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Component\RandomColorComponent.h" />
@@ -163,7 +161,6 @@
     <ClCompile Include="Source\Actor\Actor.cpp" />
     <ClCompile Include="Source\Actor\AttachTestActor.cpp" />
     <ClCompile Include="Source\Actor\CubeActor.cpp" />
-    <ClCompile Include="Source\Actor\ObjActor.cpp" />
     <ClCompile Include="Source\Actor\PlaneActor.cpp" />
     <ClCompile Include="Source\Actor\SkySphereActor.cpp" />
     <ClCompile Include="Source\Actor\SphereActor.cpp" />
@@ -177,7 +174,6 @@
     <ClCompile Include="Source\Component\CubeComponent.cpp" />
     <ClCompile Include="Source\Component\LineBatchComponent.cpp" />
     <ClCompile Include="Source\Component\MeshComponent.cpp" />
-    <ClCompile Include="Source\Component\ObjComponent.cpp" />
     <ClCompile Include="Source\Component\PlaneComponent.cpp" />
     <ClCompile Include="Source\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Component\RandomColorComponent.cpp" />

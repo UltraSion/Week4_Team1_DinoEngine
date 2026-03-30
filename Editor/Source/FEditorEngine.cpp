@@ -7,7 +7,6 @@
 #include "Core/Paths.h"
 #include "World/Level.h"
 #include "World/World.h"
-#include "Actor/ObjActor.h"
 #include "Camera/Camera.h"
 #include "Debug/EngineLog.h"
 #include "Platform/Windows/Window.h"
@@ -149,16 +148,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
-	AObjActor* TestActor = Level->SpawnActor<AObjActor>("ObjViewerStartupTest");
-	if (!TestActor)
-	{
-		UE_LOG("[ObjViewerTest] Failed to spawn startup actor");
-		return;
-	}
 
-	TestActor->SetActorLocation(FVector::ZeroVector);
-	TestActor->LoadObj(GRenderer->GetDevice(), FPaths::ToRelativePath(SelectedPath));
-	Core->SetSelectedActor(TestActor);
 	EditorUI.SyncSelectedActorProperty();
 
 	if (FCamera* Camera = ViewportClient->GetCamera())
