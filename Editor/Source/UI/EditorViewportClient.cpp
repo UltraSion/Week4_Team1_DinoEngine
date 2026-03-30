@@ -58,6 +58,20 @@ namespace
 
 		return Start + Delta * Alpha;
 	}
+
+#if IS_OBJ_VIEWER
+	float GetObjViewerZoomStep(FCore* Core)
+	{
+		AActor* SelectedActor = Core->GetSelectedActor();
+		if (UPrimitiveComponent* PrimitiveComponent = SelectedActor->GetComponentByClass<UPrimitiveComponent>())
+		{
+			const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
+			const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
+			return SafeRadius * 0.1f;
+		}
+		return 0.1f;
+	}
+#endif
 }
 
 FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, EEditorViewportType InViewportType, ELevelType InWorldType)
@@ -629,7 +643,7 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 			return;
 		}
 #if IS_OBJ_VIEWER //뷰어에서는 발줌이 좀 더 느립니다
-		CameraTransform.MoveForward(MouseWheelDelta*0.1f);
+		CameraTransform.MoveForward(MouseWheelDelta * GetObjViewerZoomStep(Core));
 #else
 		CameraTransform.MoveForward(MouseWheelDelta);
 #endif
