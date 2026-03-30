@@ -50,7 +50,7 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRe
 		if (i < StaticMeshRenderData->ImportedTexturePaths.size())
 		{
 			FString TexPath = StaticMeshRenderData->ImportedTexturePaths[i];
-			if (!TexPath.empty() && std::filesystem::exists(TexPath))
+			if (!TexPath.empty() && std::filesystem::exists(FPaths::ToAbsolutePath(TexPath)))
 			{
 				LoadTextureToSlot(Device, TexPath, i);
 				bTextureLoaded = true;

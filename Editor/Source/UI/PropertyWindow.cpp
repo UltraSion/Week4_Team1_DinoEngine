@@ -176,11 +176,22 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 				SMComp->LoadTextureToSlot(Core->GetRenderer()->GetDevice(), TextureFiles[SlotTexIndices[SlotIdx] - 1], SlotIdx);
 			}
 
-			// Texture 드롭 타겟!
+	
 			ProcessDragDrop({ ".png", ".jpg", ".jpeg" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 				SMComp->LoadTextureToSlot(Core->GetRenderer()->GetDevice(), AbsPath, SlotIdx);
+
+			
+				std::string NormalizedRel = RelPath;
+				std::replace(NormalizedRel.begin(), NormalizedRel.end(), '\\', '/');
+
 				for (int i = 0; i < (int)TextureFiles.size(); ++i) {
-					if (TextureFiles[i] == RelPath) { SlotTexIndices[SlotIdx] = i + 1; break; }
+					std::string NormalizedTex = TextureFiles[i];
+					std::replace(NormalizedTex.begin(), NormalizedTex.end(), '\\', '/');
+
+					if (NormalizedTex == NormalizedRel) {
+						SlotTexIndices[SlotIdx] = i + 1;
+						break;
+					}
 				}
 			});
 
@@ -208,15 +219,22 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 
 	int SelectedMeshIndex = 0;
 	FString CurrentAsset = SMComp->GetStaticMeshAsset();
+	std::replace(CurrentAsset.begin(), CurrentAsset.end(), '\\', '/');
 	for (int i = 0; i < (int)LoadedMeshes.size(); ++i) {
-		if (LoadedMeshes[i]->GetAssetPathFileName() == CurrentAsset) { SelectedMeshIndex = i + 1; break; }
+		FString AssetName = LoadedMeshes[i]->GetAssetPathFileName();
+		std::replace(AssetName.begin(), AssetName.end(), '\\', '/'); 
+
+		if (AssetName == CurrentAsset) {
+			SelectedMeshIndex = i + 1;
+			break;
+		}
 	}
 
 	if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), (int)Items.size()) && Core && SelectedMeshIndex > 0) {
 		SMComp->SetStaticMeshData(Core->GetRenderer()->GetDevice(), LoadedMeshes[SelectedMeshIndex - 1]->GetStaticMeshAsset());
 	}
 
-	// 람다를 활용한 Mesh 드롭 타겟
+
 	ProcessDragDrop({ ".obj" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 		SMComp->LoadStaticMesh(Core->GetRenderer()->GetDevice(), RelPath);
 	});

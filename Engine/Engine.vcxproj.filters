@@ -315,6 +315,7 @@
     <ClCompile Include="Source\Mesh\ObjImporter.cpp" />
     <ClCompile Include="Source\Object\StaticMesh.cpp" />
     <ClCompile Include="Source\Mesh\ObjManager.cpp" />
+    <ClCompile Include="Source\Asset\AssetManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">
@@ -652,6 +653,8 @@
     <ClInclude Include="Source\Mesh\StaticMeshRenderData.h" />
     <ClInclude Include="Source\Object\StaticMesh.h" />
     <ClInclude Include="Source\Mesh\ObjManager.h" />
+    <ClInclude Include="Source\Types\WeakObjectPtr.h" />
+    <ClInclude Include="Source\Asset\AssetManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

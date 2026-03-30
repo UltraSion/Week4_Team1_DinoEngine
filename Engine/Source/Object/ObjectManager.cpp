@@ -70,14 +70,14 @@ void ObjectManager::FlushKilledObjects()
 	for (int32 Idx = 0; Idx < GUObjectArray.size(); ++Idx)
 	{
 		UObject* Obj = GUObjectArray[Idx];
-		if (Obj) 
+		if (!Obj)
 			continue;
 		// RootSet이나 Standalone 에셋은 보호
 		if (Obj->HasAnyFlags(EObjectFlags::RootSet | EObjectFlags::Standalone))
 		{
 			continue;
 		}
-		if (Obj && Obj->IsPendingKill())
+		if (Obj->IsPendingKill())
 		{
 			delete Obj;// 소멸자에서 GUObjectArray[Idx] = nullptr 처리됨
 			// 빈자리를 Free List에 등록
