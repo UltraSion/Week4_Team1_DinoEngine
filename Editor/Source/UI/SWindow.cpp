@@ -8,6 +8,7 @@
 #include "CoreMinimal.h"
 #include "Windows.h"
 #include "imgui.h"
+#include "FEditorEngine.h"
 
 namespace
 {
@@ -82,6 +83,12 @@ void SWindow::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	(void)OldSide;
 	(void)NewSide;
 	throw std::runtime_error("This window does not support replacing child windows.");
+}
+
+SWindow* SWindow::Merge(SWindow* InWindowToKeep)
+{
+	(void)InWindowToKeep;
+	throw std::runtime_error("This window does not support merging child windows.");
 }
 
 bool SWindow::ISHover(FPoint coord) const
@@ -239,6 +246,64 @@ void SSplitter::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	}
 
 	throw std::runtime_error("OldSide is not part of this splitter.");
+}
+
+SWindow* SSplitter::Merge(SWindow* InWindowToKeep)
+{
+	if (InWindowToKeep != SideLT && InWindowToKeep != SideRB)
+	{
+		throw std::runtime_error("InWindowToKeep is not part of this splitter.");
+	}
+
+	FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
+	SWindow* ParentWindow = GetParent();
+	SWindow* WindowToKeep = InWindowToKeep;
+	SWindow* WindowToRemove = (WindowToKeep == SideLT) ? SideRB : SideLT;
+
+	if (WindowToKeep == SideLT)
+	{
+		SideLT = nullptr;
+	}
+	else
+	{
+		SideRB = nullptr;
+	}
+
+	if (WindowToRemove == SideLT)
+	{
+		SideLT = nullptr;
+	}
+	else if (WindowToRemove == SideRB)
+	{
+		SideRB = nullptr;
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().QueueDestroyWindow(WindowToRemove);
+	}
+	else
+	{
+		delete WindowToRemove;
+	}
+
+	if (ParentWindow)
+	{
+		ParentWindow->ReplaceSide(this, WindowToKeep);
+	}
+	else
+	{
+		WindowToKeep->SetParent(nullptr);
+		WindowToKeep->SetRect(GetRect());
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, WindowToKeep);
+		EditorEngine->GetWindowManager().QueueDestroyWindow(this);
+	}
+
+	return WindowToKeep;
 }
 
 SSplitter::SSplitter(FRect InRect, SWindow* InSideLT, SWindow* InSideRB, float InSplitRatio)
@@ -730,6 +795,57 @@ void SSplitterC::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	throw std::runtime_error("OldSide is not part of this quad splitter.");
 }
 
+SWindow* SSplitterC::Merge(SWindow* InWindowToKeep)
+{
+	if (InWindowToKeep != SideLT && InWindowToKeep != SideLB && InWindowToKeep != SideRT && InWindowToKeep != SideRB)
+	{
+		throw std::runtime_error("InWindowToKeep is not part of this quad splitter.");
+	}
+
+	FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
+	SWindow* ParentWindow = GetParent();
+	SWindow* WindowToKeep = InWindowToKeep;
+	SWindow* WindowsToRemove[] = { SideLT, SideLB, SideRT, SideRB };
+
+	SideLT = nullptr;
+	SideLB = nullptr;
+	SideRT = nullptr;
+	SideRB = nullptr;
+
+	for (SWindow* WindowToRemove : WindowsToRemove)
+	{
+		if (WindowToRemove && WindowToRemove != WindowToKeep)
+		{
+			if (EditorEngine)
+			{
+				EditorEngine->GetWindowManager().QueueDestroyWindow(WindowToRemove);
+			}
+			else
+			{
+				delete WindowToRemove;
+			}
+		}
+	}
+
+	if (ParentWindow)
+	{
+		ParentWindow->ReplaceSide(this, WindowToKeep);
+	}
+	else
+	{
+		WindowToKeep->SetParent(nullptr);
+		WindowToKeep->SetRect(GetRect());
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, WindowToKeep);
+		EditorEngine->GetWindowManager().QueueDestroyWindow(this);
+	}
+
+	return WindowToKeep;
+}
+
 SSplitterC::SSplitterC(FRect InRect, SWindow* InSideLT, SWindow* InSideLB, SWindow* InSideRT, SWindow* InSideRB, float InSplitRatioHorizontal, float InSplitRatioVertical)
 	: SWindow(InRect)
 	, SideLT(InSideLT)
@@ -833,6 +949,28 @@ void SSplitterC::Render()
 	{
 		SideRB->Render();
 	}
+}
+
+SWindow* SSplitterC::GetWindow(FPoint coord)
+{
+	if (SideLT && SideLT->ISHover(coord))
+	{
+		return SideLT->GetWindow(coord);
+	}
+	if (SideLB && SideLB->ISHover(coord))
+	{
+		return SideLB->GetWindow(coord);
+	}
+	if (SideRT && SideRT->ISHover(coord))
+	{
+		return SideRT->GetWindow(coord);
+	}
+	if (SideRB && SideRB->ISHover(coord))
+	{
+		return SideRB->GetWindow(coord);
+	}
+
+	return nullptr;
 }
 
 bool SSplitterC::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)

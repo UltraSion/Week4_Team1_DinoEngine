@@ -388,6 +388,25 @@ void FRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
 	}
 }
 
+void FRenderer::ExecuteCommandQueue(const FRenderCommandQueue& InQueue)
+{
+	TArray<FRenderCommand> LocalCommandList;
+	LocalCommandList.reserve(InQueue.Commands.size());
+
+	for (const FRenderCommand& Cmd : InQueue.Commands)
+	{
+		if (Cmd.MeshData)
+		{
+			Cmd.MeshData->UpdateVertexAndIndexBuffer(Device);
+		}
+
+		AddCommand(LocalCommandList, Cmd);
+	}
+
+	PrevCommandCount = InQueue.Commands.size();
+	ExecuteCommands(LocalCommandList, InQueue.ViewMatrix, InQueue.ProjectionMatrix);
+}
+
 void FRenderer::SetViewport(D3D11_VIEWPORT* Viewport)
 {
 	DeviceContext->RSSetViewports(1, Viewport);
@@ -401,9 +420,25 @@ void FRenderer::AddCommand(const FRenderCommand& Command)
 	Added.SortKey = FRenderCommand::MakeSortKey(Added.Material, Added.MeshData);
 }
 
+void FRenderer::AddCommand(TArray<FRenderCommand>& CommandBuffer, const FRenderCommand& Command)
+{
+	CommandBuffer.push_back(Command);
+	FRenderCommand& Added = CommandBuffer.back();
+	if (!Added.Material) Added.Material = DefaultMaterial.get();
+	Added.SortKey = FRenderCommand::MakeSortKey(Added.Material, Added.MeshData);
+}
+
 void FRenderer::ExecuteCommands()
 {
-	std::sort(CommandList.begin(), CommandList.end(),
+	ExecuteCommands(CommandList, ViewMatrix, ProjectionMatrix);
+}
+
+void FRenderer::ExecuteCommands(TArray<FRenderCommand>& InCommandList, const FMatrix& InViewMatrix, const FMatrix& InProjectionMatrix)
+{
+	ViewMatrix = InViewMatrix;
+	ProjectionMatrix = InProjectionMatrix;
+
+	std::sort(InCommandList.begin(), InCommandList.end(),
 		[](const FRenderCommand& A, const FRenderCommand& B) {
 			if (A.RenderLayer != B.RenderLayer) return A.RenderLayer < B.RenderLayer;
 			return A.SortKey < B.SortKey;
@@ -412,14 +447,19 @@ void FRenderer::ExecuteCommands()
 	SetConstantBuffers();
 	UpdateFrameConstantBuffer();
 
-	ExecuteRenderPass(ERenderLayer::Default);
+	ExecuteRenderPass(InCommandList, ERenderLayer::Default);
 	ClearDepthBuffer();
-	ExecuteRenderPass(ERenderLayer::Overlay);
+	ExecuteRenderPass(InCommandList, ERenderLayer::Overlay);
 	
 	if (PostRenderCallback) PostRenderCallback(this);
 }
 
 void FRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
+{
+	ExecuteRenderPass(CommandList, InRenderLayer);
+}
+
+void FRenderer::ExecuteRenderPass(TArray<FRenderCommand>& InCommandList, ERenderLayer InRenderLayer)
 {
 	FMaterial* CurrentMaterial = nullptr;
 	FMeshData* CurrentMesh = nullptr;
@@ -432,11 +472,11 @@ void FRenderer::ExecuteRenderPass(ERenderLayer InRenderLayer)
 
 	FRenderCommand toFind;
 	toFind.RenderLayer = InRenderLayer;
-	auto it = std::lower_bound(CommandList.begin(), CommandList.end(), toFind,
+	auto it = std::lower_bound(InCommandList.begin(), InCommandList.end(), toFind,
 		[](const FRenderCommand& A, const FRenderCommand& B) { return A.RenderLayer < B.RenderLayer; });
 
 	RenderStateManager->RebindState();
-	for (; it != CommandList.end(); it++)
+	for (; it != InCommandList.end(); it++)
 	{
 		auto Cmd = *it;
 		if (Cmd.RenderLayer != InRenderLayer) return;

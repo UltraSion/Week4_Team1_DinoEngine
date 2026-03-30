@@ -41,6 +41,7 @@ public:
 	virtual bool ISHover(FPoint coord) const;
 	virtual SWindow* GetWindow(FPoint coord);
 	FRect GetRect() const { return Rect; }
+	virtual SWindow* Merge(SWindow* MainWindow); // 부모를 제거하고 메인 윈도우로 대체 다른 윈도우는 삭제
 	virtual void OnResize() {}
 	virtual void Tick(float DeltaTime) {}
 	virtual void Render() {}
@@ -83,6 +84,7 @@ public:
 	void ReplaceSide(SWindow* OldSide, SWindow* NewSide) override;
 	SSplitter(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f);
 	~SSplitter() override;
+	virtual SWindow* Merge(SWindow* MainWindow) override; // 부모를 제거하고 메인 윈도우로 대체 다른 윈도우는 삭제
 	float GetSplitRatio() { return SplitRatio; }
 	virtual void SetSplitRatio(float InSplitRatio);
 	void SetMinPaneSize(float InMinPaneSize) { MinPaneSize = InMinPaneSize; OnResize(); }
@@ -134,6 +136,8 @@ public:
 
 class SSplitterC : public SWindow
 {
+	virtual SWindow* GetWindow(FPoint coord) override;
+
 	SWindow* SideLT = nullptr;
 	SWindow* SideLB = nullptr;
 	SWindow* SideRT = nullptr;
@@ -177,6 +181,8 @@ public:
 	void ReplaceSide(SWindow* OldSide, SWindow* NewSide) override;
 	SSplitterC(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideLB = nullptr, SWindow* InSideRT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatioHorizontal = 0.5f, float InSplitRatioVertical = 0.5f);
 	~SSplitterC() override;
+	virtual SWindow* Merge(SWindow* MainWindow) override; // 부모를 제거하고 메인 윈도우로 대체 다른 윈도우는 삭제
+
 	float GetSplitRatioVertical() { return SplitRatioVertical; }
 	float GetSplitRatioHorizontal() { return SplitRatioHorizontal; }
 	virtual void SetSplitRatioVertical(float InSplitRatio);
