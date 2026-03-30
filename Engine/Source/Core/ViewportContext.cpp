@@ -82,6 +82,16 @@ bool FViewportContext::AcceptsInput() const
 	return bAcceptsInput && IsEnabled();
 }
 
+FViewport* FViewportContext::GetViewport() const
+{
+	return Viewport;
+}
+
+FViewportClient* FViewportContext::GetViewportClient() const
+{
+	return ViewportClient;
+}
+
 void FViewportContext::SetAcceptsInput(bool bInAcceptsInput)
 {
 	bAcceptsInput = bInAcceptsInput;

@@ -20,6 +20,9 @@
 #include "World/Level.h"
 #include "Math/MathUtility.h"
 #include <cmath>
+#include "ViewportWindow.h"
+#include "Math/Rect.h"
+#include "Core/FEngine.h"
 
 namespace
 {
@@ -379,6 +382,18 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 	}
 
 	return SelectedActor;
+}
+
+void FEditorViewportClient::DrawUI()
+{
+	ImGui::Begin("ViewportSplitTest", nullptr);
+	ImGui::PushID(this);
+	if (ImGui::Button("Test Button"))
+	{
+		ViewportWindow->Split(new SViewportWindow(FRect(), GEngine->CreateContext(FRect())), SplitDirection::Horizontal, SplitOption::LT);
+	}
+	ImGui::PopID();
+	ImGui::End();
 }
 
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)

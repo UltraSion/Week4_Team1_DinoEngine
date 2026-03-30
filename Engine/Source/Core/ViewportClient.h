@@ -13,6 +13,7 @@
 #include "Input/EnhancedInputManager.h"
 #include "Math/Rect.h"
 
+
 class FCore;
 class FRenderer;
 class ULevel;
@@ -22,6 +23,7 @@ struct FRenderCommandQueue;
 class UWorld;
 struct FInputMappingContext;
 class FViewport;
+class SViewportWindow;
 
 class ENGINE_API FViewportClient
 {
@@ -40,6 +42,9 @@ public:
 	virtual void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue);
 	virtual void PostRender(FCore* Core, FRenderer* Renderer);
 	FCamera* GetCamera() { return &CameraTransform; }
+	virtual void DrawUI();
+	void SetViewportWindow(SViewportWindow* InViewportWindow);
+
 
 	virtual void Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput);
 	virtual void SetupInputBindings();
@@ -73,6 +78,8 @@ protected:
 	int32 ViewportMouseX = 0;
 	int32 ViewportMouseY = 0;
 	ELevelType WorldType = ELevelType::Game;
+	SViewportWindow* ViewportWindow = nullptr;
+
 };
 
 class ENGINE_API FGameViewportClient : public FViewportClient
