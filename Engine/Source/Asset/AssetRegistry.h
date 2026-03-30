@@ -1,6 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
-
+#include "EngineAPI.h"
 #include <string>
 
 // 에셋의 메타데이터를 담는 구조체 (언리얼의 FAssetData 역할)

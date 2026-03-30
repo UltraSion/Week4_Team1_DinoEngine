@@ -13,7 +13,7 @@
 #include "Renderer/Renderer.h"
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
-
+#include "Actor/Actor.h"
 #include <algorithm>
 #include <filesystem>
 
