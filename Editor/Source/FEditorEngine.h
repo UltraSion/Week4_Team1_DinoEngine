@@ -18,5 +18,8 @@ protected:
 	ELevelType GetStartupLevelType() const override { return ELevelType::Editor; }
 	FViewportClient* CreateViewportClient() override;
 
+private:
+	void RunObjViewerStartupTest();
+
 	FEditorUI EditorUI;
 };

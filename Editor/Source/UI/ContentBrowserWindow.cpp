@@ -1,10 +1,11 @@
 #include "ContentBrowserWindow.h"
 #include <filesystem>
 #include <d3d11.h>
+#include <algorithm>
 #include "Debug/EngineLog.h"
 #include "Core/Paths.h"
 
-FContentBrowserWindow::FContentBrowserWindow():
+FContentBrowserWindow::FContentBrowserWindow() :
 	RootPath(std::filesystem::current_path()),
 	CurrentPath(std::filesystem::current_path())
 {
@@ -59,32 +60,7 @@ void FContentBrowserWindow::Render()
 	bIsHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 
 	ImGui::End();
-
-
-	if (bFileOnDrag)
-	{
-		if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
-		{
-			ImVec2 MousePos = ImGui::GetMousePos();
-
-			ImGui::SetNextWindowPos(MousePos, ImGuiCond_Always);
-			ImGui::SetNextWindowBgAlpha(0.0f);
-
-			ImGui::Begin("DragPreview", nullptr,
-				ImGuiWindowFlags_NoDecoration |
-				ImGuiWindowFlags_NoInputs |
-				ImGuiWindowFlags_AlwaysAutoResize);
-
-			ImGui::Image(FileIcon, ImVec2(48, 48));
-
-			ImGui::End();
-		}
-		else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-		{
-			bFileOnDrag = false;
-			OnFileDragEnd(SelectedFilePath.string(), DirectoryPathUnderMouse.string());
-		}
-	}
+	// 예전 수동 Drag & Drop 데드 코드 완벽히 삭제 완료!
 }
 
 void FContentBrowserWindow::SetFolderIcon(ID3D11ShaderResourceView* FolderSRV)
@@ -108,8 +84,7 @@ void FContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
 		auto NameUtf8 = DirPath.filename().u8string();
 		std::string Name(NameUtf8.begin(), NameUtf8.end());
 
-		ImGuiTreeNodeFlags Flags =
-			ImGuiTreeNodeFlags_OpenOnArrow |
+		ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_OpenOnArrow |
 			((CurrentPath == DirPath) ? ImGuiTreeNodeFlags_Selected : 0);
 
 		bool bOpened = ImGui::TreeNodeEx(Name.c_str(), Flags);
@@ -131,14 +106,12 @@ void FContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
 			{
 				bIsMouseOnDirectory = true;
 				DirectoryPathUnderMouse = DirPath;
-				
 			}
 			else if (Entry.is_regular_file())
 			{
 				bIsMouseOnFile = true;
 				FilePathUnderMouse = DirPath;
 			}
-
 		}
 	}
 }
@@ -146,9 +119,8 @@ void FContentBrowserWindow::DrawFolderTree(const std::filesystem::path& Path)
 void FContentBrowserWindow::DrawFileGrid()
 {
 	const float CellSize = 80.0f;
-	const float IconSize = 48.0f;
-
 	float PanelWidth = ImGui::GetContentRegionAvail().x;
+
 	int ColumnCount = (int)(PanelWidth / CellSize);
 	if (ColumnCount < 1) ColumnCount = 1;
 
@@ -156,92 +128,103 @@ void FContentBrowserWindow::DrawFileGrid()
 
 	for (auto& Entry : std::filesystem::directory_iterator(CurrentPath))
 	{
-		const auto& 
-			Path = Entry.path();
-		auto NameUtf8 = Path.filename().u8string();
-		std::string Name(NameUtf8.begin(), NameUtf8.end());
-
-		std::string Ext = Path.extension().string();
-		std::ranges::transform(Ext, Ext.begin(), [](unsigned char c) {
-			return std::tolower(c);
-			});
-
-		if (Entry.is_regular_file())
-		{
-			if (!(Ext == ".json" || Ext == ".obj"))
-			{
-				continue;
-			}
-		}
-
-		/** PushID 전에 종료처리 할것 */
-
-		ImGui::PushID(Name.c_str());
-
-		ImTextureID Icon = Entry.is_directory() ? FolderIcon : FileIcon;
-
-		// 아이콘 버튼
-		ImGui::ImageButton(Name.c_str(), Icon, ImVec2(IconSize, IconSize));
-
-		if (Entry.is_directory())
-		{
-		}
-		else
-		{
-			if (ImGui::BeginPopupContextItem())
-			{
-				if (ImGui::MenuItem("Delete"))
-				{
-					std::filesystem::remove(Path);
-				}
-				ImGui::EndPopup();
-			}			
-		}
-
-		// 선택
-		if (ImGui::IsItemClicked())
-		{
-			SelectedPath = Path;
-		}
-
-		// 더블클릭 처리 🔥
-		if (ImGui::IsItemHovered())
-		{
-			if (Entry.is_directory())
-			{
-				bIsMouseOnDirectory = true;
-				DirectoryPathUnderMouse = Path;
-			}
-			else if (Entry.is_regular_file())
-			{
-				bIsMouseOnFile = true;
-				FilePathUnderMouse = Path;
-			}
-
-			if (ImGui::IsMouseDoubleClicked(0))
-			{
-				if (Entry.is_directory())
-				{
-					CurrentPath /= Path.filename(); // 폴더 진입
-				}
-				else
-				{
-					OnFileDoubleClickCallback(Path.string());
-				}
-			}
-			else if (!bFileOnDrag && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !Entry.is_directory())
-			{
-				bFileOnDrag = true;
-				SelectedFilePath = Path;
-			}
-		}
-
-		// 이름
-		ImGui::TextWrapped("%s", Name.c_str());
-
-		ImGui::NextColumn();
-		ImGui::PopID();
+		DrawGridItem(Entry); // 그리드 아이템 그리기 로직을 분리!
 	}
 
 	ImGui::Columns(1);
+}
+
+// ─── 리팩토링: 개별 아이템 렌더링 로직 분리 ────────────────────────
+void FContentBrowserWindow::DrawGridItem(const std::filesystem::directory_entry& Entry)
+{
+	const auto& Path = Entry.path();
+	auto NameUtf8 = Path.filename().u8string();
+	std::string Name(NameUtf8.begin(), NameUtf8.end());
+
+	// 1. 파일 확장자 필터링 (텍스처 포맷 추가!)
+	if (Entry.is_regular_file())
+	{
+		std::string Ext = Path.extension().string();
+		std::ranges::transform(Ext, Ext.begin(), [](unsigned char c) { return std::tolower(c); });
+
+		if (Ext != ".json" && Ext != ".obj" && Ext != ".png" && Ext != ".jpg" && Ext != ".jpeg")
+		{
+			return; // 지원하지 않는 포맷은 건너뜀
+		}
+	}
+
+	// 2. 고유 ID 푸시
+	ImGui::PushID(Name.c_str());
+
+	const float IconSize = 48.0f;
+	ImTextureID Icon = Entry.is_directory() ? FolderIcon : FileIcon;
+
+	// 3. 아이콘 버튼
+	ImGui::ImageButton(Name.c_str(), Icon, ImVec2(IconSize, IconSize));
+
+	// 4. Drag & Drop Source 및 Context Menu
+	if (!Entry.is_directory())
+	{
+		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+		{
+			std::string PayloadPath = Path.string();
+			ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", PayloadPath.c_str(), PayloadPath.size() + 1);
+
+			ImGui::Image(FileIcon, ImVec2(32, 32));
+			ImGui::SameLine();
+			ImGui::Text("%s", Name.c_str());
+
+			ImGui::EndDragDropSource();
+		}
+	}
+	else
+	{
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::MenuItem("Delete"))
+			{
+				std::filesystem::remove(Path);
+			}
+			ImGui::EndPopup();
+		}
+	}
+
+	// 5. 선택 처리
+	if (ImGui::IsItemClicked())
+	{
+		SelectedPath = Path;
+	}
+
+	// 6. 호버 및 더블 클릭 처리
+	if (ImGui::IsItemHovered())
+	{
+		if (Entry.is_directory())
+		{
+			bIsMouseOnDirectory = true;
+			DirectoryPathUnderMouse = Path;
+		}
+		else if (Entry.is_regular_file())
+		{
+			bIsMouseOnFile = true;
+			FilePathUnderMouse = Path;
+		}
+
+		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+		{
+			if (Entry.is_directory())
+			{
+				CurrentPath /= Path.filename(); // 폴더 진입
+			}
+			else
+			{
+				OnFileDoubleClickCallback(Path.string());
+			}
+		}
+	}
+
+	// 7. 이름 출력
+	ImGui::TextWrapped("%s", Name.c_str());
+
+	ImGui::NextColumn();
+	ImGui::PopID();
 }

@@ -92,7 +92,7 @@ void FViewportLegacy::Render(HWND Hwnd)
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() - RenderModeComboWidth);
 			ImGui::SetNextItemWidth(RenderModeComboWidth);
 			ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
-			ImGui::Combo("", reinterpret_cast<int*>(&RenderMode), "Lighting\0No Lighting\0Wireframe", 3);
+			ImGui::Combo("", reinterpret_cast<int*>(&RenderMode), "Lighting\0No Lighting\0Wireframe\0SolidWireframe", 4);
 			EditorViewportClient->SetRenderMode(RenderMode);
 		}*/
 		ImGui::EndMenuBar();

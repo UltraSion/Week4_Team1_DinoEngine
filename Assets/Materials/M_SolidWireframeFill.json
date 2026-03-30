@@ -1,0 +1,13 @@
+{
+  "Name": "M_SolidWireframeFill",
+  "VertexShader": "Engine/Shaders/VertexShader.hlsl",
+  "PixelShader": "Engine/Shaders/WhitePixelShader.hlsl",
+  "RenderState": {
+    "FillMode": 3,
+    "CullMode": 3,
+    "DepthTest": true,
+    "DepthWrite": 1,
+    "DepthFunc": "Less"
+  },
+  "ConstantBuffers": []
+}

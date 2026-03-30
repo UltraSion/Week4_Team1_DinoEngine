@@ -86,13 +86,18 @@
     <ClInclude Include="Source\Math\Vector4.h" />
     <ClInclude Include="Source\Memory\MemoryBase.h" />
     <ClInclude Include="Source\Mesh\Mesh.h" />
-    <ClInclude Include="Source\Mesh\StaticMesh.h" />
+    <ClInclude Include="Source\Mesh\ObjImporter.h" />
+    <ClInclude Include="Source\Mesh\ObjInfo.h" />
+    <ClInclude Include="Source\Mesh\ObjManager.h" />
+    <ClInclude Include="Source\Mesh\StaticMeshRenderData.h" />
     <ClInclude Include="Source\Object\Class.h" />
     <ClInclude Include="Source\Object\Object.h" />
     <ClInclude Include="Source\Object\ObjectFactory.h" />
     <ClInclude Include="Source\Object\ObjectGlobals.h" />
+    <ClInclude Include="Source\Object\ObjectIterator.h" />
     <ClInclude Include="Source\Object\ObjectManager.h" />
     <ClInclude Include="Source\Object\ObjectTypes.h" />
+    <ClInclude Include="Source\Object\StaticMesh.h" />
     <ClInclude Include="Source\Physics\PhysicsManager.h" />
     <ClInclude Include="Source\Platform\Windows\PlatformGlobals.h" />
     <ClInclude Include="Source\Platform\Windows\Window.h" />
@@ -198,13 +203,15 @@
     <ClCompile Include="Source\Math\Transform.cpp" />
     <ClCompile Include="Source\Math\Vector.cpp" />
     <ClCompile Include="Source\Memory\MemoryBase.cpp" />
+    <ClCompile Include="Source\Mesh\ObjImporter.cpp" />
     <ClCompile Include="Source\Mesh\Mesh.cpp" />
-    <ClCompile Include="Source\Mesh\StaticMesh.cpp" />
+    <ClCompile Include="Source\Mesh\ObjManager.cpp" />
     <ClCompile Include="Source\Object\Class.cpp" />
     <ClCompile Include="Source\Object\Object.cpp" />
     <ClCompile Include="Source\Object\ObjectFactory.cpp" />
     <ClCompile Include="Source\Object\ObjectGlobals.cpp" />
     <ClCompile Include="Source\Object\ObjectManager.cpp" />
+    <ClCompile Include="Source\Object\StaticMesh.cpp" />
     <ClCompile Include="Source\Physics\PhysicsManager.cpp" />
     <ClCompile Include="Source\Platform\Windows\PlatformGlobals.cpp" />
     <ClCompile Include="Source\Platform\Windows\Window.cpp" />
@@ -380,7 +387,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;_DEBUG;_CONSOLE;IS_OBJ_VIEWER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>

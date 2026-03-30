@@ -1,0 +1,16 @@
+{
+  "Name": "M_SolidWireframeLine",
+  "VertexShader": "Engine/Shaders/VertexShader.hlsl",
+  "PixelShader": "Engine/Shaders/BlackPixelShader.hlsl",
+  "RenderState": {
+    "FillMode": 2,
+    "CullMode": 3,
+    "DepthTest": true,
+    "DepthWrite": 0,
+    "DepthFunc": "LessEqual",
+    "DepthBias": -2,
+    "SlopeScaledDepthBias": -2.0,
+    "DepthBiasClamp": 0.0
+  },
+  "ConstantBuffers": []
+}

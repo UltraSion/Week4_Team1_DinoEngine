@@ -2,23 +2,23 @@
 
 #include "EditorUI.h"
 #include "Actor/Actor.h"
+#include "Actor/ObjActor.h"
+#include "Actor/SkySphereActor.h"
+#include "Component/PrimitiveComponent.h"
 #include "Core/Core.h"
-#include "Input/InputManager.h"
+#include "Core/Paths.h"
 #include "Debug/EngineLog.h"
+#include "Input/InputManager.h"
 #include "Platform/Windows/Window.h"
+#include "Renderer/Material.h"
+#include "Renderer/MaterialManager.h"
 #include "Renderer/RenderCommand.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderStateManager.h"
-#include "Renderer/Materialmanager.h"
-#include "Renderer/Material.h"
 #include "Renderer/ShaderMap.h"
-#include "World/Level.h"
 #include "Serializer/SceneSerializer.h"
-#include "Component/PrimitiveComponent.h"
-#include "Core/Paths.h"
-#include "imgui.h"
-#include "Actor/ObjActor.h"
-#include "Actor/SkySphereActor.h"
+#include "World/Level.h"
+
 namespace
 {
 	const char* GetViewportTypeLabel(EEditorViewportType ViewportType)
@@ -44,6 +44,7 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 	, ViewportType(InViewportType)
 {
 	SetWorldType(InWorldType);
+	SetGridVisible(bShowGrid);
 	ConfigureDefaultView();
 }
 
@@ -54,8 +55,30 @@ void FEditorViewportClient::Attach(FCore* Core)
 		return;
 	}
 
+	if (!EditorUI.HasActiveViewportClient())
+	{
+		EditorUI.SetActiveViewportClient(this);
+	}
+
 	WireFrameMaterial = FMaterialManager::Get().FindByName(WireframeMaterialName);
+	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
+	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
+}
+
+void FEditorViewportClient::Detach()
+{
+	Gizmo.EndDrag();
+	GridMesh.reset();
+	GridMaterial.reset();
+	WireFrameMaterial.reset();
+	SolidWireFrameFillMaterial.reset();
+	SolidWireFrameLineMaterial.reset();
+
+	if (EditorUI.GetActiveViewportClient() == this)
+	{
+		EditorUI.SetActiveViewportClient(nullptr);
+	}
 }
 
 void FEditorViewportClient::ConfigureDefaultView()
@@ -91,7 +114,7 @@ void FEditorViewportClient::ConfigureDefaultView()
 
 void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 {
-	ID3D11Device* Device = Renderer->GetDevice();
+	ID3D11Device* Device = Renderer ? Renderer->GetDevice() : nullptr;
 	if (!Device)
 	{
 		return;
@@ -101,38 +124,34 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 	GridMesh->Topology = EMeshTopology::EMT_TriangleList;
 	for (int i = 0; i < 18; ++i)
 	{
-		FPrimitiveVertex v;
-		GridMesh->Vertices.push_back(v);
+		FPrimitiveVertex Vertex;
+		GridMesh->Vertices.push_back(Vertex);
 		GridMesh->Indices.push_back(i);
 	}
 	GridMesh->CreateVertexAndIndexBuffer(Device);
 
-	std::wstring ShaderDirW = FPaths::ShaderDir();
-	std::wstring VSPath = ShaderDirW + L"AxisVertexShader.hlsl";
-	std::wstring PSPath = ShaderDirW + L"AxisPixelShader.hlsl";
-	auto VS = FShaderMap::Get().GetOrCreateVertexShader(Device, VSPath.c_str());
-	auto PS = FShaderMap::Get().GetOrCreatePixelShader(Device, PSPath.c_str());
+	const std::wstring ShaderDir = FPaths::ShaderDir();
+	auto VertexShader = FShaderMap::Get().GetOrCreateVertexShader(Device, (ShaderDir + L"AxisVertexShader.hlsl").c_str());
+	auto PixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"AxisPixelShader.hlsl").c_str());
 
 	GridMaterial = std::make_shared<FMaterial>();
 	GridMaterial->SetOriginName("M_EditorGrid");
-	GridMaterial->SetVertexShader(VS);
-	GridMaterial->SetPixelShader(PS);
+	GridMaterial->SetVertexShader(VertexShader);
+	GridMaterial->SetPixelShader(PixelShader);
 
 	FRasterizerStateOption RasterizerOption;
 	RasterizerOption.FillMode = D3D11_FILL_SOLID;
 	RasterizerOption.CullMode = D3D11_CULL_NONE;
-	auto RS = Renderer->GetRenderStateManager()->GetOrCreateRasterizerState(RasterizerOption);
 	GridMaterial->SetRasterizerOption(RasterizerOption);
-	GridMaterial->SetRasterizerState(RS);
+	GridMaterial->SetRasterizerState(Renderer->GetRenderStateManager()->GetOrCreateRasterizerState(RasterizerOption));
 
 	FDepthStencilStateOption DepthStencilOption;
 	DepthStencilOption.DepthEnable = true;
 	DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	auto DSS = Renderer->GetRenderStateManager()->GetOrCreateDepthStencilState(DepthStencilOption);
 	GridMaterial->SetDepthStencilOption(DepthStencilOption);
-	GridMaterial->SetDepthStencilState(DSS);
+	GridMaterial->SetDepthStencilState(Renderer->GetRenderStateManager()->GetOrCreateDepthStencilState(DepthStencilOption));
 
-	int32 SlotIndex = GridMaterial->CreateConstantBuffer(Device, 32);
+	const int32 SlotIndex = GridMaterial->CreateConstantBuffer(Device, 32);
 	if (SlotIndex >= 0)
 	{
 		GridMaterial->RegisterParameter("GridSize", SlotIndex, 12, 4);
@@ -140,13 +159,6 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 		GridMaterial->SetParameterData("GridSize", &GridSize, 4);
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
-}
-
-void FEditorViewportClient::Detach()
-{
-	Gizmo.EndDrag();
-	GridMesh.reset();
-	GridMaterial.reset();
 }
 
 UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
@@ -164,6 +176,11 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	(void)Hwnd;
 	(void)LParam;
 
+	if (EditorUI.GetActiveViewportClient() != this)
+	{
+		EditorUI.SetActiveViewportClient(this);
+	}
+
 	ULevel* Level = nullptr;
 	UWorld* World = nullptr;
 	if (!CanUseEditingTools(Core, Level, World))
@@ -174,6 +191,8 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	AActor* SelectedActor = GetSelectedActor();
 	const bool bRightMouseDown = InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
 
+#if IS_OBJ_VIEWER
+#else
 	switch (Msg)
 	{
 	case WM_KEYDOWN:
@@ -191,13 +210,14 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	default:
 		return;
 	}
+#endif
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const
 {
 	OutLevel = ResolveLevel(Core);
 	OutWorld = ResolveWorld(Core);
-	return OutLevel != nullptr && OutWorld != nullptr;
+	return SupportsEditingTools() && OutLevel != nullptr && OutWorld != nullptr;
 }
 
 void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseDown)
@@ -284,47 +304,55 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (Core && FilePath.ends_with(".json"))
+	if (!Core || !GRenderer || !FilePath.ends_with(".json"))
 	{
-		Core->SetSelectedActor(nullptr);
-		ULevel* Level = ResolveLevel(Core);
-		if (!Level)
-		{
-			return;
-		}
+		return;
+	}
 
-		Level->ClearActors();
-		bool bLoaded = FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice());
+	ULevel* Level = ResolveLevel(Core);
+	if (!Level)
+	{
+		return;
+	}
 
-		if (bLoaded)
-		{
-			UE_LOG("Level loaded: %s", FilePath.c_str());
-		}
-		else
-		{
-			MessageBoxW(nullptr, L"Level information is invalid.", L"Error", MB_OK | MB_ICONWARNING);
-		}
+	Core->SetSelectedActor(nullptr);
+	Level->ClearActors();
+
+	if (FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice()))
+	{
+		UE_LOG("Level loaded: %s", FilePath.c_str());
+	}
+	else
+	{
+		MessageBoxW(nullptr, L"Level information is invalid.", L"Error", MB_OK | MB_ICONWARNING);
 	}
 }
 
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (GRenderer && Core && FilePath.ends_with(".obj"))
+	if (!Core || !GRenderer || !FilePath.ends_with(".obj"))
 	{
-		ULevel* Level = ResolveLevel(Core);
-		if (!Level)
-		{
-			return;
-		}
-
-		const FRay Ray = Picker.ScreenToRay(&CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
-
-		AObjActor* NewActor = Level->SpawnActor<AObjActor>("ObjActor");
-		NewActor->LoadObj(GRenderer->GetDevice(), FPaths::ToRelativePath(FilePath));
-		FVector V = Ray.Origin + Ray.Direction * 5;
-		NewActor->SetActorLocation(V);
+		return;
 	}
+
+	ULevel* Level = ResolveLevel(Core);
+	if (!Level)
+	{
+		return;
+	}
+
+	const FRay Ray = Picker.ScreenToRay(&CameraTransform, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight);
+	AObjActor* NewActor = Level->SpawnActor<AObjActor>("ObjActor");
+	if (!NewActor)
+	{
+		return;
+	}
+
+	NewActor->LoadObj(GRenderer->GetDevice(), FPaths::ToRelativePath(FilePath));
+	NewActor->SetActorLocation(Ray.Origin + Ray.Direction * 5.0f);
+	Core->SetSelectedActor(NewActor);
+	EditorUI.SyncSelectedActorProperty();
 }
 
 void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
@@ -341,22 +369,48 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 			}
 		}
 	}
-
-	if (GridMesh && GridMaterial && bShowGrid)
+	else if (RenderMode == ERenderMode::SolidWireframe)
 	{
-		FRenderCommand GridCmd;
-		GridCmd.MeshData = GridMesh.get();
-		GridCmd.Material = GridMaterial.get();
-		GridCmd.WorldMatrix = FMatrix::Identity;
-		GridCmd.RenderLayer = ERenderLayer::Default;
-		OutQueue.AddCommand(GridCmd);
+		TArray<FRenderCommand> SolidWireframeCommands;
+		SolidWireframeCommands.reserve(OutQueue.Commands.size() * 2);
+
+		for (const FRenderCommand& Command : OutQueue.Commands)
+		{
+			if (Command.RenderLayer == ERenderLayer::Overlay)
+			{
+				SolidWireframeCommands.push_back(Command);
+				continue;
+			}
+
+			FRenderCommand FillCommand = Command;
+			FillCommand.Material = SolidWireFrameFillMaterial.get();
+			SolidWireframeCommands.push_back(FillCommand);
+
+			FRenderCommand LineCommand = Command;
+			LineCommand.Material = SolidWireFrameLineMaterial.get();
+			SolidWireframeCommands.push_back(LineCommand);
+		}
+
+		OutQueue.Commands = std::move(SolidWireframeCommands);
 	}
 
-	AActor* GizmoTarget = GetGizmoTarget();
-	if (GizmoTarget)
+	if (GridMesh && GridMaterial && IsGridVisible())
+	{
+		FRenderCommand GridCommand;
+		GridCommand.MeshData = GridMesh.get();
+		GridCommand.Material = GridMaterial.get();
+		GridCommand.WorldMatrix = FMatrix::Identity;
+		GridCommand.RenderLayer = ERenderLayer::Default;
+		OutQueue.AddCommand(GridCommand);
+	}
+
+#if IS_OBJ_VIEWER
+#else
+	if (AActor* GizmoTarget = GetGizmoTarget())
 	{
 		Gizmo.BuildRenderCommands(GizmoTarget, &CameraTransform, OutQueue);
 	}
+#endif
 }
 
 void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
@@ -366,8 +420,8 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
-	AActor* Selected = Core->GetSelectedActor();
-	if (!Selected || Selected->IsPendingDestroy() || !Selected->IsVisible() || Selected->IsA<ASkySphereActor>())
+	AActor* SelectedActor = Core->GetSelectedActor();
+	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())
 	{
 		return;
 	}
@@ -377,7 +431,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
-	for (UActorComponent* Component : Selected->GetComponents())
+#if IS_OBJ_VIEWER
+	return;
+#else
+	for (UActorComponent* Component : SelectedActor->GetComponents())
 	{
 		if (!Component->IsA(UPrimitiveComponent::StaticClass()))
 		{
@@ -389,10 +446,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		{
 			Renderer->RenderOutline(
 				PrimitiveComponent->GetPrimitive()->GetMeshData(),
-				PrimitiveComponent->GetWorldTransform()
-			);
+				PrimitiveComponent->GetWorldTransform());
 		}
 	}
+#endif
 }
 
 void FEditorViewportClient::SetGridSize(float InSize)
@@ -413,15 +470,22 @@ void FEditorViewportClient::SetLineThickness(float InThickness)
 	}
 }
 
-void FEditorViewportClient::SetupInputBindings()
+bool FEditorViewportClient::IsGridVisible() const
 {
+	return GetShowFlags().HasFlag(EEngineShowFlags::SF_Grid);
+}
+
+void FEditorViewportClient::SetGridVisible(bool bVisible)
+{
+	bShowGrid = bVisible;
+	GetShowFlags().SetFlag(EEngineShowFlags::SF_Grid, bVisible);
 }
 
 void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 {
 	(void)Core;
 
-	if (!InputManager || !InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
+	if (!InputManager)
 	{
 		return;
 	}
@@ -430,29 +494,32 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 	float RightInput = 0.0f;
 	float UpInput = 0.0f;
 
-	if (InputManager->IsKeyDown('W'))
+	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
 	{
-		ForwardInput += 1.0f;
-	}
-	if (InputManager->IsKeyDown('S'))
-	{
-		ForwardInput -= 1.0f;
-	}
-	if (InputManager->IsKeyDown('D'))
-	{
-		RightInput += 1.0f;
-	}
-	if (InputManager->IsKeyDown('A'))
-	{
-		RightInput -= 1.0f;
-	}
-	if (InputManager->IsKeyDown('E'))
-	{
-		UpInput += 1.0f;
-	}
-	if (InputManager->IsKeyDown('Q'))
-	{
-		UpInput -= 1.0f;
+		if (InputManager->IsKeyDown('W'))
+		{
+			ForwardInput += 1.0f;
+		}
+		if (InputManager->IsKeyDown('S'))
+		{
+			ForwardInput -= 1.0f;
+		}
+		if (InputManager->IsKeyDown('D'))
+		{
+			RightInput += 1.0f;
+		}
+		if (InputManager->IsKeyDown('A'))
+		{
+			RightInput -= 1.0f;
+		}
+		if (InputManager->IsKeyDown('E'))
+		{
+			UpInput += 1.0f;
+		}
+		if (InputManager->IsKeyDown('Q'))
+		{
+			UpInput -= 1.0f;
+		}
 	}
 
 	if (ForwardInput != 0.0f)
@@ -468,12 +535,15 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 		CameraTransform.MoveUp(UpInput * DeltaTime);
 	}
 
-	const float MouseDeltaX = InputManager->GetMouseDeltaX();
-	const float MouseDeltaY = InputManager->GetMouseDeltaY();
-	if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
+	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
 	{
-		CameraTransform.Rotate(
-			MouseDeltaX * CameraTransform.GetMouseSensitivity(),
-			-MouseDeltaY * CameraTransform.GetMouseSensitivity());
+		const float MouseDeltaX = InputManager->GetMouseDeltaX();
+		const float MouseDeltaY = InputManager->GetMouseDeltaY();
+		if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
+		{
+			CameraTransform.Rotate(
+				MouseDeltaX * CameraTransform.GetMouseSensitivity(),
+				-MouseDeltaY * CameraTransform.GetMouseSensitivity());
+		}
 	}
 }

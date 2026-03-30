@@ -3,6 +3,9 @@
 #include "imgui.h"
 #include <functional>
 class FCore;
+class UStaticMeshComponent;
+class AStaticMeshActor;
+class AActor;
 using FPropertyChangedCallback = std::function<void(const FVector&, const FVector&, const FVector&)>;
 
 class FPropertyWindow
@@ -22,6 +25,12 @@ public:
 	FPropertyChangedCallback OnChanged;
 private:
 	void DrawTransformSection();
+
+	void DrawBillboardSection(AActor* SelectedActor);
+
+	void DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMComp, AActor* SelectedActor);
+
+	void DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMActor);
 
 	FVector EditLocation = { 0.0f, 0.0f, 0.0f };
 	FVector EditRotation = { 0.0f, 0.0f, 0.0f };

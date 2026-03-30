@@ -1,7 +1,65 @@
 #include "PrimitiveObj.h"
 #include "Core/Paths.h"
+#include <cfloat>
 #include <fstream>
 #include <sstream>
+
+namespace
+{
+	FString BuildObjCacheKey(const FString& FilePath, FPrimitiveObj::EImportAxisMode ImportAxisMode)
+	{
+		switch (ImportAxisMode)
+		{
+		case FPrimitiveObj::EImportAxisMode::YUpToZUp:
+			return FilePath + "|YUpToZUp";
+		case FPrimitiveObj::EImportAxisMode::ZUp:
+		default:
+			return FilePath + "|ZUp";
+		}
+	}
+
+	FVector ApplyImportAxisTransform(const FVector& InVector, FPrimitiveObj::EImportAxisMode ImportAxisMode)
+	{
+		switch (ImportAxisMode)
+		{
+		case FPrimitiveObj::EImportAxisMode::YUpToZUp:
+			return { InVector.X, -InVector.Z, InVector.Y };
+		case FPrimitiveObj::EImportAxisMode::ZUp:
+		default:
+			return InVector;
+		}
+	}
+
+	void RecenterMeshToOrigin(FMeshData& MeshData)
+	{
+		if (MeshData.Vertices.empty())
+		{
+			return;
+		}
+
+		FVector MinCoord(FLT_MAX, FLT_MAX, FLT_MAX);
+		FVector MaxCoord(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+		for (const FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			MinCoord.X = (std::min)(MinCoord.X, Vertex.Position.X);
+			MinCoord.Y = (std::min)(MinCoord.Y, Vertex.Position.Y);
+			MinCoord.Z = (std::min)(MinCoord.Z, Vertex.Position.Z);
+
+			MaxCoord.X = (std::max)(MaxCoord.X, Vertex.Position.X);
+			MaxCoord.Y = (std::max)(MaxCoord.Y, Vertex.Position.Y);
+			MaxCoord.Z = (std::max)(MaxCoord.Z, Vertex.Position.Z);
+		}
+
+		const FVector Center = (MaxCoord - MinCoord) * 0.5f + MinCoord;
+		for (FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			Vertex.Position -= Center;
+		}
+	}
+}
+
+FPrimitiveObj::EImportAxisMode FPrimitiveObj::ImportAxisMode = FPrimitiveObj::EImportAxisMode::ZUp;
 
 FPrimitiveObj::FPrimitiveObj()
 {
@@ -18,7 +76,8 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 {
 	SetPrimitiveFileName(FilePath);
 
-	auto Cached = GetCached(FilePath);
+	const FString CacheKey = BuildObjCacheKey(FilePath, ImportAxisMode);
+	auto Cached = GetCached(CacheKey);
 	if (Cached)
 	{
 		MeshData = Cached;
@@ -140,7 +199,7 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 			{
 				FIndex Tri[3] = { Face[0], Face[i], Face[i + 1] };
 
-				// ★ 추가: vn 없으면 면 노말 계산
+			
 				FVector FaceNormal(0, 0, 0);
 				if (!Tri[0].bHasNrm)
 				{
@@ -156,10 +215,10 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 				for (int j = 0; j < 3; ++j)
 				{
 					FPrimitiveVertex V{};
-					V.Position = Positions[Tri[j].PosIdx];
-					V.Normal = Tri[j].bHasNrm ? Normals[Tri[j].NrmIdx] : FaceNormal;  // ★ 변경
+					V.Position = ApplyImportAxisTransform(Positions[Tri[j].PosIdx], ImportAxisMode);
+					V.Normal = ApplyImportAxisTransform(Tri[j].bHasNrm ? Normals[Tri[j].NrmIdx] : FaceNormal, ImportAxisMode);  
 					V.UV = Tri[j].bHasUV ? UVs[Tri[j].UVIdx] : FVector2(0, 0);
-					V.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f);  // ★ 변경: 흰색 기본
+					V.Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f); 
 
 					MeshData->Vertices.push_back(V);
 				}
@@ -171,10 +230,10 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 		}
 	}
 
-	// ★ 추가: 마지막 Section 마무리
+
 	FinishSection();
 
-	// ★ 추가: Section 없으면 전체를 1개 Section으로
+
 	if (MeshData->Sections.empty() && !MeshData->Indices.empty())
 	{
 		FMeshSection Sec;
@@ -184,8 +243,19 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 		MeshData->Sections.push_back(Sec);
 	}
 
+	RecenterMeshToOrigin(*MeshData);
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
 	MeshData->UpdateLocalBound();
 
-	RegisterMeshData(FilePath, MeshData);
+	RegisterMeshData(CacheKey, MeshData);
+}
+
+void FPrimitiveObj::SetImportAxisMode(EImportAxisMode InMode)
+{
+	ImportAxisMode = InMode;
+}
+
+FPrimitiveObj::EImportAxisMode FPrimitiveObj::GetImportAxisMode()
+{
+	return ImportAxisMode;
 }

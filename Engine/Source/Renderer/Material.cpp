@@ -237,7 +237,11 @@ void FMaterial::Bind(ID3D11DeviceContext* DeviceContext)
 	if (VertexShader) VertexShader->Bind(DeviceContext);
 	if (PixelShader) PixelShader->Bind(DeviceContext);
 	if (MaterialTexture) MaterialTexture->Bind(DeviceContext);
-
+	else
+	{
+		ID3D11ShaderResourceView* NullSRV = nullptr;
+		DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
+	}
 	for (int32 i = 0; i < static_cast<int32>(ConstantBuffers.size()); ++i)
 	{
 		ConstantBuffers[i].Upload(DeviceContext);

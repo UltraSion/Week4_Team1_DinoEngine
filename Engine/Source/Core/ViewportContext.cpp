@@ -163,6 +163,11 @@ void FViewportContext::Tick(FCore* Core, float DeltaTime)
 		return;
 	}
 
+	if (!bActive && !bCapturing)
+	{
+		return;
+	}
+
 	ViewportClient->Tick(DeltaTime);
 	ViewportClient->ProcessCameraInput(Core, DeltaTime);
 }
@@ -191,6 +196,25 @@ bool FViewportContext::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WP
 		{
 			ViewportClient->SetViewportInputState(LocalMouseX, LocalMouseY, Viewport->GetRect());
 		}
+
+		if (Msg == WM_LBUTTONDOWN || Msg == WM_RBUTTONDOWN || Msg == WM_MBUTTONDOWN)
+		{
+			SetActive(true);
+			SetCapturing(true);
+		}
+		else if (Msg == WM_LBUTTONUP || Msg == WM_RBUTTONUP || Msg == WM_MBUTTONUP)
+		{
+			SetCapturing(false);
+			SetActive(bHasLocalMousePosition);
+		}
+		else if (bHasLocalMousePosition)
+		{
+			SetActive(true);
+		}
+	}
+	else if (!IsActive() && !IsCapturing())
+	{
+		return false;
 	}
 
 	ViewportClient->HandleMessage(Core, Hwnd, Msg, WParam, LParam);

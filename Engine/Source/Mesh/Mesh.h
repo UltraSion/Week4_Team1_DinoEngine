@@ -13,6 +13,7 @@ class ENGINE_API FMesh
 public:
 	FMesh() = default;
 	virtual ~FMesh() = default;
+	void SetMeshData(const std::shared_ptr<FMeshData>& InData) { MeshData = InData; }
 	FMeshData* GetMeshData() const { return MeshData.get(); }
 	const TArray<FMeshSection>& GetSections() const;
 	uint32 GetNumMaterialSlots() const { return static_cast<uint32>(DefaultMaterials.size()); }

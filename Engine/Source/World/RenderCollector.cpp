@@ -10,7 +10,7 @@
 #include "Renderer/SubUVRenderer.h"
 #include "Renderer/Material.h"
 #include "Component/StaticMeshComponent.h"
-#include "Mesh/Mesh.h"
+
 void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
 	const FShowFlags& ShowFlags, FRenderCommandQueue& OutQueue)
 {
@@ -53,7 +53,8 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 						Command.RenderLayer = ERenderLayer::Overlay;
 					}
 				
-					
+#if IS_OBJ_VIEWER
+#else
 					const FVector WorldPos = TextComp->GetRenderWorldPosition();
 					const FVector Scale = TextComp->GetRenderWorldScale();
 
@@ -71,6 +72,7 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 					}
 
 					OutQueue.AddCommand(Command);
+#endif
 				}
 			}
 			continue;
@@ -115,11 +117,9 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 		if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
 		{
 			UMeshComponent* MeshComp = static_cast<UMeshComponent*>(PrimitiveComponent);
-			std::shared_ptr<FMesh> MeshAsset = MeshComp->GetMesh();
-			if (!MeshAsset || !MeshAsset->GetMeshData()) continue;
-
-			FMeshData* Data = MeshAsset->GetMeshData();
-			const TArray<FMeshSection>& Sections = MeshAsset->GetSections();
+			FMeshData* Data = MeshComp->GetMeshData();
+			if (!Data) continue;
+			const TArray<FMeshSection>& Sections = MeshComp->GetSections();
 
 			for (const FMeshSection& Section : Sections)
 			{
@@ -187,7 +187,7 @@ void FLevelRenderCollector::FrustrumCull(const TArray<AActor*>& Actors, const FF
 			{
 				if (!ShowFlags.HasFlag(EEngineShowFlags::SF_Primitives)) continue;
 				UMeshComponent* MC = static_cast<UMeshComponent*>(PrimitiveComponent);
-				if (!MC->GetMesh() || !MC->GetMesh()->GetMeshData()) continue;
+				if (!MC->GetMeshData()) continue;
 			}
 			else
 			{

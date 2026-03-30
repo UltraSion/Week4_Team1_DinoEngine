@@ -44,6 +44,7 @@ private:
 
 	void DrawFolderTree(const std::filesystem::path& Path);
 	void DrawFileGrid();
+	void DrawGridItem(const std::filesystem::directory_entry& Entry);
 };
 
 
