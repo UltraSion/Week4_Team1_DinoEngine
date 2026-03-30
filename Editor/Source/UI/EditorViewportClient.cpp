@@ -415,6 +415,18 @@ void FEditorViewportClient::DrawUI()
 				SplitOption::LT
 			);
 		}
+
+		ImGui::SameLine();
+		sprintf_s(buttonName, "+##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			ViewportWindow->Split4(
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				SplitOption::LT
+			);
+		}
 	}
 	ImGui::End();
 }
