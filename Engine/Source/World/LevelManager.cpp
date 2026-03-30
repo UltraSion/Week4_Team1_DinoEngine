@@ -147,10 +147,10 @@ AActor* FLevelManager::GetSelectedActor() const
 	const FEditorWorldContext* ActiveEditorContext = GetActiveEditorContext();
 	if (ActiveEditorContext)
 	{
-		return ActiveEditorContext->SelectedActor;
+		return ActiveEditorContext->SelectedActor.Get();
 	}
 
-	return EditorWorldContext.SelectedActor;
+	return EditorWorldContext.SelectedActor.Get();
 }
 
 // ===== Resize =====

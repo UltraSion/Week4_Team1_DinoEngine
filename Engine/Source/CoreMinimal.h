@@ -17,6 +17,7 @@ ENGINE_API extern FEngine* GEngine;
 #include "Types/StaticArray.h"
 #include "Types/String.h"
 #include "Types/ObjectPtr.h"
+#include "Types/WeakObjectPtr.h"
 #include "Math/Matrix.h"
 #include "Math/Vector.h"
 #include "Math/Vector4.h"

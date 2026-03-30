@@ -22,7 +22,7 @@ struct ENGINE_API FWorldContext
 
 struct ENGINE_API FEditorWorldContext : public FWorldContext
 {
-	TObjectPtr<AActor> SelectedActor;
+	TWeakObjectPtr<AActor> SelectedActor;
 
 	void Reset()
 	{

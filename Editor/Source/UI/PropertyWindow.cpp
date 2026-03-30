@@ -169,11 +169,11 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 	}
 
 	const uint32 NumSlots = SMComp->GetNumMaterials();
-	static AActor* LastSelectedActor = nullptr;
+	static TWeakObjectPtr<AActor> LastSelectedActor;
 	static std::vector<int> SlotMatIndices;
 	static std::vector<int> SlotTexIndices;
 
-	if (LastSelectedActor != SelectedActor)
+	if (LastSelectedActor.Get() != SelectedActor)
 	{
 		SlotMatIndices.clear();
 		SlotTexIndices.clear();
