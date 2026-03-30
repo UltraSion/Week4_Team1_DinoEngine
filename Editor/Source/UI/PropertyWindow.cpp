@@ -57,7 +57,7 @@ void FPropertyWindow::DrawTransformSection()
 		ImGui::PopItemWidth();
 	};
 
-	// 람다를 사용해 단 3줄로 UI 렌더링 끝!
+	// 람다를 사용해 단 3줄로 UI 렌더링 끝
 	DrawTransformRow("Location", "##RL", EditLocation, { 0.f, 0.f, 0.f }, ImVec4(0.5f, 0.1f, 0.1f, 1.0f), 0.1f, 0.0f, 0.0f, "%.2f");
 	DrawTransformRow("Rotation", "##RR", EditRotation, { 0.f, 0.f, 0.f }, ImVec4(0.1f, 0.4f, 0.1f, 1.0f), 0.5f, -360.0f, 360.0f, "%.1f");
 	DrawTransformRow("Scale",    "##RS", EditScale,    { 1.f, 1.f, 1.f }, ImVec4(0.1f, 0.2f, 0.5f, 1.0f), 0.01f, 0.001f, 100.0f, "%.3f");

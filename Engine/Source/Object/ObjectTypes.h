@@ -12,7 +12,7 @@ enum class EObjectFlags : uint32
 };
 
 inline EObjectFlags operator|(EObjectFlags A, EObjectFlags B)
-{
+{ 
     return static_cast<EObjectFlags>(
         static_cast<uint32>(A) | static_cast<uint32>(B));
 }

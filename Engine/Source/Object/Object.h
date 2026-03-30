@@ -76,7 +76,7 @@ public:
 	uint32 UUID = 0; // 엔진 전체 고유 ID (1-based, 단조 증가)
 	uint32 InternalIndex = 0; // GUObjectArray 내 인덱스
 	uint32 ObjectSize = 0; // 이 오브젝트의 할당 크기 (bytes)
-
+	uint32 SerialNumber = 0;
 	// 조건 4: RTTI
 	static UClass* StaticClass();
 	virtual UClass* GetClass() const;

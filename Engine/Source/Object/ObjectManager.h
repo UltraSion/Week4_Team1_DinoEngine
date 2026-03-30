@@ -24,5 +24,6 @@ public:
 
 	// GUObjectArray의 nullptr 슬롯을 제거하고 InternalIndex 재조정
 	void FlushKilledObjects();
-
+private:
+	TArray<int32> FreeIndices; // PendingKill된 오브젝트의 InternalIndex 저장
 };

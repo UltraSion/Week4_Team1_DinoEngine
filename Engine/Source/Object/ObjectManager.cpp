@@ -30,7 +30,25 @@ UObject* ObjectManager::SpawnObject(
 	UObject* InOuter,
 	const FString& InName)
 {
-	return FObjectFactory::ConstructObject(InClass, InOuter, InName);
+	static uint32 GlobalSerialNumberCounter = 1;
+	UObject* NewObj = FObjectFactory::ConstructObject(InClass, InOuter, InName);
+	int32 NewIndex=0;
+	// 빈자리가 있으면 재사용 (O(1))
+	if (!FreeIndices.empty())
+	{
+		NewIndex = FreeIndices.back();
+		FreeIndices.pop_back();
+		GUObjectArray[NewIndex] = NewObj;
+	}
+	// 빈자리가 없으면 배열끝에 추가 reserve
+	else
+	{
+		NewIndex = static_cast<int32>(GUObjectArray.size());
+		GUObjectArray.push_back(NewObj);
+	}
+	NewObj->InternalIndex = NewIndex;
+	NewObj->SerialNumber = GlobalSerialNumberCounter++;
+	return NewObj;
 }
 
 void ObjectManager::ReleaseObject(UObject* obj)
@@ -52,28 +70,26 @@ void ObjectManager::FlushKilledObjects()
 	for (int32 Idx = 0; Idx < GUObjectArray.size(); ++Idx)
 	{
 		UObject* Obj = GUObjectArray[Idx];
+		if (Obj) 
+			continue;
+		// RootSet이나 Standalone 에셋은 보호
+		if (Obj->HasAnyFlags(EObjectFlags::RootSet | EObjectFlags::Standalone))
+		{
+			continue;
+		}
 		if (Obj && Obj->IsPendingKill())
 		{
-			delete Obj;
+			delete Obj;// 소멸자에서 GUObjectArray[Idx] = nullptr 처리됨
+			// 빈자리를 Free List에 등록
+			FreeIndices.push_back(Idx);
 			++KilledCount;
 		}
 	}
 
-	// Phase 2: nullptr 슬롯을 제거하고 살아있는 오브젝트의 InternalIndex 재조정
-	int32 WriteIdx = 0;
-	for (int32 ReadIdx = 0; ReadIdx < GUObjectArray.size(); ++ReadIdx)
-	{
-		UObject* Obj = GUObjectArray[ReadIdx];
-		if (Obj != nullptr)
-		{
-			Obj->InternalIndex = static_cast<uint32>(WriteIdx);
-			GUObjectArray[WriteIdx] = Obj;
-			++WriteIdx;
-		}
-	}
-	GUObjectArray.resize(WriteIdx);
-	GUObjectArray.reserve(GUObjectArrayReserveSize);
+	
 
-	UE_LOG("[GC] FlushKilledObjects: %d objects collected, %d -> %d alive",
-		KilledCount, PrevCount, WriteIdx);
+	if (KilledCount > 0)
+	{
+		UE_LOG("[GC] Collected %d objects. Free Slots: %zu", KilledCount, FreeIndices.size());
+	}
 }

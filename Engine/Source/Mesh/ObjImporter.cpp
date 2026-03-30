@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include "Asset/AssetManager.h"
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
@@ -228,6 +229,24 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 			{
 				// 이름이 일치하고, 텍스처(map_Kd)가 존재한다면
 				if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
+				{
+			
+					// TexPath = (Dir / Mtl.DiffuseTexturePath).string();
+
+					//AssetManager의 레지스트리 검색 활용
+					FString ResolvedPath = FAssetManager::Get().FindAssetPath(Mtl.DiffuseTexturePath);
+
+					if (!ResolvedPath.empty())
+					{
+						TexPath = ResolvedPath;
+					}
+					else
+					{
+						// 에셋 매니저에서도 못 찾았을 경우기존 같은 폴더 로직 폴백(Fallback) 유지
+						TexPath = (Dir / Mtl.DiffuseTexturePath).string();
+					}
+					break;
+				}	if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
 				{
 					// 절대 경로로 조립
 					TexPath = (Dir / Mtl.DiffuseTexturePath).string();

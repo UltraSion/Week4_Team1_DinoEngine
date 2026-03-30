@@ -21,6 +21,7 @@
 #include "Component/SubUVComponent.h"
 #include "Actor/SkySphereActor.h"
 #include "Mesh/ObjManager.h"
+#include "Asset/AssetManager.h"
 #include <filesystem>
 
 FCore::~FCore()
@@ -41,7 +42,8 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	}
 
 	ObjManager = new ObjectManager();
-
+	FString AssetRootDir = (FPaths::ProjectRoot() / "Assets").string();
+	FAssetManager::Get().Initialize(AssetRootDir);
 	// Material
 	FMaterialManager::Get().LoadAllMaterials(Renderer->GetDevice(), Renderer->GetRenderStateManager().get());
 	{
