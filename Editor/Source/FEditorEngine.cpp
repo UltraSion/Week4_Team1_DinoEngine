@@ -9,6 +9,7 @@
 #include "World/World.h"
 #include "Camera/Camera.h"
 #include "Component/PrimitiveComponent.h"
+#include "Component/StaticMeshComponent.h"
 #include "Debug/EngineLog.h"
 #include "Math/MathUtility.h"
 #include "Platform/Windows/Window.h"
@@ -226,13 +227,16 @@ void FEditorEngine::RunObjViewerStartupTest()
 #if IS_OBJ_VIEWER //뷰어에서는 mesh의 크기에 따라 다른 위치에 카메라가 놓입니다. 다시 로드할 때도 적용됩니다.
 		Camera->SetFOV(60.0f);
 		float CameraDistance = 10.0f;
-		if (UPrimitiveComponent* PrimitiveComponent = TestActor->GetPrimitiveComponent())
+		if (MeshActor)
 		{
-			const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
-			const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
-			const float HalfFovRadians = FMath::DegreesToRadians(Camera->GetFOV() * 0.5f);
-			const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-			CameraDistance = FMath::Max((SafeRadius / SafeTanHalfFov) * 1.2f, SafeRadius * 2.0f);
+			if (UPrimitiveComponent* PrimitiveComponent = MeshActor->GetStaticMeshComponent())
+			{
+				const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
+				const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
+				const float HalfFovRadians = FMath::DegreesToRadians(Camera->GetFOV() * 0.5f);
+				const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+				CameraDistance = FMath::Max((SafeRadius / SafeTanHalfFov) * 1.2f, SafeRadius * 2.0f);
+			}
 		}
 
 		Camera->SetPosition({ -CameraDistance, 0.0f, 0.0f });
