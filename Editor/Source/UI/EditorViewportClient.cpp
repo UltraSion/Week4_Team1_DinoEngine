@@ -496,6 +496,7 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 
 	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
 	{
+#if !IS_OBJ_VIEWER
 		if (InputManager->IsKeyDown('W'))
 		{
 			ForwardInput += 1.0f;
@@ -520,6 +521,7 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 		{
 			UpInput -= 1.0f;
 		}
+#endif
 	}
 
 	if (ForwardInput != 0.0f)
