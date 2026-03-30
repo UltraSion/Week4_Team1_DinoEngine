@@ -49,6 +49,7 @@ public:
 	void HandleFileDropOnViewport(const FString& FilePath);
 	void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue) override;
 	void PostRender(FCore* Core, FRenderer* Renderer) override;
+	void Tick(float DeltaTime) override;
 	void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	float GetGridSize() const { return GridSize; }
 	void SetGridSize(float InSize);
@@ -94,5 +95,12 @@ private:
 	float InitialCameraPitch = 0.0f;
 	float InitialCameraFOV = 45.0f;
 	bool bHasInitialCameraState = false;
+	FVector ResetAnimationStartPosition = FVector::ZeroVector;
+	float ResetAnimationStartYaw = 0.0f;
+	float ResetAnimationStartPitch = 0.0f;
+	float ResetAnimationStartFOV = 45.0f;
+	float ResetAnimationElapsed = 0.0f;
+	float ResetAnimationDuration = 0.25f;
+	bool bResetCameraAnimating = false;
 	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
 };

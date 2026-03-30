@@ -18,6 +18,7 @@
 #include "Renderer/ShaderMap.h"
 #include "Serializer/SceneSerializer.h"
 #include "World/Level.h"
+#include "Math/MathUtility.h"
 #include <cmath>
 
 namespace
@@ -36,6 +37,26 @@ namespace
 		default:
 			return "Perspective";
 		}
+	}
+
+	float LerpFloat(float A, float B, float Alpha)
+	{
+		return A + (B - A) * Alpha;
+	}
+
+	float LerpAngleDegrees(float Start, float End, float Alpha)
+	{
+		float Delta = std::fmod(End - Start, 360.0f);
+		if (Delta > 180.0f)
+		{
+			Delta -= 360.0f;
+		}
+		else if (Delta < -180.0f)
+		{
+			Delta += 360.0f;
+		}
+
+		return Start + Delta * Alpha;
 	}
 }
 
@@ -197,7 +218,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	case WM_KEYDOWN:
 		HandleEditorHotkeys(WParam, bRightMouseDown);
 		return;
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //일단 버그를 막기 위해 뷰어에서만 더블 클릭을 허용합니다
 	case WM_LBUTTONDBLCLK:
 		ResetCameraToInitialState();
 		return;
@@ -216,6 +237,38 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	}
 }
 
+void FEditorViewportClient::Tick(float DeltaTime)
+{
+	FViewportClient::Tick(DeltaTime);
+
+#if IS_OBJ_VIEWER //뷰어에서 더블 클릭 시 초기 모드로 움직일 때, 부드럽게 움직이는 코드입니다
+	if (!bResetCameraAnimating || !bHasInitialCameraState)
+	{
+		return;
+	}
+
+	ResetAnimationElapsed += DeltaTime;
+	const float NormalizedTime = FMath::Clamp(ResetAnimationElapsed / ResetAnimationDuration, 0.0f, 1.0f);
+	const float SmoothAlpha = NormalizedTime * NormalizedTime * (3.0f - 2.0f * NormalizedTime);
+
+	const FVector NewPosition =
+		ResetAnimationStartPosition + (InitialCameraPosition - ResetAnimationStartPosition) * SmoothAlpha;
+	const float NewYaw = LerpAngleDegrees(ResetAnimationStartYaw, InitialCameraYaw, SmoothAlpha);
+	const float NewPitch = LerpFloat(ResetAnimationStartPitch, InitialCameraPitch, SmoothAlpha);
+	const float NewFOV = LerpFloat(ResetAnimationStartFOV, InitialCameraFOV, SmoothAlpha);
+
+	CameraTransform.SetPosition(NewPosition);
+	CameraTransform.SetRotation(NewYaw, NewPitch);
+	CameraTransform.SetFOV(NewFOV);
+
+	if (NormalizedTime >= 1.0f)
+	{
+		bResetCameraAnimating = false;
+		ResetAnimationElapsed = 0.0f;
+	}
+#endif
+}
+
 void FEditorViewportClient::SaveInitialCameraState()
 {
 	InitialCameraPosition = CameraTransform.GetPosition();
@@ -227,16 +280,17 @@ void FEditorViewportClient::SaveInitialCameraState()
 
 void FEditorViewportClient::ResetCameraToInitialState()
 {
-#if IS_OBJ_VIEWER
 	if (!bHasInitialCameraState)
 	{
 		return;
 	}
 
-	CameraTransform.SetPosition(InitialCameraPosition);
-	CameraTransform.SetRotation(InitialCameraYaw, InitialCameraPitch);
-	CameraTransform.SetFOV(InitialCameraFOV);
-#endif
+	ResetAnimationStartPosition = CameraTransform.GetPosition();
+	ResetAnimationStartYaw = CameraTransform.GetYaw();
+	ResetAnimationStartPitch = CameraTransform.GetPitch();
+	ResetAnimationStartFOV = CameraTransform.GetFOV();
+	ResetAnimationElapsed = 0.0f;
+	bResetCameraAnimating = true;
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const

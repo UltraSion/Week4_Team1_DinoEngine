@@ -635,7 +635,7 @@ void FEditorUI::Render()
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
 				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
-#if !IS_OBJ_VIEWER //뷰 모드에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
+#if !IS_OBJ_VIEWER //뷰어에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
 #endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);

@@ -163,9 +163,15 @@ void FEditorEngine::RunObjViewerStartupTest()
 
 	if (FCamera* Camera = ViewportClient->GetCamera())
 	{
+#if IS_OBJ_VIEWER //뷰어에서는 다른 위치에 카메라가 놓입니다.
+		Camera->SetPosition({ -10.0f, 0.0f, 0.0f });
+		Camera->SetRotation(90.0f, 0.0f);
+		Camera->SetFOV(50.0f);
+#else
 		Camera->SetPosition({ -6.0f, -6.0f, 5.0f });
 		Camera->SetRotation(45.0f, -30.0f);
 		Camera->SetFOV(50.0f);
+#endif
 	}
 	ViewportClient->SaveInitialCameraState();
 
