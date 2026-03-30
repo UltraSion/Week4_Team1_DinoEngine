@@ -21,9 +21,10 @@
 #include "UI/EditorViewportClient.h"
 #include "World/Level.h"
 #include "Actor/StaticMeshActor.h"
-#include "Renderer/Renderer.h"
-#include "World/Level.h"
 #include "Component/StaticMeshComponent.h"
+#include "Mesh/StaticMeshRenderData.h"
+#include "Primitive/PrimitiveBase.h"
+#include "Renderer/Renderer.h"
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
@@ -731,6 +732,69 @@ void FEditorUI::Render()
 	}
 
 #if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
+	if (Core)
+	{
+		AActor* SelectedActor = Core->GetSelectedActor();
+		if (AStaticMeshActor* MeshActor = dynamic_cast<AStaticMeshActor*>(SelectedActor))
+		{
+			UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
+			if (MeshComp)
+			{
+				FStaticMeshRenderData* MeshData = MeshComp->GetStaticMesh();
+				if (MeshData)
+				{
+					FMeshData* CPUData = MeshData->GetMeshData();
+					if (CPUData)
+					{
+						ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
+						ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+						if (ImGui::Begin("OBJ Information", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+						{
+							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
+							ImGui::Text("Asset Information");
+							ImGui::PopStyleColor();
+							ImGui::Text("Path: %s", MeshData->GetAssetPath().c_str());
+							ImGui::Separator();
+
+							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
+							ImGui::Text("Mesh Statistics");
+							ImGui::PopStyleColor();
+							ImGui::Text("Vertices: %d", (int)CPUData->Vertices.size());
+							ImGui::Text("Indices:  %d", (int)CPUData->Indices.size());
+							ImGui::Text("Triangles: %d", (int)CPUData->Indices.size() / 3);
+							ImGui::Text("Sections: %d", (int)CPUData->Sections.size());
+							ImGui::Separator();
+
+							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
+							ImGui::Text("Bounding Box");
+							ImGui::PopStyleColor();
+							FVector Min = CPUData->GetMinCoord();
+							FVector Max = CPUData->GetMaxCoord();
+							FVector Center = CPUData->GetCenterCoord();
+							ImGui::Text("Min:    (%.2f, %.2f, %.2f)", Min.X, Min.Y, Min.Z);
+							ImGui::Text("Max:    (%.2f, %.2f, %.2f)", Max.X, Max.Y, Max.Z);
+							ImGui::Text("Center: (%.2f, %.2f, %.2f)", Center.X, Center.Y, Center.Z);
+							ImGui::Text("Size:   (%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
+							ImGui::Text("Radius: %.2f", CPUData->GetLocalBoundRadius());
+							ImGui::Separator();
+
+							if (MeshData->ImportedTexturePaths.size() > 0)
+							{
+								ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
+								ImGui::Text("Textures");
+								ImGui::PopStyleColor();
+								for (int i = 0; i < (int)MeshData->ImportedTexturePaths.size(); ++i)
+								{
+									ImGui::Text("[%d] %s", i, MeshData->ImportedTexturePaths[i].c_str());
+								}
+							}
+						}
+						ImGui::End();
+					}
+				}
+			}
+		}
+	}
 #else
 	Property.Render(Core);
 	Console.Render();
