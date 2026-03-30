@@ -226,9 +226,9 @@ void FEditorEngine::RunObjViewerStartupTest()
 #if IS_OBJ_VIEWER //뷰어에서는 mesh의 크기에 따라 다른 위치에 카메라가 놓입니다. 다시 로드할 때도 적용됩니다.
 		Camera->SetFOV(60.0f);
 		float CameraDistance = 10.0f;
-		if (UPrimitiveComponent* PrimitiveComponent = TestActor->GetPrimitiveComponent())
+		if (UStaticMeshComponent* MeshComponent = MeshActor->GetStaticMeshComponent())
 		{
-			const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
+			const FBoxSphereBounds Bounds = MeshComponent->GetWorldBounds();
 			const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
 			const float HalfFovRadians = FMath::DegreesToRadians(Camera->GetFOV() * 0.5f);
 			const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
