@@ -52,18 +52,38 @@ namespace //양쪽 공백 제거, 소문자 변환, OverlayMode, BytesToKiB
 		return Result;
 	}
 
-	const char* GetStatModeName(FCore::EStatOverlayMode InMode)
+	uint8 GetStatOverlayModeFlag(FCore::EStatOverlayMode InMode)
 	{
-		switch (InMode)
+		return static_cast<uint8>(InMode);
+	}
+
+	bool HasStatOverlayMode(uint8 Flags, FCore::EStatOverlayMode InMode)
+	{
+		return (Flags & GetStatOverlayModeFlag(InMode)) != 0;
+	}
+
+	FString GetStatModeName(uint8 Flags)
+	{
+		if (Flags == static_cast<uint8>(FCore::EStatOverlayMode::None))
 		{
-		case FCore::EStatOverlayMode::FPS:
-			return "fps";
-		case FCore::EStatOverlayMode::Memory:
-			return "memory";
-		case FCore::EStatOverlayMode::None:
-		default:
 			return "none";
 		}
+
+		FString Result;
+		if (HasStatOverlayMode(Flags, FCore::EStatOverlayMode::FPS))
+		{
+			Result += "fps";
+		}
+		if (HasStatOverlayMode(Flags, FCore::EStatOverlayMode::Memory))
+		{
+			if (!Result.empty())
+			{
+				Result += " ";
+			}
+			Result += "memory";
+		}
+
+		return Result.empty() ? "none" : Result;
 	}
 
 	float BytesToKiB(uint32 Bytes)
@@ -322,21 +342,21 @@ void FCore::RegisterConsoleVariables()
 			const FString Args = ToLowerCopy(TrimConsoleArg(InArgs));
 			if (Args.empty())
 			{
-				OutResult = FString("stat = ") + GetStatModeName(StatOverlayMode) + "  (usage: stat fps | stat memory | stat none)";
+				OutResult = FString("stat = ") + GetStatModeName(StatOverlayModeFlags) + "  (usage: stat fps | stat memory | stat none)";
 				return;
 			}
 
 			if (Args == "fps")
 			{
-				StatOverlayMode = EStatOverlayMode::FPS;
+				StatOverlayModeFlags ^= GetStatOverlayModeFlag(EStatOverlayMode::FPS);
 			}
 			else if (Args == "memory")
 			{
-				StatOverlayMode = EStatOverlayMode::Memory;
+				StatOverlayModeFlags ^= GetStatOverlayModeFlag(EStatOverlayMode::Memory);
 			}
 			else if (Args == "none")
 			{
-				StatOverlayMode = EStatOverlayMode::None;
+				StatOverlayModeFlags = static_cast<uint8>(EStatOverlayMode::None);
 			}
 			else
 			{
@@ -344,7 +364,7 @@ void FCore::RegisterConsoleVariables()
 				return;
 			}
 
-			OutResult = FString("stat = ") + GetStatModeName(StatOverlayMode);
+			OutResult = FString("stat = ") + GetStatModeName(StatOverlayModeFlags);
 		}, "Show overlay stats: stat fps | stat memory | stat none");
 }
 
@@ -357,7 +377,7 @@ void FCore::RegisterConsoleVariables()
  */
 void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 ViewportHeight) const
 {
-	if (!Renderer || StatOverlayMode == EStatOverlayMode::None || ViewportWidth <= 0 || ViewportHeight <= 0)
+	if (!Renderer || StatOverlayModeFlags == static_cast<uint8>(EStatOverlayMode::None) || ViewportWidth <= 0 || ViewportHeight <= 0)
 	{
 		return;
 	}
@@ -370,50 +390,60 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 	const FVector4 TitleColor(0.95f, 0.95f, 0.95f, 1.0f);
 	const FVector4 ValueColor(0.80f, 0.90f, 1.0f, 1.0f);
 
-	TArray<FString> Lines;
-	float BoxWidth = 300.0f;
+	const float LineHeight = Renderer->GetOverlayTextLineHeight();
+	float LeftCursorBoxY = Margin;
 
-	if (StatOverlayMode == EStatOverlayMode::FPS)
+	auto DrawStatBox = [&](const TArray<FString>& Lines, float BoxWidth, float BoxX, float& CursorBoxY)
+		{
+			if (Lines.empty())
+			{
+				return;
+			}
+
+			const float BoxHeight = Padding * 2.0f + LineHeight * static_cast<float>(Lines.size()) + LineSpacing * static_cast<float>(Lines.size() - 1);
+			Renderer->DrawOverlayRect(BoxX, CursorBoxY, BoxWidth, BoxHeight, BackgroundColor, ViewportWidth, ViewportHeight);
+			Renderer->DrawOverlayRectOutline(BoxX, CursorBoxY, BoxWidth, BoxHeight, BorderColor, ViewportWidth, ViewportHeight);
+
+			float CursorY = CursorBoxY + Padding;
+			for (size_t Index = 0; Index < Lines.size(); ++Index)
+			{
+				const FVector4& TextColor = (Index == 0) ? TitleColor : ValueColor;
+				Renderer->DrawOverlayText(Lines[Index], BoxX + Padding, CursorY, TextColor, ViewportWidth, ViewportHeight);
+				CursorY += LineHeight + LineSpacing;
+			}
+
+			CursorBoxY += BoxHeight + Margin;
+		};
+
+	if (HasStatOverlayMode(StatOverlayModeFlags, EStatOverlayMode::FPS))
 	{
+		TArray<FString> Lines;
 		char Buffer[128] = {};
 		Lines.push_back("STAT FPS");
 		snprintf(Buffer, sizeof(Buffer), "FPS                    : %.1f", Timer.GetDisplayFPS());
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Frame Time : %.2f ms", Timer.GetFrameTimeMs());
+		snprintf(Buffer, sizeof(Buffer), "Frame Time             : %.2f ms", Timer.GetFrameTimeMs());
 		Lines.push_back(Buffer);
-		BoxWidth = 320.0f;
+		const float FPSBoxWidth = 320.0f;
+		float FPSCursorBoxY = Margin;
+		const float FPSBoxX = static_cast<float>(ViewportWidth) - Margin - FPSBoxWidth;
+		DrawStatBox(Lines, FPSBoxWidth, FPSBoxX, FPSCursorBoxY);
 	}
-	else if (StatOverlayMode == EStatOverlayMode::Memory)
+
+	if (HasStatOverlayMode(StatOverlayModeFlags, EStatOverlayMode::Memory))
 	{
 		const FMallocStats& MallocStats = GetGMalloc()->MallocStats;
+		TArray<FString> Lines;
 		char Buffer[160] = {};
 		Lines.push_back("STAT MEMORY");
-		snprintf(Buffer, sizeof(Buffer), "UObject Count         : %u", UObject::TotalAllocationCounts);
+		snprintf(Buffer, sizeof(Buffer), "UObject Count          : %u", UObject::TotalAllocationCounts);
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "UObject Bytes         : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "UObject Bytes          : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Usage                 : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "Heap Usage             : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Allocations: %u", MallocStats.CurrentAllocationCount);
+		snprintf(Buffer, sizeof(Buffer), "Heap Allocations       : %u", MallocStats.CurrentAllocationCount);
 		Lines.push_back(Buffer);
-		BoxWidth = 500.0f;
-	}
-
-	if (Lines.empty())
-	{
-		return;
-	}
-
-	const float LineHeight = Renderer->GetOverlayTextLineHeight();
-	const float BoxHeight = Padding * 2.0f + LineHeight * static_cast<float>(Lines.size()) + LineSpacing * static_cast<float>(Lines.size() - 1);
-	Renderer->DrawOverlayRect(Margin, Margin, BoxWidth, BoxHeight, BackgroundColor, ViewportWidth, ViewportHeight);
-	Renderer->DrawOverlayRectOutline(Margin, Margin, BoxWidth, BoxHeight, BorderColor, ViewportWidth, ViewportHeight);
-
-	float CursorY = Margin + Padding;
-	for (size_t Index = 0; Index < Lines.size(); ++Index)
-	{
-		const FVector4& TextColor = (Index == 0) ? TitleColor : ValueColor;
-		Renderer->DrawOverlayText(Lines[Index], Margin + Padding, CursorY, TextColor, ViewportWidth, ViewportHeight);
-		CursorY += LineHeight + LineSpacing;
+		DrawStatBox(Lines, 500.0f, Margin, LeftCursorBoxY);
 	}
 }

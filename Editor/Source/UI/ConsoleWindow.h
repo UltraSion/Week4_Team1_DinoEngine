@@ -12,6 +12,7 @@ public:
 	~FConsoleWindow();
 
 	void Render();
+	void RequestInputFocus(bool bClearInput = false);
 	void AddLog(const char* Fmt, ...) IM_FMTARGS(2);
 	void ClearLog();
 
@@ -37,6 +38,9 @@ private:
 	ImGuiTextFilter   Filter;
 	bool              AutoScroll = true;
 	bool              ScrollToBottom = false;
+	bool              bPendingWindowFocus = false;
+	bool              bPendingInputFocus = false;
+	bool              bClearInputOnFocus = false;
 
 	FCommandHandler   CommandHandler;
 };
