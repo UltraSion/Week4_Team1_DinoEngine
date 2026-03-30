@@ -394,7 +394,7 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 void FEditorViewportClient::DrawUI()
 {
 	FRect WindowRect = ViewportWindow->GetRect();
-	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X, WindowRect.Position.Y));
+	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X + WindowRect.Size.X * 0.5f, WindowRect.Position.Y));
 
 	char windowName[128];
 	sprintf_s(windowName, "ViewportButtonFrame##%p", this);
