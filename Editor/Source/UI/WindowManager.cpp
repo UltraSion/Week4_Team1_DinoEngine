@@ -90,6 +90,11 @@ void FWindowManager::Shutdown()
 	MouseCaptureWindow = nullptr;
 	KeyboardFocusWindow = nullptr;
 	ActiveViewportWindow = nullptr;
+	for (SWindow* Window : PendingDestroyWindows)
+	{
+		delete Window;
+	}
+	PendingDestroyWindows.clear();
 	for (SWindow* Window : Windows)
 	{
 		delete Window;
@@ -318,6 +323,58 @@ bool FWindowManager::HasAnyMouseButtonPressed() const
 		);
 }
 
+bool FWindowManager::IsInWindowSubtree(SWindow* Window, SWindow* CandidateAncestor) const
+{
+	SWindow* Current = Window;
+	while (Current)
+	{
+		if (Current == CandidateAncestor)
+		{
+			return true;
+		}
+
+		Current = Current->GetParent();
+	}
+
+	return false;
+}
+
+void FWindowManager::FlushPendingDestroyWindows()
+{
+	for (SWindow* WindowToDestroy : PendingDestroyWindows)
+	{
+		if (!WindowToDestroy)
+		{
+			continue;
+		}
+
+		if (IsInWindowSubtree(HoveredWindow, WindowToDestroy))
+		{
+			HoveredWindow = nullptr;
+		}
+		if (IsInWindowSubtree(PressedWindow, WindowToDestroy))
+		{
+			PressedWindow = nullptr;
+		}
+		if (IsInWindowSubtree(MouseCaptureWindow, WindowToDestroy))
+		{
+			MouseCaptureWindow = nullptr;
+		}
+		if (IsInWindowSubtree(KeyboardFocusWindow, WindowToDestroy))
+		{
+			KeyboardFocusWindow = nullptr;
+		}
+		if (IsInWindowSubtree(ActiveViewportWindow, WindowToDestroy))
+		{
+			ActiveViewportWindow = nullptr;
+		}
+
+		delete WindowToDestroy;
+	}
+
+	PendingDestroyWindows.clear();
+}
+
 SWindow* FWindowManager::GetWindowAtPoint(const FPoint& Point) const
 {
 	for (SWindow* Window : Windows)
@@ -444,6 +501,8 @@ void FWindowManager::DrawWindows() const
 			Window->Draw();
 		}
 	}
+
+	const_cast<FWindowManager*>(this)->FlushPendingDestroyWindows();
 }
 
 void FWindowManager::AddWindow(SWindow* NewWindow)
@@ -454,4 +513,30 @@ void FWindowManager::AddWindow(SWindow* NewWindow)
 	}
 
 	Windows.push_back(NewWindow);
+}
+
+void FWindowManager::ReplaceWindow(SWindow* OldWindow, SWindow* NewWindow)
+{
+	if (OldWindow == nullptr || OldWindow == NewWindow)
+	{
+		return;
+	}
+
+	for (SWindow*& Window : Windows)
+	{
+		if (Window == OldWindow)
+		{
+			Window = NewWindow;
+		}
+	}
+}
+
+void FWindowManager::QueueDestroyWindow(SWindow* Window)
+{
+	if (!Window)
+	{
+		return;
+	}
+
+	PendingDestroyWindows.push_back(Window);
 }

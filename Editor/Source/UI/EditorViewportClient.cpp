@@ -459,6 +459,22 @@ void FEditorViewportClient::DrawUI()
 	}
 
 	ImGui::SameLine();
+	sprintf_s(buttonName, "-##%p", this);
+	bool HasParent = ViewportWindow->GetParent() != nullptr;
+	if (!HasParent)
+	{
+		ImGui::BeginDisabled();
+	}
+	if (ImGui::Button(buttonName))
+	{
+		ViewportWindow->GetParent()->Merge(ViewportWindow);
+	}
+	if (!HasParent)
+	{
+		ImGui::EndDisabled();
+	}
+
+	ImGui::SameLine();
 	DrawCameraOption(GetCamera());
 	ImGui::End();
 

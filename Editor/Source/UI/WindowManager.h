@@ -15,6 +15,7 @@ class SViewportWindow;
 class FWindowManager
 {
 	TArray<SWindow*> Windows;
+	TArray<SWindow*> PendingDestroyWindows;
 	FInputManager* InputManager = nullptr;
 	FEnhancedInputManager* EnhancedInputManager = nullptr;
 	SWindow* HoveredWindow = nullptr;
@@ -33,6 +34,8 @@ class FWindowManager
 	void SetKeyboardFocusWindow(SWindow* NewKeyboardFocusWindow);
 	void SetActiveViewportWindow(SViewportWindow* NewActiveViewportWindow);
 	bool HasAnyMouseButtonPressed() const;
+	bool IsInWindowSubtree(SWindow* Window, SWindow* CandidateAncestor) const;
+	void FlushPendingDestroyWindows();
 	bool RouteMouseMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	bool RouteKeyboardMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 
@@ -49,4 +52,6 @@ public:
 	void RenderWindows() const;
 	void DrawWindows() const;
 	void AddWindow(SWindow* NewWindow);
+	void ReplaceWindow(SWindow* OldWindow, SWindow* NewWindow);
+	void QueueDestroyWindow(SWindow* Window);
 };
