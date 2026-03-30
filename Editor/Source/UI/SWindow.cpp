@@ -1,6 +1,7 @@
 #include "SWindow.h"
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <stdexcept>
 #include <windowsx.h>
@@ -36,9 +37,22 @@ namespace
 			ImGuiWindowFlags_NoMove |
 			ImGuiWindowFlags_NoResize |
 			ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoDocking |
 			ImGuiWindowFlags_NoFocusOnAppearing |
 			ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoBringToFrontOnFocus |
 			ImGuiWindowFlags_NoBackground;
+	}
+
+	ImVec2 ToScreenPosition(const FPoint& Position)
+	{
+		const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+		if (MainViewport == nullptr)
+		{
+			return ImVec2(Position.X, Position.Y);
+		}
+
+		return ImVec2(MainViewport->Pos.x + Position.X, MainViewport->Pos.y + Position.Y);
 	}
 }
 
@@ -127,8 +141,6 @@ void SSplitter::SetSideRB(SWindow* InSideRB)
 
 void SSplitter::OnResize()
 {
-	//SplitRatio = ClampSplitRatio(SplitRatio);
-
 	if (SideLT)
 	{
 		SideLT->SetRect(GetSideLTRect());
@@ -195,32 +207,32 @@ SWindow* SSplitter::GetWindow(FPoint coord)
 	return nullptr;
 }
 
-float SSplitter::ClampSplitRatio(float InSplitRatio) const
-{
-	const float AxisSize = GetPrimaryAxisSize();
-	if (AxisSize <= 0.0f)
-	{
-		return 0.5f;
-	}
-
-	const float AvailableAxis = AxisSize - SplitterThickness;
-	if (AvailableAxis <= 0.0f)
-	{
-		return 0.5f;
-	}
-
-	const float ClampedMinPaneSize = (std::max)(0.0f, MinPaneSize);
-	float MinRatio = ClampedMinPaneSize / AvailableAxis;
-	float MaxRatio = 1.0f - MinRatio;
-
-	if (MinRatio > 0.5f)
-	{
-		MinRatio = 0.5f;
-		MaxRatio = 0.5f;
-	}
-
-	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
-}
+//float SSplitter::ClampSplitRatio(float InSplitRatio) const
+//{
+//	const float AxisSize = GetPrimaryAxisSize();
+//	if (AxisSize <= 0.0f)
+//	{
+//		return 0.5f;
+//	}
+//
+//	const float AvailableAxis = AxisSize - SplitterThickness;
+//	if (AvailableAxis <= 0.0f)
+//	{
+//		return 0.5f;
+//	}
+//
+//	const float ClampedMinPaneSize = (std::max)(0.0f, MinPaneSize);
+//	float MinRatio = ClampedMinPaneSize / AvailableAxis;
+//	float MaxRatio = 1.0f - MinRatio;
+//
+//	if (MinRatio > 0.5f)
+//	{
+//		MinRatio = 0.5f;
+//		MaxRatio = 0.5f;
+//	}
+//
+//	return (std::clamp)(InSplitRatio, MinRatio, MaxRatio);
+//}
 
 void SSplitter::SetSplitRatio(float InSplitRatio)
 {
@@ -299,7 +311,7 @@ FRect SSplitterV::GetSideLTRect()
 {
 	const float AvailableHeight = (std::max)(0.0f, Rect.Size.Y - SplitterThickness);
 	const float Height = AvailableHeight * SplitRatio;
-	return FRect({ Rect.Position.X, Rect.Position.Y }, { Rect.Size.X , Height });
+	return FRect({ Rect.Position.X, Rect.Position.Y }, { Rect.Size.X, Height });
 }
 
 FRect SSplitterV::GetSideRBRect()
@@ -309,7 +321,7 @@ FRect SSplitterV::GetSideRBRect()
 	const float BottomHeight = AvailableHeight - TopHeight;
 	return FRect(
 		{ Rect.Position.X, Rect.Position.Y + TopHeight + SplitterThickness },
-		{ Rect.Size.X , BottomHeight });
+		{ Rect.Size.X, BottomHeight });
 }
 
 FRect SSplitterH::GetSideLTRect()

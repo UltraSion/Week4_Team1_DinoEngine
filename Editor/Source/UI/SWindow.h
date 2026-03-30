@@ -57,12 +57,11 @@ protected:
 	SWindow* SideLT = nullptr;
 	SWindow* SideRB = nullptr;
 
-	float ClampSplitRatio(float InSplitRatio) const;
+	//float ClampSplitRatio(float InSplitRatio) const;
 	virtual float GetPrimaryAxisSize() const = 0;
 	virtual float GetMouseDeltaForSplit() const = 0;
 	virtual ImGuiMouseCursor GetSplitterMouseCursor() const = 0;
 	virtual FRect GetSplitterRect() const = 0;
-	void DrawSplitterHandle();
 
 public:
 	SWindow* GetSideLT() { return SideLT; }
@@ -83,8 +82,9 @@ public:
 	float GetSplitterThickness() const { return SplitterThickness; }
 	virtual void Tick(float DeltaTime) override;
 	virtual void Render() override;
-	virtual void Draw() override;
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
+	virtual void Draw() override;
+
 };
 
 class SSplitterV : public SSplitter
@@ -99,6 +99,7 @@ public:
 	virtual float GetMouseDeltaForSplit() const override;
 	virtual ImGuiMouseCursor GetSplitterMouseCursor() const override;
 	virtual FRect GetSplitterRect() const override;
+	virtual void Draw() override;
 };
 
 class SSplitterH : public SSplitter
@@ -113,5 +114,6 @@ public:
 	virtual float GetMouseDeltaForSplit() const override;
 	virtual ImGuiMouseCursor GetSplitterMouseCursor() const override;
 	virtual FRect GetSplitterRect() const override;
+	//virtual void Draw() override;
 };
 
