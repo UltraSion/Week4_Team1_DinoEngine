@@ -1,5 +1,6 @@
 #include "EditorUI.h"
 
+#include "FEditorEngine.h"
 #include "Actor/Actor.h"
 #include "Actor/ObjActor.h"
 #include "Camera/Camera.h"
@@ -416,9 +417,12 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 
 				if (bIsMouseMessage || bIsKeyboardMessage)
 				{
-					bViewportInteractive =
-						GEngine->GetWindowManager().GetWindowAtPoint(
-							FPoint(static_cast<float>(ClientPoint.x), static_cast<float>(ClientPoint.y))) != nullptr;
+					if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+					{
+						bViewportInteractive =
+							EditorEngine->GetWindowManager().GetWindowAtPoint(
+								FPoint(static_cast<float>(ClientPoint.x), static_cast<float>(ClientPoint.y))) != nullptr;
+					}
 				}
 			}
 

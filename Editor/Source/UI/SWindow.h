@@ -1,6 +1,7 @@
 #pragma once
 #include "Math/Rect.h"
 #include "Windows.h"
+#include "imgui.h"
 
 class FCore;
 
@@ -18,7 +19,7 @@ enum SplitOption
 
 class SSplitter;
 
-class ENGINE_API SWindow
+class SWindow
 {
 	SSplitter* Parent = nullptr;
 
@@ -43,14 +44,24 @@ public:
 	SSplitter* Split(SWindow* InNewWindow, SplitDirection InDirection, SplitOption InSplitOption);
 };
 
-class ENGINE_API SSplitter : public SWindow
+class SSplitter : public SWindow
 {
 	virtual SWindow* GetWindow(FPoint coord) override;
 
 protected:
 	float SplitRatio = 0.5f;
+	float MinPaneSize = 80.0f;
+	float SplitterThickness = 6.0f;
+	bool bDragging = false;
 	SWindow* SideLT = nullptr;
 	SWindow* SideRB = nullptr;
+
+	float ClampSplitRatio(float InSplitRatio) const;
+	virtual float GetPrimaryAxisSize() const = 0;
+	virtual float GetMouseDeltaForSplit() const = 0;
+	virtual ImGuiMouseCursor GetSplitterMouseCursor() const = 0;
+	virtual FRect GetSplitterRect() const = 0;
+	void DrawSplitterHandle();
 
 public:
 	SWindow* GetSideLT() { return SideLT; }
@@ -65,6 +76,10 @@ public:
 	~SSplitter() override;
 	float GetSplitRatio() { return SplitRatio; }
 	virtual void SetSplitRatio(float InSplitRatio);
+	void SetMinPaneSize(float InMinPaneSize) { MinPaneSize = InMinPaneSize; OnResize(); }
+	float GetMinPaneSize() const { return MinPaneSize; }
+	void SetSplitterThickness(float InSplitterThickness) { SplitterThickness = InSplitterThickness; OnResize(); }
+	float GetSplitterThickness() const { return SplitterThickness; }
 	virtual void Tick(float DeltaTime) override;
 	virtual void Draw() override;
 	virtual bool HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam) override;
@@ -78,6 +93,10 @@ public:
 
 	virtual FRect GetSideLTRect() override;
 	virtual FRect GetSideRBRect() override;
+	virtual float GetPrimaryAxisSize() const override;
+	virtual float GetMouseDeltaForSplit() const override;
+	virtual ImGuiMouseCursor GetSplitterMouseCursor() const override;
+	virtual FRect GetSplitterRect() const override;
 };
 
 class SSplitterV : public SSplitter
@@ -88,5 +107,9 @@ public:
 
 	virtual FRect GetSideLTRect() override;
 	virtual FRect GetSideRBRect() override;
+	virtual float GetPrimaryAxisSize() const override;
+	virtual float GetMouseDeltaForSplit() const override;
+	virtual ImGuiMouseCursor GetSplitterMouseCursor() const override;
+	virtual FRect GetSplitterRect() const override;
 };
 
