@@ -500,6 +500,8 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
+	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
+
 	AActor* SelectedActor = Core->GetSelectedActor();
 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())
 	{

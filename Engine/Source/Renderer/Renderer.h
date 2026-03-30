@@ -77,6 +77,10 @@ public:
 	void DrawLine(const FVector& Start, const FVector& End, const FVector4& Color);
 	void DrawCube(const FVector& Center, const FVector& BoxExtent, const FVector4& Color);
 	void ExecuteLineCommands();
+	void DrawOverlayRect(float X, float Y, float Width, float Height, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight);
+	void DrawOverlayRectOutline(float X, float Y, float Width, float Height, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight);
+	void DrawOverlayText(const FString& Text, float X, float Y, const FVector4& Color, int32 ViewportWidth, int32 ViewportHeight);
+	float GetOverlayTextLineHeight() const { return 16.0f; }
 
 	// ─── 특수 효과 ───
 	/** 선택된 오브젝트 등의 아웃라인 렌더링 */
@@ -110,6 +114,7 @@ private:
 	void UpdateFrameConstantBuffer();
 	void UpdateObjectConstantBuffer(const FMatrix& WorldMatrix);
 	void ClearDepthBuffer();
+	void DrawImmediateMesh(FMeshData* MeshData, FMaterial* Material, const FMatrix& WorldMatrix, int32 ViewportWidth, int32 ViewportHeight);
 
 	bool CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV);
 
@@ -161,6 +166,7 @@ private:
 	/** 기본 공유 리소스 */
 	std::shared_ptr<FMaterial> DefaultMaterial;
 	std::shared_ptr<FMaterial> DefaultTextureMaterial;
+	std::shared_ptr<FMaterial> OverlayColorMaterial;
 
 	FTextMeshBuilder TextRenderer;
 	FSubUVRenderer SubUVRenderer;

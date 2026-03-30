@@ -106,13 +106,14 @@ bool FConsoleVariableManager::Execute(const char* CommandLine, FString& OutResul
 
 	size_t SpacePos = Line.find(' ');
 	FString Name = (SpacePos != FString::npos) ? Line.substr(0, SpacePos) : Line;
+	FString Args = (SpacePos != FString::npos) ? Line.substr(SpacePos + 1) : "";
 
 	// Check commands first
 	FString LowerName = ToLower(Name);
 	auto CmdIt = Commands.find(LowerName);
 	if (CmdIt != Commands.end())
 	{
-		CmdIt->second.Command(OutResult);
+		CmdIt->second.Command(Args, OutResult);
 		return true;
 	}
 
