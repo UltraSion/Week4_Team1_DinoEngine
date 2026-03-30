@@ -104,6 +104,7 @@ bool FConsoleVariableManager::Execute(const char* CommandLine, FString& OutResul
 	// Or:    "t.MaxFPS"    -> Name="t.MaxFPS" (query)
 	FString Line(CommandLine);
 
+	//현재는 첫번째 공백 이후을 기준으로만 파싱하므로 인자가 여러 개인 상황은 지원하지 않습니다.
 	size_t SpacePos = Line.find(' ');
 	FString Name = (SpacePos != FString::npos) ? Line.substr(0, SpacePos) : Line;
 	FString Args = (SpacePos != FString::npos) ? Line.substr(SpacePos + 1) : "";
@@ -117,9 +118,11 @@ bool FConsoleVariableManager::Execute(const char* CommandLine, FString& OutResul
 		return true;
 	}
 
-	FConsoleVariable* Var = Find(Name);
+	FConsoleVariable* Var = Find(Name); //Variables.find(ToLower(Name));
 	if (!Var)
+	{
 		return false;
+	}
 
 	if (SpacePos != FString::npos)
 	{

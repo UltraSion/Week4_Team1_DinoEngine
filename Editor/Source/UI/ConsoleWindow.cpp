@@ -73,10 +73,21 @@ void FConsoleWindow::RegisterCommand(const char* Command)
 	Commands.push_back(Command);
 }
 
+void FConsoleWindow::RequestInputFocus(bool bClearInput)
+{
+	bPendingWindowFocus = true;
+	bPendingInputFocus = true;
+	bClearInputOnFocus = bClearInputOnFocus || bClearInput;
+}
+
 // --- Render ---
 void FConsoleWindow::Render()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+	if (bPendingWindowFocus)
+	{
+		ImGui::SetNextWindowFocus();
+	}
 	bool bOpen = ImGui::Begin("Console");
 	ImGui::PopStyleVar();
 
@@ -161,6 +172,12 @@ void FConsoleWindow::Render()
 		ImGuiInputTextFlags_CallbackCompletion |
 		ImGuiInputTextFlags_CallbackHistory;
 
+	if (bClearInputOnFocus)
+	{
+		InputBuf[0] = '\0';
+		bClearInputOnFocus = false;
+	}
+
 	ImGui::SetNextItemWidth(-1.0f);
 	if (ImGui::InputText("##Input", InputBuf, IM_COUNTOF(InputBuf),
 		InputFlags, &TextEditCallbackStub, this))
@@ -173,8 +190,12 @@ void FConsoleWindow::Render()
 	}
 
 	ImGui::SetItemDefaultFocus();
-	if (bReclaimFocus)
+	if (bPendingInputFocus || bReclaimFocus)
+	{
 		ImGui::SetKeyboardFocusHere(-1);
+		bPendingInputFocus = false;
+	}
+	bPendingWindowFocus = false;
 
 	ImGui::End();
 }

@@ -25,9 +25,9 @@ class ENGINE_API FCore
 public:
 	enum class EStatOverlayMode : uint8
 	{
-		None,
-		FPS,
-		Memory
+		None = 0,
+		FPS = 1 << 0,
+		Memory = 1 << 1
 	};
 
 	FCore() = default;
@@ -74,8 +74,8 @@ public:
 	UWorld* GetEditorWorld() const { return LevelManager->GetEditorWorld(); }
 	UWorld* GetGameWorld() const { return LevelManager->GetGameWorld(); }
 	const FWorldContext* GetActiveWorldContext() const { return LevelManager->GetActiveWorldContext(); }
-	EStatOverlayMode GetStatOverlayMode() const { return StatOverlayMode; }
-	void SetStatOverlayMode(EStatOverlayMode InMode) { StatOverlayMode = InMode; }
+	uint8 GetStatOverlayMode() const { return StatOverlayModeFlags; }
+	void SetStatOverlayMode(uint8 InFlags) { StatOverlayModeFlags = InFlags; }
 	void RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 ViewportHeight) const;
 
 	//void RenderViewport(TArray<AActor*>& Actors, FViewportContext& ViewportContext);
@@ -107,7 +107,7 @@ private:
 	double GCInterval = 30.0;
 	int32 WindowWidth = 0;
 	int32 WindowHeight = 0;
-	EStatOverlayMode StatOverlayMode = EStatOverlayMode::None;
+	uint8 StatOverlayModeFlags = static_cast<uint8>(EStatOverlayMode::None);
 
 	//FRenderCommandQueue CommandQueue;
 };
