@@ -667,6 +667,7 @@
     <ClInclude Include="Source\Mesh\ObjManager.h" />
     <ClInclude Include="Source\Asset\AssetManager.h" />
     <ClInclude Include="Source\Asset\AssetRegistry.h" />
+    <ClInclude Include="Source\Types\WeakObjectPtr.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

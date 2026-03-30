@@ -45,9 +45,21 @@ struct TWeakObjectPtr
 	T* operator->() const { return Get(); }
 	explicit operator bool() const { return IsValid(); }
 
-	TWeakObjectPtr& operator=(T* Object)
+	//  포인터를 명시적으로 비울 때 사용
+	void Reset()
 	{
-		*this = TWeakObjectPtr(Object);
-		return *this;
+		ObjectIndex = -1;
+		ObjectSerialNumber = 0;
 	}
+
+	// TWeakObjectPtr 끼리의 비교
+	bool operator==(const TWeakObjectPtr& Other) const
+	{
+		return ObjectIndex == Other.ObjectIndex && ObjectSerialNumber == Other.ObjectSerialNumber;
+	}
+	bool operator!=(const TWeakObjectPtr& Other) const { return !(*this == Other); }
+
+	// 실제 Raw Pointer(T*) 와의 비교 (아주 자주 쓰임!)
+	bool operator==(const T* Other) const { return Get() == Other; }
+	bool operator!=(const T* Other) const { return Get() != Other; }
 };

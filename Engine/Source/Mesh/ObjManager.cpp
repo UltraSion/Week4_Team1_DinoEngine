@@ -3,8 +3,7 @@
 #include "Object/StaticMesh.h"
 #include "Mesh/ObjImporter.h"
 #include "Mesh/ObjInfo.h"
-#include "Object/ObjectIterator.h"
-#include "Object/ObjectFactory.h"
+
 
 TMap<FString, std::shared_ptr<FStaticMeshRenderData>> FObjManager::ObjStaticMeshMap;
 
@@ -26,21 +25,6 @@ FStaticMeshRenderData* FObjManager::LoadObjStaticMeshAsset(const FString& PathFi
 	return Cooked;
 }
 
-UStaticMesh* FObjManager::LoadObjStaticMesh(const FString& PathFileName)
-{
-	for (TObjectIterator<UStaticMesh> It; It; ++It)
-	{
-		if ((*It)->GetAssetPathFileName() == PathFileName)
-			return *It;
-	}
-
-	FStaticMeshRenderData* Asset = LoadObjStaticMeshAsset(PathFileName);
-	if (!Asset) return nullptr;
-
-	UStaticMesh* NewObj = FObjectFactory::ConstructObject<UStaticMesh>();
-	NewObj->SetStaticMeshAsset(Asset);
-	return NewObj;
-}
 
 void FObjManager::Clear()
 {

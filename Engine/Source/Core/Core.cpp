@@ -46,7 +46,7 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 
 
 	FString AssetRootDir = (FPaths::ProjectRoot() / "Assets").string();
-	FAssetRegistry::Get().Initialize(AssetRootDir);
+	FAssetRegistry::Get().SearchAllAssets(AssetRootDir);
 	// Material
 	FMaterialManager::Get().LoadAllMaterials(GRenderer->GetDevice(), GRenderer->GetRenderStateManager().get());
 

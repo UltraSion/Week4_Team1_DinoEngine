@@ -142,6 +142,7 @@
     <ClInclude Include="Source\Types\Set.h" />
     <ClInclude Include="Source\Types\StaticArray.h" />
     <ClInclude Include="Source\Types\String.h" />
+    <ClInclude Include="Source\Types\WeakObjectPtr.h" />
     <ClInclude Include="Source\UI\SWindow.h" />
     <ClInclude Include="Source\UI\WindowManager.h" />
     <ClInclude Include="Source\World\Level.h" />

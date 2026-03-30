@@ -22,7 +22,7 @@ class TObjectIterator
 public:
 	TObjectIterator() : Index(0), MaxIndexAtStart(static_cast<int32>(GUObjectArray.size())) { Advance(); }
 
-	explicit operator bool() const { return Index < (int32)GUObjectArray.size(); }
+	explicit operator bool() const { return Index < MaxIndexAtStart; }
 	T* operator*() const { return static_cast<T*>(GUObjectArray[Index]); }
 	T* operator->() const { return static_cast<T*>(GUObjectArray[Index]); }
 	TObjectIterator& operator++() { ++Index; Advance(); return *this; }

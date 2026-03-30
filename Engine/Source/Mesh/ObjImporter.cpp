@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
@@ -52,23 +53,20 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 			std::string MtlFileName;
 			// 띄어쓰기가 있는 파일명을 위해 안전하게 파싱
 			std::getline(SS >> std::ws, MtlFileName);
-
-			// AssetManager에게 전체 프로젝트에서 .mtl을 찾아달라고 요청
-			FString ResolvedMtlPath = FAssetManager::Get().FindAssetPath(MtlFileName);
-
+			FAssetData MtlData;
 			FString MtlPath;
-			if (!ResolvedMtlPath.empty())
+			// AssetManager에게 전체 프로젝트에서 .mtl을 찾아달라고 요청
+			if (FAssetRegistry::Get().GetAssetByObjectPath(MtlFileName, MtlData))
 			{
-				// 찾았다면 절대 경로로 변환 (ifstream으로 읽어야 하므로)
-				MtlPath = FPaths::ToAbsolutePath(ResolvedMtlPath);
+				// 찾았다면 AssetData 안의 상대경로를 절대경로로 변환
+				MtlPath = FPaths::ToAbsolutePath(MtlData.AssetPath);
 			}
 			else
 			{
-				// 못 찾았다면 최후의 수단으로 obj와 같은 폴더에서 찾기 (기존 폴백 로직)
+				// 못 찾았다면 기존 폴백 로직
 				std::filesystem::path ObjDir = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path();
 				MtlPath = (ObjDir / MtlFileName).string();
 			}
-
 			ParseMtl(MtlPath, OutInfo.Materials);
 		}
 
@@ -242,21 +240,21 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 				// 이름이 일치하고, 텍스처(map_Kd)가 존재한다면
 				if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
 				{
-			
-					// TexPath = (Dir / Mtl.DiffuseTexturePath).string();
-
-					//AssetManager의 레지스트리 검색 활용
-					FString ResolvedPath = FAssetManager::Get().FindAssetPath(Mtl.DiffuseTexturePath);
-
-					if (!ResolvedPath.empty())
+		
+					//AssetRegistry에게 텍스처 검색 요청
+					FAssetData TexData;
+					if (FAssetRegistry::Get().GetAssetByObjectPath(Mtl.DiffuseTexturePath, TexData))
 					{
-						TexPath = ResolvedPath;
+						// 찾았으면 에셋의 상대경로를 그대로 사용
+						TexPath = TexData.AssetPath;
 					}
 					else
 					{
-						// 에셋 매니저에서도 못 찾았을 경우기존 같은 폴더 로직 폴백(Fallback) 유지
+						// 에셋 매니저에서도 못 찾았을 경우 기존 같은 폴더 로직 폴백
+						std::filesystem::path Dir(Info.ObjDirectory);
 						TexPath = (Dir / Mtl.DiffuseTexturePath).string();
 					}
+
 					break;
 				}	if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
 				{

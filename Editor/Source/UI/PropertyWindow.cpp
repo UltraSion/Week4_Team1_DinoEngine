@@ -8,10 +8,11 @@
 #include "Component/UUIDBillboardComponent.h"
 #include "Core/Core.h"
 #include "Core/Paths.h"
-#include "Object/ObjectIterator.h"
 #include "Object/StaticMesh.h"
 #include "Renderer/MaterialManager.h"
 #include "Renderer/Renderer.h"
+#include "Asset/AssetRegistry.h"
+#include "Asset/AssetManager.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -40,35 +41,34 @@ void FPropertyWindow::DrawTransformSection()
 	const float DragUIWidth = 200.0f;
 
 	auto DrawTransformRow = [&](const char* Label, const char* BtnID, FVector& Vec, const FVector& ResetVal, const ImVec4& BaseColor, float Step, float Min, float Max, const char* Format)
+	{
+		float Value[3] = { Vec.X, Vec.Y, Vec.Z };
+
+		ImGui::PushStyleColor(ImGuiCol_Button, BaseColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(BaseColor.x + 0.2f, BaseColor.y + 0.1f, BaseColor.z + 0.1f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(BaseColor.x + 0.4f, BaseColor.y + 0.2f, BaseColor.z + 0.2f, 1.0f));
+
+		if (ImGui::Button(BtnID, ImVec2(ResetBtnWidth, 0)))
 		{
-			float Value[3] = { Vec.X, Vec.Y, Vec.Z };
+			Vec = ResetVal;
+			bModified = true;
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("Reset %s", Label);
+		}
+		ImGui::PopStyleColor(3);
 
-			ImGui::PushStyleColor(ImGuiCol_Button, BaseColor);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(BaseColor.x + 0.2f, BaseColor.y + 0.1f, BaseColor.z + 0.1f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(BaseColor.x + 0.4f, BaseColor.y + 0.2f, BaseColor.z + 0.2f, 1.0f));
+		ImGui::SameLine(0, Spacing);
+		ImGui::PushItemWidth(DragUIWidth);
+		if (ImGui::DragFloat3(Label, Value, Step, Min, Max, Format))
+		{
+			Vec = { Value[0], Value[1], Value[2] };
+			bModified = true;
+		}
+		ImGui::PopItemWidth();
+	};
 
-			if (ImGui::Button(BtnID, ImVec2(ResetBtnWidth, 0)))
-			{
-				Vec = ResetVal;
-				bModified = true;
-			}
-			if (ImGui::IsItemHovered())
-			{
-				ImGui::SetTooltip("Reset %s", Label);
-			}
-			ImGui::PopStyleColor(3);
-
-			ImGui::SameLine(0, Spacing);
-			ImGui::PushItemWidth(DragUIWidth);
-			if (ImGui::DragFloat3(Label, Value, Step, Min, Max, Format))
-			{
-				Vec = { Value[0], Value[1], Value[2] };
-				bModified = true;
-			}
-			ImGui::PopItemWidth();
-		};
-
-	// 람다를 사용해 단 3줄로 UI 렌더링 끝
 	DrawTransformRow("Location", "##RL", EditLocation, { 0.f, 0.f, 0.f }, ImVec4(0.5f, 0.1f, 0.1f, 1.0f), 0.1f, 0.0f, 0.0f, "%.2f");
 	DrawTransformRow("Rotation", "##RR", EditRotation, { 0.f, 0.f, 0.f }, ImVec4(0.1f, 0.4f, 0.1f, 1.0f), 0.5f, -360.0f, 360.0f, "%.1f");
 	DrawTransformRow("Scale", "##RS", EditScale, { 1.f, 1.f, 1.f }, ImVec4(0.1f, 0.2f, 0.5f, 1.0f), 0.01f, 0.001f, 100.0f, "%.3f");
@@ -116,7 +116,6 @@ void FPropertyWindow::DrawBillboardSection(AActor* SelectedActor)
 	ImGui::Unindent(8.0f);
 }
 
-
 auto ProcessDragDrop = [](const std::vector<std::string>& TargetExts, auto OnDropValid)
 {
 	if (!ImGui::BeginDragDropTarget())
@@ -153,61 +152,20 @@ auto ProcessDragDrop = [](const std::vector<std::string>& TargetExts, auto OnDro
 
 void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMComp, AActor* SelectedActor)
 {
-	auto ScanFiles = [](const std::filesystem::path& SubDir, const std::vector<std::string>& Extensions, TArray<FString>& OutNames, bool bStemOnly)
-		{
-			namespace fs = std::filesystem;
-			const auto TargetDir = FPaths::ProjectRoot() / SubDir;
-			if (!fs::exists(TargetDir))
-			{
-				return;
-			}
-
-			for (const auto& Entry : fs::directory_iterator(TargetDir))
-			{
-				if (!Entry.is_regular_file())
-				{
-					continue;
-				}
-
-				std::string Extension = Entry.path().extension().string();
-				std::transform(Extension.begin(), Extension.end(), Extension.begin(), ::tolower);
-				if (std::find(Extensions.begin(), Extensions.end(), Extension) == Extensions.end())
-				{
-					continue;
-				}
-
-				if (bStemOnly)
-				{
-					OutNames.push_back(Entry.path().stem().string());
-				}
-				else
-				{
-					OutNames.push_back(fs::relative(Entry.path(), FPaths::ProjectRoot()).generic_string());
-				}
-			}
-		};
-
-	static TArray<FString> MaterialNames;
-	static TArray<FString> TextureFiles;
-	static bool bScanned = false;
-
-	if (!bScanned)
-	{
-		ScanFiles("Assets/Materials", { ".json" }, MaterialNames, true);
-		ScanFiles("Assets/Meshes", { ".png", ".jpg", ".jpeg" }, TextureFiles, false);
-		bScanned = true;
-	}
+	//AssetRegistry에서 가벼운 메타데이터 목록만 가져옴
+	TArray<FAssetData> MaterialAssets = FAssetRegistry::Get().GetAssetsByClass("Material");
+	TArray<FAssetData> TextureAssets = FAssetRegistry::Get().GetAssetsByClass("Texture");
 
 	std::vector<const char*> MatItems = { "Default" };
-	for (const auto& Name : MaterialNames)
+	for (const auto& Asset : MaterialAssets)
 	{
-		MatItems.push_back(Name.c_str());
+		MatItems.push_back(Asset.AssetName.c_str());
 	}
 
 	std::vector<const char*> TexItems = { "None" };
-	for (const auto& Texture : TextureFiles)
+	for (const auto& Asset : TextureAssets)
 	{
-		TexItems.push_back(Texture.c_str());
+		TexItems.push_back(Asset.AssetName.c_str());
 	}
 
 	const uint32 NumSlots = SMComp->GetNumMaterials();
@@ -237,7 +195,8 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 		{
 			if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), static_cast<int>(MatItems.size())) && Core && SlotMatIndices[SlotIdx] > 0)
 			{
-				if (auto Mat = FMaterialManager::Get().FindByName(MaterialNames[SlotMatIndices[SlotIdx] - 1]))
+				FString MatName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
+				if (auto Mat = FMaterialManager::Get().FindByName(MatName))
 				{
 					SMComp->SetMaterial(SlotIdx, Mat.get());
 				}
@@ -245,21 +204,22 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 
 			if (ImGui::Combo("Texture", &SlotTexIndices[SlotIdx], TexItems.data(), static_cast<int>(TexItems.size())) && Core && SlotTexIndices[SlotIdx] > 0 && GRenderer)
 			{
-				SMComp->LoadTextureToSlot(GRenderer->GetDevice(), TextureFiles[SlotTexIndices[SlotIdx] - 1], SlotIdx);
+				// UI에서 선택된 텍스처의 상대 경로를 바탕으로 로딩 시도
+				FString TexPath = TextureAssets[SlotTexIndices[SlotIdx] - 1].AssetPath;
+				SMComp->LoadTextureToSlot(GRenderer->GetDevice(), TexPath, SlotIdx);
 			}
 
-	
-
-	
 			ProcessDragDrop({ ".png", ".jpg", ".jpeg" }, [&](const std::string& AbsPath, const std::string& RelPath) {
-				SMComp->LoadTextureToSlot(GRenderer->GetDevice(), AbsPath, SlotIdx);
+				if (GRenderer)
+				{
+					SMComp->LoadTextureToSlot(GRenderer->GetDevice(), AbsPath, SlotIdx);
+				}
 
-			
 				std::string NormalizedRel = RelPath;
 				std::replace(NormalizedRel.begin(), NormalizedRel.end(), '\\', '/');
 
-				for (int i = 0; i < (int)TextureFiles.size(); ++i) {
-					std::string NormalizedTex = TextureFiles[i];
+				for (int i = 0; i < (int)TextureAssets.size(); ++i) {
+					std::string NormalizedTex = TextureAssets[i].AssetPath;
 					std::replace(NormalizedTex.begin(), NormalizedTex.end(), '\\', '/');
 
 					if (NormalizedTex == NormalizedRel) {
@@ -290,35 +250,50 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 		return;
 	}
 
-	std::vector<UStaticMesh*> LoadedMeshes;
+	//  AssetRegistry에서 StaticMesh 목록을 가져옴 
+	TArray<FAssetData> MeshAssets = FAssetRegistry::Get().GetAssetsByClass("StaticMesh");
+
 	std::vector<const char*> Items = { "None" };
-	for (TObjectIterator<UStaticMesh> It; It; ++It)
+	for (const auto& Asset : MeshAssets)
 	{
-		LoadedMeshes.push_back(*It);
-		Items.push_back((*It)->GetAssetPathFileName().c_str());
+		Items.push_back(Asset.AssetName.c_str());
 	}
 
 	int SelectedMeshIndex = 0;
 	FString CurrentAsset = SMComp->GetStaticMeshAsset();
 	std::replace(CurrentAsset.begin(), CurrentAsset.end(), '\\', '/');
-	for (int i = 0; i < (int)LoadedMeshes.size(); ++i) {
-		FString AssetName = LoadedMeshes[i]->GetAssetPathFileName();
-		std::replace(AssetName.begin(), AssetName.end(), '\\', '/'); 
 
-		if (AssetName == CurrentAsset) {
+	for (int i = 0; i < (int)MeshAssets.size(); ++i) {
+		FString AssetPath = MeshAssets[i].AssetPath;
+		std::replace(AssetPath.begin(), AssetPath.end(), '\\', '/');
+
+		if (AssetPath == CurrentAsset) {
 			SelectedMeshIndex = i + 1;
 			break;
 		}
 	}
 
+	// 🚀 지연 로딩: 사용자가 콤보박스를 클릭했을 때만 AssetManager를 통해 로드!
 	if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), static_cast<int>(Items.size())) && Core && SelectedMeshIndex > 0 && GRenderer)
 	{
-		SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMeshes[SelectedMeshIndex - 1]->GetStaticMeshAsset());
+		FString SelectedPath = MeshAssets[SelectedMeshIndex - 1].AssetPath;
+		UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), SelectedPath);
+		if (LoadedMesh)
+		{
+			SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh->GetStaticMeshAsset());
+		}
 	}
 
-
+	//  사용자가 드래그 앤 드롭 했을 때만 AssetManager를 통해 로드
 	ProcessDragDrop({ ".obj" }, [&](const std::string& AbsPath, const std::string& RelPath) {
-		SMComp->LoadStaticMesh(GRenderer->GetDevice(), RelPath);
+		if (GRenderer)
+		{
+			UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), RelPath);
+			if (LoadedMesh)
+			{
+				SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh->GetStaticMeshAsset());
+			}
+		}
 	});
 
 	if (!CurrentAsset.empty())
