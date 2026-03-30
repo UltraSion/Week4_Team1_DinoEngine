@@ -18,6 +18,7 @@
 #include "Renderer/ShaderMap.h"
 #include "Serializer/SceneSerializer.h"
 #include "World/Level.h"
+#include <cmath>
 
 namespace
 {
@@ -191,13 +192,16 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	AActor* SelectedActor = GetSelectedActor();
 	const bool bRightMouseDown = InputManager && InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT);
 
-#if IS_OBJ_VIEWER
-#else
 	switch (Msg)
 	{
 	case WM_KEYDOWN:
 		HandleEditorHotkeys(WParam, bRightMouseDown);
 		return;
+#if IS_OBJ_VIEWER
+	case WM_LBUTTONDBLCLK:
+		ResetCameraToInitialState();
+		return;
+#endif
 	case WM_LBUTTONDOWN:
 		HandleSelectionClick(Core, World, SelectedActor);
 		return;
@@ -210,6 +214,28 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	default:
 		return;
 	}
+}
+
+void FEditorViewportClient::SaveInitialCameraState()
+{
+	InitialCameraPosition = CameraTransform.GetPosition();
+	InitialCameraYaw = CameraTransform.GetYaw();
+	InitialCameraPitch = CameraTransform.GetPitch();
+	InitialCameraFOV = CameraTransform.GetFOV();
+	bHasInitialCameraState = true;
+}
+
+void FEditorViewportClient::ResetCameraToInitialState()
+{
+#if IS_OBJ_VIEWER
+	if (!bHasInitialCameraState)
+	{
+		return;
+	}
+
+	CameraTransform.SetPosition(InitialCameraPosition);
+	CameraTransform.SetRotation(InitialCameraYaw, InitialCameraPitch);
+	CameraTransform.SetFOV(InitialCameraFOV);
 #endif
 }
 
@@ -404,7 +430,7 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		OutQueue.AddCommand(GridCommand);
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어는 gizmo도 안 뜹니다
 #else
 	if (AActor* GizmoTarget = GetGizmoTarget())
 	{
@@ -431,9 +457,7 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
-#if IS_OBJ_VIEWER
 	return;
-#else
 	for (UActorComponent* Component : SelectedActor->GetComponents())
 	{
 		if (!Component->IsA(UPrimitiveComponent::StaticClass()))
@@ -449,7 +473,6 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 				PrimitiveComponent->GetWorldTransform());
 		}
 	}
-#endif
 }
 
 void FEditorViewportClient::SetGridSize(float InSize)
@@ -485,6 +508,9 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 {
 	(void)Core;
 
+	constexpr float WheelZoomForwardScale = 0.5f;
+	constexpr float WheelZoomFactor = 1.1f;
+
 	if (!InputManager)
 	{
 		return;
@@ -496,7 +522,7 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 
 	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
 	{
-#if !IS_OBJ_VIEWER
+#if !IS_OBJ_VIEWER //뷰어에서는 못 움직입니다
 		if (InputManager->IsKeyDown('W'))
 		{
 			ForwardInput += 1.0f;
@@ -537,6 +563,22 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 		CameraTransform.MoveUp(UpInput * DeltaTime);
 	}
 
+	const float MouseWheelDelta = InputManager->GetMouseWheelDelta();
+	if (MouseWheelDelta != 0.0f)
+	{
+		if (CameraTransform.IsOrthographic())
+		{
+			const float ZoomFactor = MouseWheelDelta;
+			CameraTransform.SetOrthoWidth(CameraTransform.GetOrthoWidth() / ZoomFactor);
+			return;
+		}
+#if IS_OBJ_VIEWER //뷰어에서는 발줌이 좀 더 느립니다
+		CameraTransform.MoveForward(MouseWheelDelta*0.1f);
+#else
+		CameraTransform.MoveForward(MouseWheelDelta);
+#endif
+	}
+
 	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
 	{
 		const float MouseDeltaX = InputManager->GetMouseDeltaX();
@@ -546,6 +588,21 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 			CameraTransform.Rotate(
 				MouseDeltaX * CameraTransform.GetMouseSensitivity(),
 				-MouseDeltaY * CameraTransform.GetMouseSensitivity());
+		}
+	}
+
+	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_MIDDLE))
+	{
+		const float MouseDeltaX = InputManager->GetMouseDeltaX();
+		const float MouseDeltaY = InputManager->GetMouseDeltaY();
+		if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
+		{
+			const FVector Right = CameraTransform.GetRight().GetSafeNormal();
+			const FVector Forward = CameraTransform.GetForward().GetSafeNormal();
+			const FVector Up = FVector::CrossProduct(Forward, Right).GetSafeNormal();
+
+			CameraTransform.OffsetPosition(Right * (-MouseDeltaX * DeltaTime * CameraTransform.GetSpeed()));
+			CameraTransform.OffsetPosition(Up * (MouseDeltaY * DeltaTime * CameraTransform.GetSpeed()));
 		}
 	}
 }

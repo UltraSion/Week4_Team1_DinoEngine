@@ -7,7 +7,7 @@ void FAxisRenderer::RenderWorldAxis(FRenderer* Renderer, float Length)
     {
         return;
     }
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 월드축 렌더링x
 #else
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { Length, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, Length, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f });

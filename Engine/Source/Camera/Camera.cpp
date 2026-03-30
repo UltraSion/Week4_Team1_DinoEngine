@@ -90,19 +90,20 @@ FVector FCamera::GetRight() const
 void FCamera::MoveForward(float Delta)
 {
 #if IS_OBJ_VIEWER
+	//OrbitDistance을 업데이트해줍니다.
 	if (OrbitDistance <= 0.0f)
 	{
 		OrbitDistance = Position.Size();
 	}
 
+	//카메라가 물체에 너무 붙지 않게 제한합니다.
 	OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
 	Position = -GetForward() * OrbitDistance + PanOffset;
 	return;
 #else
-#endif
-
 	FVector Forward = GetForward();
 	Position = Position + Forward * (Delta * Speed);
+#endif
 }
 
 void FCamera::MoveRight(float Delta)
@@ -131,7 +132,7 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 	Yaw += DeltaYaw;
 	Pitch += DeltaPitch;
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 orbit 카메라로 움직입니다(카메라가 아닌 물체를 중심으로 회전)
 	Yaw = NormalizeAngleDegrees(Yaw);
 	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
 

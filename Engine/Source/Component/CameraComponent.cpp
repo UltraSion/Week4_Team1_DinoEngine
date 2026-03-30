@@ -25,26 +25,17 @@ void UCameraComponent::Tick(float DeltaTime)
 
 void UCameraComponent::MoveForward(float Value)
 {
-#if IS_OBJ_VIEWER
-#else
 	Camera->MoveForward(Value);
-#endif
 }
 
 void UCameraComponent::MoveRight(float Value)
 {
-#if IS_OBJ_VIEWER
-#else
 	Camera->MoveRight(Value);
-#endif
 }
 
 void UCameraComponent::MoveUp(float Value)
 {
-#if IS_OBJ_VIEWER
-#else
 	Camera->MoveUp(Value);
-#endif
 }
 
 void UCameraComponent::PanRight(float Value)
@@ -72,6 +63,8 @@ void UCameraComponent::FootZoom(float Value)
 	}
 #if IS_OBJ_VIEWER
 	Camera->MoveForward(Value*0.1f);
+#else
+	Camera->MoveForward(Value);
 #endif
 }
 

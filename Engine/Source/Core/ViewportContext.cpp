@@ -12,6 +12,7 @@ namespace
 		{
 		case WM_MOUSEMOVE:
 		case WM_LBUTTONDOWN:
+		case WM_LBUTTONDBLCLK:
 		case WM_LBUTTONUP:
 		case WM_RBUTTONDOWN:
 		case WM_RBUTTONUP:
@@ -197,7 +198,7 @@ bool FViewportContext::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WP
 			ViewportClient->SetViewportInputState(LocalMouseX, LocalMouseY, Viewport->GetRect());
 		}
 
-		if (Msg == WM_LBUTTONDOWN || Msg == WM_RBUTTONDOWN || Msg == WM_MBUTTONDOWN)
+		if (Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK || Msg == WM_RBUTTONDOWN || Msg == WM_MBUTTONDOWN)
 		{
 			SetActive(true);
 			SetCapturing(true);
