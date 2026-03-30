@@ -1,29 +1,29 @@
 #include "Core.h"
 
-#include "Core/Paths.h"
-#include "Core/ConsoleVariableManager.h"
-#include "World/Level.h"
 #include "Actor/Actor.h"
-#include "Input/EnhancedInputManager.h"
-#include "Component/CameraComponent.h"
-#include "Object/ObjectFactory.h"
-#include "Object/ObjectManager.h"
-#include "Component/PrimitiveComponent.h"
-#include "Primitive/PrimitiveBase.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/RenderCommand.h"
-#include "Renderer/MaterialManager.h"
-#include "Math/Frustum.h"
-#include "Input/InputManager.h"
-#include "ViewportClient.h"
-#include "Object/ObjectGlobals.h"
-#include "Component/UUIDBillboardComponent.h"
-#include "Component/SubUVComponent.h"
 #include "Actor/SkySphereActor.h"
+#include "Component/PrimitiveComponent.h"
+#include "Component/SubUVComponent.h"
+#include "Component/UUIDBillboardComponent.h"
+#include "Core/ConsoleVariableManager.h"
+#include "Core/Paths.h"
+#include "Input/EnhancedInputManager.h"
+#include "Input/InputManager.h"
+#include "Math/Frustum.h"
+#include "Mesh/ObjManager.h"
+#include "Object/ObjectFactory.h"
+#include "Object/ObjectGlobals.h"
+#include "Object/ObjectManager.h"
+#include "Primitive/PrimitiveBase.h"
+#include "Renderer/MaterialManager.h"
+#include "Renderer/RenderCommand.h"
+#include "Renderer/Renderer.h"
+#include "ViewportClient.h"
+#include "World/Level.h"
+
+#include <filesystem>
 #include "Mesh/ObjManager.h"
 #include "Asset/AssetManager.h"
-#include <filesystem>
-
 FCore::~FCore()
 {
 	Release();
@@ -35,44 +35,42 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	WindowWidth = Width;
 	WindowHeight = Height;
 
-	Renderer = std::make_unique<FRenderer>(Hwnd, Width, Height);
-	if (!Renderer)
+	GRenderer = new FRenderer(Hwnd, Width, Height);
+	if (!GRenderer)
 	{
 		return false;
 	}
 
 	ObjManager = new ObjectManager();
+
+
 	FString AssetRootDir = (FPaths::ProjectRoot() / "Assets").string();
 	FAssetManager::Get().Initialize(AssetRootDir);
 	// Material
-	FMaterialManager::Get().LoadAllMaterials(Renderer->GetDevice(), Renderer->GetRenderStateManager().get());
+	FMaterialManager::Get().LoadAllMaterials(GRenderer->GetDevice(), GRenderer->GetRenderStateManager().get());
 	{
 		namespace fs = std::filesystem;
-		auto MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
+		const fs::path MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
 		if (fs::exists(MeshDir))
 		{
-			for (const auto& entry : fs::directory_iterator(MeshDir))
+			for (const auto& Entry : fs::directory_iterator(MeshDir))
 			{
-				if (entry.is_regular_file() && entry.path().extension() == ".obj")
+				if (Entry.is_regular_file() && Entry.path().extension() == ".obj")
 				{
-					auto Rel = fs::relative(entry.path(), FPaths::ProjectRoot());
-					FObjManager::LoadObjStaticMesh(Rel.generic_string());
+					const auto RelativePath = fs::relative(Entry.path(), FPaths::ProjectRoot());
+					FObjManager::LoadObjStaticMesh(RelativePath.generic_string());
 				}
 			}
 		}
 	}
-	// InputManager
-	InputManager = new FInputManager();
-	EnhancedInput = new FEnhancedInputManager();
 
 	PhysicsManager = std::make_unique<FPhysicsManager>();
 
-	// Timer
 	Timer.Initialize();
 	RegisterConsoleVariables();
 	LevelManager = std::make_unique<FLevelManager>();
 	const float AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
-	if (!LevelManager->Initialize(AspectRatio, StartupLevelType, Renderer.get()))
+	if (!LevelManager->Initialize(AspectRatio, StartupLevelType, GRenderer))
 	{
 		return false;
 	}
@@ -80,55 +78,14 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 	return true;
 }
 
-
-
-void FCore::SetViewportClient(FViewportClient* InViewportClient)
-{
-	if (ViewportClient == InViewportClient)
-	{
-		return;
-	}
-
-	if (ViewportClient && Renderer)
-	{
-		ViewportClient->Detach(this, Renderer.get());
-	}
-
-	ViewportClient = InViewportClient;
-
-	if (ViewportClient && Renderer)
-	{
-		ViewportClient->Attach(this, Renderer.get());
-	}
-}
-
-void FCore::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
-{
-	if (InputManager)
-	{
-		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
-	}
-
-	if (ViewportClient)
-	{
-		ViewportClient->HandleMessage(this, Hwnd, Msg, WParam, LParam);
-	}
-}
-
 void FCore::Release()
 {
-	if (ViewportClient && Renderer)
-	{
-		ViewportClient->Detach(this, Renderer.get());
-	}
-	ViewportClient = nullptr;
 	if (LevelManager)
 	{
 		LevelManager->Release();
 		LevelManager.reset();
 	}
 
-	// Level 해제 후 PendingKill 오브젝트를 GC로 정리
 	if (ObjManager)
 	{
 		ObjManager->FlushKilledObjects();
@@ -136,16 +93,12 @@ void FCore::Release()
 		ObjManager = nullptr;
 	}
 
-	delete EnhancedInput;
-	EnhancedInput = nullptr;
-	delete InputManager;
-	InputManager = nullptr;
 	CPrimitiveBase::ClearCache();
 
-	if (Renderer)
+	if (GRenderer)
 	{
-		// 렌더러 Release는 소멸자에서 자동 호출
-		Renderer.reset();
+		delete GRenderer;
+		GRenderer = nullptr;
 	}
 }
 
@@ -160,72 +113,56 @@ void FCore::Tick(const float DeltaTime)
 	Input(DeltaTime);
 	Physics(DeltaTime);
 	GameLogic(DeltaTime);
-	Render();
 	LateUpdate(DeltaTime);
 }
 
 void FCore::Input(float DeltaTime)
 {
-	if (InputManager)
-	{
-		InputManager->Tick();
-	}
-
-	if (EnhancedInput && InputManager)
-	{
-		EnhancedInput->ProcessInput(InputManager, DeltaTime);
-	}
-
-	if (ViewportClient)
-	{
-		ViewportClient->Tick(this, DeltaTime);
-	}
+	(void)DeltaTime;
 }
 
 void FCore::Physics(float DeltaTime)
 {
-	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
-	
-	if (Level)
+	(void)DeltaTime;
+
+	ULevel* Level = LevelManager ? LevelManager->GetActiveLevel() : nullptr;
+	if (!Level)
 	{
-		FVector LineStart(2, 2, 0), LineEnd(5, 5, 0);
-		FHitResult HitResult;
+		return;
+	}
 
-		bool bHit = PhysicsManager->Linetrace(Level, LineStart, LineEnd, HitResult);
+	FVector LineStart(2, 2, 0);
+	FVector LineEnd(5, 5, 0);
+	FHitResult HitResult;
 
-		if (bHit)
+	if (PhysicsManager->Linetrace(Level, LineStart, LineEnd, HitResult))
+	{
+		if (!HitResult.HitActor->IsA(ASkySphereActor::StaticClass()))
 		{
-			if (!HitResult.HitActor->IsA(ASkySphereActor::StaticClass()))
+			for (UActorComponent* ActorComp : HitResult.HitActor->GetComponents())
 			{
-				for (UActorComponent* ActorComp : HitResult.HitActor->GetComponents())
+				if (!ActorComp->IsA(UPrimitiveComponent::StaticClass()))
 				{
-
-					if (!ActorComp->IsA(UPrimitiveComponent::StaticClass()))
-					{
-						continue;
-					}
-					//discard Billboard subUv
-					UPrimitiveComponent* PrimComp = static_cast<UPrimitiveComponent*>(ActorComp);
-					if (!PrimComp->ShouldDrawDebugBounds()) continue;
-
-					FBoxSphereBounds Bound = PrimComp->GetWorldBounds();
-					//DebugDrawManager를 통해 그림 → Flush()에서 일괄 렌더
-
-					DebugDrawManager.DrawCube(Bound.Center, Bound.BoxExtent, FVector4(1, 0, 0, 1));
-
+					continue;
 				}
 
+				UPrimitiveComponent* PrimComp = static_cast<UPrimitiveComponent*>(ActorComp);
+				if (!PrimComp->ShouldDrawDebugBounds())
+				{
+					continue;
+				}
 
-				//Renderer->DrawCube(HitResult.HitLocation, FVector(0.1, 0.1, 0.1), FVector4(0, 1, 0, 1));
-				//Renderer를 직접 호출 → DebugDrawManager를 거치지 않음
-				DebugDrawManager.DrawCube(HitResult.HitLocation, FVector(0.1, 0.1, 0.1), FVector4(0, 1, 0, 1));
+				const FBoxSphereBounds Bounds = PrimComp->GetWorldBounds();
+				DebugDrawManager.DrawCube(Bounds.Center, Bounds.BoxExtent, FVector4(1, 0, 0, 1));
 			}
-		}
 
-		if (Renderer)
-		{
-			DebugDrawManager.DrawLine(LineStart, LineEnd, FVector4(0, 1, 1, 1));
+			DebugDrawManager.DrawCube(HitResult.HitLocation, FVector(0.1, 0.1, 0.1), FVector4(0, 1, 0, 1));
 		}
+	}
+
+	if (GRenderer)
+	{
+		DebugDrawManager.DrawLine(LineStart, LineEnd, FVector4(0, 1, 1, 1));
 	}
 }
 
@@ -240,12 +177,14 @@ void FCore::GameLogic(float DeltaTime)
 
 void FCore::LateUpdate(float DeltaTime)
 {
+	(void)DeltaTime;
+
 	if (GCInterval <= 0.0)
 	{
 		return;
 	}
 
-	double CurrentTime = Timer.GetTotalTime();
+	const double CurrentTime = Timer.GetTotalTime();
 	if (ObjManager && (CurrentTime - LastGCTime) >= GCInterval)
 	{
 		ObjManager->FlushKilledObjects();
@@ -253,61 +192,24 @@ void FCore::LateUpdate(float DeltaTime)
 	}
 }
 
-void FCore::Render()
-{
-	ULevel* Level = ViewportClient ? ViewportClient->ResolveLevel(this) : GetActiveLevel();
-	if (!Renderer || !Level || Renderer->IsOccluded())
-	{
-		return;
-	}
-
-	Renderer->BeginFrame();
-
-	UWorld* ActiveWorld = GetActiveWorld();
-	if (!ActiveWorld)
-	{
-		Renderer->EndFrame();
-		return;
-	}
-	UCameraComponent* ActiveCamera = ActiveWorld->GetActiveCameraComponent();
-	if (!ActiveCamera)
-	{
-		Renderer->EndFrame();
-		return;
-	}
-
-	CommandQueue.Clear();
-	CommandQueue.Reserve(Renderer->GetPrevCommandCount());
-	CommandQueue.ViewMatrix = ActiveCamera->GetViewMatrix();
-	CommandQueue.ProjectionMatrix = ActiveCamera->GetProjectionMatrix();
-
-	FFrustum Frustum;
-	const FMatrix ViewProjection = CommandQueue.ViewMatrix * CommandQueue.ProjectionMatrix;
-	Frustum.ExtractFromVP(ViewProjection);
-
-	if (ViewportClient)
-	{
-		ViewportClient->BuildRenderCommands(this, Level, Frustum, CommandQueue);
-	}
-	else
-	{
-		// Level->CollectRenderCommands(Frustum, CommandQueue);
-	}
-
-	Renderer->SubmitCommands(CommandQueue);
-	Renderer->ExecuteCommands();
-	const FShowFlags& ShowFlags = ViewportClient ? ViewportClient->GetShowFlags() : FShowFlags();
-	DebugDrawManager.Flush(Renderer.get(), ShowFlags, ActiveWorld);
-	Renderer->EndFrame();
-}
-
 void FCore::OnResize(int32 Width, int32 Height)
 {
-	if (Width == 0 || Height == 0) return;
+	if (Width == 0 || Height == 0)
+	{
+		return;
+	}
+
 	WindowWidth = Width;
 	WindowHeight = Height;
-	if (Renderer) Renderer->OnResize(Width, Height);
-	if (LevelManager) LevelManager->OnResize(Width, Height);
+
+	if (GRenderer)
+	{
+		GRenderer->OnResize(Width, Height);
+	}
+	if (LevelManager)
+	{
+		LevelManager->OnResize(Width, Height);
+	}
 }
 
 void FCore::RegisterConsoleVariables()
@@ -332,14 +234,14 @@ void FCore::RegisterConsoleVariables()
 	}
 	VSyncVar->SetOnChanged([this](FConsoleVariable* Var)
 		{
-			if (Renderer)
+			if (GRenderer)
 			{
-				Renderer->SetVSync(Var->GetInt() != 0);
+				GRenderer->SetVSync(Var->GetInt() != 0);
 			}
 		});
-	if (Renderer)
+	if (GRenderer)
 	{
-		Renderer->SetVSync(VSyncVar->GetInt() != 0);
+		GRenderer->SetVSync(VSyncVar->GetInt() != 0);
 	}
 
 	FConsoleVariable* GCIntervalVar = CVM.Find("gc.Interval");
@@ -367,4 +269,3 @@ void FCore::RegisterConsoleVariables()
 			}
 		}, "Force immediate garbage collection");
 }
-

@@ -47,25 +47,21 @@ namespace
 	}
 }
 
-FViewport::~FViewport()
+FViewportLegacy::~FViewportLegacy()
 {
 	ReleaseLevelView();
 }
 
-void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
+void FViewportLegacy::Render(HWND Hwnd)
 {
-	//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
-	//ImGui::PopStyleVar();
+	(void)Hwnd;
 
+	const bool bOpen = ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
 	if (!bOpen)
 	{
-		bHovered = false;
-		bFocused = false;
-		bVisible = false;
-		if (Renderer)
+		if (GRenderer)
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
@@ -73,82 +69,53 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 
 	if (ImGui::BeginMenuBar())
 	{
-		FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
+		/*FEditorViewportClient* EditorViewportClient = Core ? dynamic_cast<FEditorViewportClient*>(Core->GetViewportClient()) : nullptr;
 		if (EditorViewportClient)
 		{
-			// 도구 선택 버튼
 			ImGui::Separator();
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
 			if (RenderGizmoModeButton("T", EGizmoMode::Location, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Location);
 			}
-
 			if (RenderGizmoModeButton("R", EGizmoMode::Rotation, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Rotation);
 			}
-
 			if (RenderGizmoModeButton("S", EGizmoMode::Scale, EditorViewportClient))
 			{
 				EditorViewportClient->SetGizmoMode(EGizmoMode::Scale);
 			}
 			ImGui::PopStyleVar();
-		
-			// RenderMode 선택
+
 			float RenderModeComboWidth = 120.0f;
-			// 오른쪽 정렬
 			ImGui::SetCursorPosX(ImGui::GetWindowWidth() - RenderModeComboWidth);
 			ImGui::SetNextItemWidth(RenderModeComboWidth);
-			{
-				ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
-				ImGui::Combo("", (int*) &RenderMode, "Lighting\0No Lighting\0Wireframe", 3);
-				EditorViewportClient->SetRenderMode(RenderMode);
-			}
-		}
+			ERenderMode RenderMode = EditorViewportClient->GetRenderMode();
+			ImGui::Combo("", reinterpret_cast<int*>(&RenderMode), "Lighting\0No Lighting\0Wireframe\0SolidWireframe", 4);
+			EditorViewportClient->SetRenderMode(RenderMode);
+		}*/
 		ImGui::EndMenuBar();
 	}
 
-	bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-	bHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
-
-	const ImVec2 ContentPos = ImGui::GetCursorScreenPos();
 	const ImVec2 ContentSize = ImGui::GetContentRegionAvail();
 	const uint32 NewWidth = ContentSize.x > 1.0f ? static_cast<uint32>(ContentSize.x) : 0;
 	const uint32 NewHeight = ContentSize.y > 1.0f ? static_cast<uint32>(ContentSize.y) : 0;
 
-	bVisible = (NewWidth > 0 && NewHeight > 0);
-
-	if (Hwnd)
-	{
-		POINT ClientPoint = {
-			static_cast<LONG>(ContentPos.x),
-			static_cast<LONG>(ContentPos.y)
-		};
-		::ScreenToClient(Hwnd, &ClientPoint);
-		ClientPosX = ClientPoint.x;
-		ClientPosY = ClientPoint.y;
-	}
-	else
-	{
-		ClientPosX = 0;
-		ClientPosY = 0;
-	}
-
-	if (!bVisible)
+	if (NewWidth == 0 || NewHeight == 0)
 	{
 		ReleaseLevelView();
-		if (Renderer)
+		if (GRenderer)
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 		ImGui::End();
 		return;
 	}
 
-	if (Renderer)
+	if (GRenderer)
 	{
-		ReadyLevelView(Renderer->GetDevice(), NewWidth, NewHeight);
+		ReadyLevelView(GRenderer->GetDevice(), NewWidth, NewHeight);
 
 		if (RenderTargetView && DepthStencilView)
 		{
@@ -159,18 +126,18 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 			LevelViewport.Height = static_cast<float>(NewHeight);
 			LevelViewport.MinDepth = 0.0f;
 			LevelViewport.MaxDepth = 1.0f;
-			Renderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
+			GRenderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
 		}
 		else
 		{
-			Renderer->ClearLevelRenderTarget();
+			GRenderer->ClearLevelRenderTarget();
 		}
 	}
 
-	if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
-	{
-		Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
-	}
+	//if (Core && Core->GetLevel() && Core->GetLevel()->GetCamera())
+	//{
+	//	Core->GetLevel()->GetCamera()->SetAspectRatio(static_cast<float>(NewWidth) / static_cast<float>(NewHeight));
+	//}
 
 	if (ShaderResourceView)
 	{
@@ -180,7 +147,7 @@ void FViewport::Render(FCore* Core, FRenderer* Renderer, HWND Hwnd)
 	ImGui::End();
 }
 
-void FViewport::ReleaseLevelView()
+void FViewportLegacy::ReleaseLevelView()
 {
 	IUnknown* Resource = reinterpret_cast<IUnknown*>(DepthStencilView);
 	ReleaseIfValid(Resource);
@@ -206,33 +173,7 @@ void FViewport::ReleaseLevelView()
 	OffscreenHeight = 0;
 }
 
-bool FViewport::GetMousePositionInViewport(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const
-{
-	if (!bVisible || OffscreenWidth == 0 || OffscreenHeight == 0)
-	{
-		return false;
-	}
-
-	if (WindowMouseX < ClientPosX || WindowMouseY < ClientPosY)
-	{
-		return false;
-	}
-
-	const int32 LocalX = WindowMouseX - ClientPosX;
-	const int32 LocalY = WindowMouseY - ClientPosY;
-	if (LocalX < 0 || LocalY < 0 || LocalX >= static_cast<int32>(OffscreenWidth) || LocalY >= static_cast<int32>(OffscreenHeight))
-	{
-		return false;
-	}
-
-	OutViewportX = LocalX;
-	OutViewportY = LocalY;
-	OutWidth = static_cast<int32>(OffscreenWidth);
-	OutHeight = static_cast<int32>(OffscreenHeight);
-	return true;
-}
-
-void FViewport::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
+void FViewportLegacy::ReadyLevelView(ID3D11Device* Device, uint32 Width, uint32 Height)
 {
 	if (Device == nullptr)
 	{

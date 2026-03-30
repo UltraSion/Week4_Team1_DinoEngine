@@ -1,5 +1,5 @@
 #pragma once
-#include "OutlinerWindow.h" 
+#include "OutlinerWindow.h"
 #include "ControlPanelWindow.h"
 #include "PropertyWindow.h"
 #include "ConsoleWindow.h"
@@ -13,17 +13,21 @@ class FWindow;
 class FRenderer;
 class AActor;
 class FEditorViewportClient;
+
 class FEditorUI
 {
 public:
 	void Initialize(FCore* InCore);
 	void SetupWindow(FWindow* InWindow);
-	void AttachToRenderer(FRenderer* InRenderer);
-	void DetachFromRenderer(FRenderer* InRenderer);
+	void AttachToRenderer();
+	void DetachFromRenderer();
 	void Render();
 	void SyncSelectedActorProperty();
-	bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
-	bool IsViewportInteractive() const;
+	void SetActiveViewportClient(FEditorViewportClient* InViewportClient) { ActiveViewportClient = InViewportClient; }
+	FEditorViewportClient* GetActiveViewportClient() const { return ActiveViewportClient; }
+	bool HasActiveViewportClient() const { return ActiveViewportClient != nullptr; }
+	//bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
+	//bool IsViewportInteractive() const;
 
 	FConsoleWindow& GetConsole() { return Console; }
 	FCore* GetCore() { return Core; }
@@ -33,16 +37,16 @@ private:
 	void LoadEditorSettings();
 	void SaveEditorSettings();
 	std::wstring GetEditorIniPathW() const;
+
 	FCore* Core = nullptr;
 	TObjectPtr<AActor> CachedSelectedActor;
-
 	FWindow* MainWindow = nullptr;
 
 	FControlPanelWindow ControlPanel;
 	FPropertyWindow Property;
 	FConsoleWindow Console;
 	FStatWindow Stat;
-	FViewport Viewport;
+	FViewportLegacy ViewportLegacy;
 	FOutlinerWindow Outliner;
 	FContentBrowserWindow ContentBrowser;
 
@@ -50,4 +54,5 @@ private:
 	bool bViewportClientActive = false;
 	bool bLayoutInitialized = false;
 	FRenderer* CurrentRenderer = nullptr;
+	FEditorViewportClient* ActiveViewportClient = nullptr;
 };

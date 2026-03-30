@@ -31,7 +31,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 		Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
 	}
 
-	// Materials (ë¡œë“œëœ Material íŒŒì¼ ê²½ë¡œë¥¼ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œë¡œ ì €ì¥)
+	// Materials (·ÎµåµÈ Material ÆÄÀÏ °æ·Î¸¦ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î·Î ÀúÀå)
 	TArray<FString> LoadedPaths = FMaterialManager::Get().GetLoadedPaths();
 	if (!LoadedPaths.empty())
 	{
@@ -39,7 +39,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 		FString Root = FPaths::ProjectRoot().string();
 		for (const FString& AbsPath : LoadedPaths)
 		{
-			// ì ˆëŒ€ ê²½ë¡œ â†’ í”„ë¡œì íŠ¸ ë£¨íŠ¸ ê¸°ì¤€ ìƒëŒ€ ê²½ë¡œ
+			// Àı´ë °æ·Î ¡æ ÇÁ·ÎÁ§Æ® ·çÆ® ±âÁØ »ó´ë °æ·Î
 			std::filesystem::path Rel = std::filesystem::relative(AbsPath, Root);
 			Materials.push_back(Rel.generic_string());
 		}

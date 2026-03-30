@@ -1,7 +1,6 @@
 #include "ViewportClient.h"
 #include "World/World.h"
 #include "Core/Core.h"
-#include "Input/InputManager.h"
 #include "Camera/Camera.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderCommand.h"
@@ -12,50 +11,77 @@
 #include "Component/SubUVComponent.h"
 #include "Core/FEngine.h"
 #include "Component/TextComponent.h"
+#include "Input/InputMappingContext.h"
 
-
-void FViewportClient::Attach(FCore* Core, FRenderer* Renderer)
+void FViewportClient::Attach(FCore* Core)
 {
 }
 
-void FViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+void FViewportClient::Detach()
 {
 }
 
-void FViewportClient::Tick(FCore* Core, float DeltaTime)
+void FViewportClient::Initialize(FInputManager* InInput, FEnhancedInputManager* InEnhancedInput)
 {
-	// instead Enhance input system controller
-	//if (!Core)
-	//{
-	//	return;
-	//}
+	InputManager = InInput;
+	EnhancedInput = InEnhancedInput;
+	SetupInputBindings();
+}
 
-	//FInputManager* InputManager = Core->GetInputManager();
-	//ULevel* Level = ResolveLevel(Core);
-	//if (!InputManager || !Level)
-	//{
-	//	return;
-	//}
+void FViewportClient::Cleanup()
+{
+	if (EnhancedInput && CameraContext)
+	{
+		EnhancedInput->RemoveMappingContext(CameraContext);
+	}
+	delete CameraContext;
+	CameraContext = nullptr;
+	EnhancedInput = nullptr;
+}
 
-	//FCamera* Camera = Level->GetCamera();
-	//if (!Camera)
-	//{
-	//	return;
-	//}
+void FViewportClient::Tick(float DeltaTime)
+{
+	CurrentDeltaTime = DeltaTime;
+}
 
-	//if (InputManager->IsKeyDown('W')) Camera->MoveForward(DeltaTime);
-	//if (InputManager->IsKeyDown('S')) Camera->MoveForward(-DeltaTime);
-	//if (InputManager->IsKeyDown('D')) Camera->MoveRight(DeltaTime);
-	//if (InputManager->IsKeyDown('A')) Camera->MoveRight(-DeltaTime);
-	//if (InputManager->IsKeyDown('E')) Camera->MoveUp(DeltaTime);
-	//if (InputManager->IsKeyDown('Q')) Camera->MoveUp(-DeltaTime);
+void FViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
+{
+	(void)Core;
+	(void)DeltaTime;
+}
 
-	//if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
-	//{
-	//	const float DeltaX = InputManager->GetMouseDeltaX();
-	//	const float DeltaY = InputManager->GetMouseDeltaY();
-	//	Camera->Rotate(DeltaX * 0.2f, -DeltaY * 0.2f);
-	//}
+void FViewportClient::SetViewportRect(const FRect& InRect)
+{
+	ViewportTopLeftX = static_cast<int32>(InRect.Position.X);
+	ViewportTopLeftY = static_cast<int32>(InRect.Position.Y);
+	ViewportWidth = static_cast<int32>(InRect.Size.X);
+	ViewportHeight = static_cast<int32>(InRect.Size.Y);
+
+	if (ViewportWidth > 0 && ViewportHeight > 0)
+	{
+		CameraTransform.SetAspectRatio(static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight));
+	}
+}
+
+void FViewportClient::SetViewportInputState(int32 InMouseX, int32 InMouseY, const FRect& InRect)
+{
+	ViewportMouseX = InMouseX;
+	ViewportMouseY = InMouseY;
+	SetViewportRect(InRect);
+}
+
+void FViewportClient::SetWorldType(ELevelType InWorldType)
+{
+	WorldType = InWorldType;
+}
+
+ELevelType FViewportClient::GetWorldType() const
+{
+	return WorldType;
+}
+
+void FViewportClient::SetupInputBindings()
+{
 }
 
 void FViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -64,46 +90,59 @@ void FViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WPa
 
 ULevel* FViewportClient::ResolveLevel(FCore* Core) const
 {
-	return Core ? Core->GetActiveLevel() : nullptr;
+	UWorld* World = ResolveWorld(Core);
+	return World ? World->GetLevel() : nullptr;
 }
 
 UWorld* FViewportClient::ResolveWorld(FCore* Core) const
 {
-	return Core ? Core->GetActiveWorld() : nullptr;
-}
-
-void FViewportClient::BuildRenderCommands(FCore* Core, ULevel* Level, const FFrustum& Frustum, FRenderCommandQueue& OutQueue)
-{
-	UWorld* World = ResolveWorld(Core);
-	if (!World) return;
-
-	// Persistent + Streaming 전체 액터를 렌더
-	TArray<AActor*> AllActors = World->GetAllActors();
-	RenderCollector.CollectRenderCommands(AllActors, Frustum, ShowFlags, OutQueue);
-}
-
-void FViewportClient::HandleFileDoubleClick(const FString& FilePath)
-{
-
-}
-
-void FViewportClient::HandleFileDropOnViewport(const FString& FilePath)
-{
-
-}
-
-void FGameViewportClient::Attach(FCore* Core, FRenderer* Renderer)
-{
-	if (Renderer)
+	if (!Core)
 	{
-		Renderer->ClearViewportCallbacks();
+		return nullptr;
+	}
+
+	switch (WorldType)
+	{
+	case ELevelType::Editor:
+		return Core->GetEditorWorld();
+	case ELevelType::Game:
+	case ELevelType::PIE:
+		return Core->GetGameWorld();
+	case ELevelType::Inactive:
+	default:
+		return Core->GetActiveWorld();
 	}
 }
 
-void FGameViewportClient::Detach(FCore* Core, FRenderer* Renderer)
+void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
 {
-	if (Renderer)
+	FFrustum Frustum;
+	const FMatrix ViewProjection = CameraTransform.GetViewMatrix() * CameraTransform.GetProjectionMatrix();
+	Frustum.ExtractFromVP(ViewProjection);
+
+	OutQueue.ViewMatrix = CameraTransform.GetViewMatrix();
+	OutQueue.ProjectionMatrix = CameraTransform.GetProjectionMatrix();
+	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, OutQueue);
+}
+
+void FViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
+{
+	(void)Core;
+	(void)Renderer;
+}
+
+void FGameViewportClient::Attach(FCore* Core)
+{
+	if (GRenderer)
 	{
-		Renderer->ClearViewportCallbacks();
+		GRenderer->ClearViewportCallbacks();
+	}
+}
+
+void FGameViewportClient::Detach()
+{
+	if (GRenderer)
+	{
+		GRenderer->ClearViewportCallbacks();
 	}
 }

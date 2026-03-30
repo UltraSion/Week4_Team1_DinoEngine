@@ -20,6 +20,8 @@ std::shared_ptr<FRasterizerState> FRasterizerState::Create(
 	desc.CullMode = InOption.CullMode;
 	desc.DepthClipEnable = InOption.DepthClipEnable;
 	desc.DepthBias = InOption.DepthBias;
+	desc.SlopeScaledDepthBias = InOption.SlopeScaledDepthBias;
+	desc.DepthBiasClamp = InOption.DepthBiasClamp;
 	// 나머지 기본값 설정
 	desc.FrontCounterClockwise = false;
 	desc.ScissorEnable = false;

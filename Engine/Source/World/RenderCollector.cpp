@@ -17,11 +17,10 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 	TArray<UPrimitiveComponent*> VisiblePrimitives;
 	FrustrumCull(Actors, Frustum, ShowFlags, VisiblePrimitives);
 
-	FRenderer* Renderer = GEngine->GetCore()->GetRenderer();
-	if (!Renderer) return;
+	if (!GRenderer) return;
 
-	FTextMeshBuilder& TextRenderer = Renderer->GetTextRenderer();
-	FSubUVRenderer& SubUVRenderer = Renderer->GetSubUVRenderer();
+	FTextMeshBuilder& TextRenderer = GRenderer->GetTextRenderer();
+	FSubUVRenderer& SubUVRenderer = GRenderer->GetSubUVRenderer();
 
 	for (UPrimitiveComponent* PrimitiveComponent : VisiblePrimitives)
 	{
@@ -54,13 +53,14 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 						Command.RenderLayer = ERenderLayer::Overlay;
 					}
 				
-					
+#if IS_OBJ_VIEWER
+#else
 					const FVector WorldPos = TextComp->GetRenderWorldPosition();
 					const FVector Scale = TextComp->GetRenderWorldScale();
 
 					if (TextComp->IsBillboard())
 					{
-						const FVector CameraPos = Renderer->GetCameraPosition();
+						const FVector CameraPos = GRenderer->GetCameraPosition();
 						Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);
 					}
 					else
@@ -72,6 +72,7 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 					}
 
 					OutQueue.AddCommand(Command);
+#endif
 				}
 			}
 			continue;
@@ -102,7 +103,7 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 
 					if (SubUVComponent->IsBillboard())
 					{
-						const FVector CameraPos = Renderer->GetCameraPosition();
+						const FVector CameraPos = GRenderer->GetCameraPosition();
 						const FVector WorldPos = Command.WorldMatrix.GetTranslation();
 						const FVector Scale = Command.WorldMatrix.GetScaleVector();
 						Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);

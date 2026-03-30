@@ -142,6 +142,27 @@ std::shared_ptr<FMaterial> FMaterialManager::LoadFromFile(
 		{
 			rasterizerOption.CullMode = RenderStatesJson["CullMode"].get<D3D11_CULL_MODE>();
 		}
+		//DepthBias : geometry는 유지하고 depth test에서의 z-fighting 해결.
+		if (RenderStatesJson.contains("DepthBias"))
+		{
+			rasterizerOption.DepthBias =
+				RenderStatesJson["DepthBias"].get<int>();
+		}
+		if (RenderStatesJson.contains("DepthClipEnable"))
+		{
+			rasterizerOption.DepthClipEnable =
+				RenderStatesJson["DepthClipEnable"].get<bool>();
+		}
+		if (RenderStatesJson.contains("SlopeScaledDepthBias"))
+		{
+			rasterizerOption.SlopeScaledDepthBias =
+				RenderStatesJson["SlopeScaledDepthBias"].get<float>();
+		}
+		if (RenderStatesJson.contains("DepthBiasClamp"))
+		{
+			rasterizerOption.DepthBiasClamp =
+				RenderStatesJson["DepthBiasClamp"].get<float>();
+		}
 		auto RasterizerState = InStateManager->GetOrCreateRasterizerState(rasterizerOption);
 		Mat->SetRasterizerOption(rasterizerOption);	// 디버깅용 정보 삽입
 		Mat->SetRasterizerState(RasterizerState);

@@ -25,25 +25,32 @@ void UCameraComponent::Tick(float DeltaTime)
 
 void UCameraComponent::MoveForward(float Value)
 {
+#if IS_OBJ_VIEWER
+#else
 	Camera->MoveForward(Value);
+#endif
 }
 
 void UCameraComponent::MoveRight(float Value)
 {
+#if IS_OBJ_VIEWER
+#else
 	Camera->MoveRight(Value);
-
+#endif
 }
 
 void UCameraComponent::MoveUp(float Value)
 {
+#if IS_OBJ_VIEWER
+#else
 	Camera->MoveUp(Value);
-
+#endif
 }
 
 void UCameraComponent::PanRight(float Value)
 {
 	const FVector Right = Camera->GetRight().GetSafeNormal();
-	Camera->SetPosition(Camera->GetPosition() + Right * (Value * Camera->GetSpeed()));
+	Camera->OffsetPosition(Right * (Value * Camera->GetSpeed()));
 }
 
 void UCameraComponent::PanUp(float Value)
@@ -52,7 +59,7 @@ void UCameraComponent::PanUp(float Value)
 	const FVector Forward = Camera->GetForward().GetSafeNormal();
 	const FVector Right = Camera->GetRight().GetSafeNormal();
 	const FVector PanUp = FVector::CrossProduct(Forward, Right).GetSafeNormal();
-	Camera->SetPosition(Camera->GetPosition() + PanUp * (Value * Camera->GetSpeed()));
+	Camera->OffsetPosition(PanUp * (Value * Camera->GetSpeed()));
 }
 
 void UCameraComponent::FootZoom(float Value)
@@ -63,7 +70,9 @@ void UCameraComponent::FootZoom(float Value)
 		Camera->SetOrthoWidth(Camera->GetOrthoWidth() * ZoomScale);
 		return;
 	}
-	Camera->MoveForward(Value);
+#if IS_OBJ_VIEWER
+	Camera->MoveForward(Value*0.1f);
+#endif
 }
 
 void UCameraComponent::Rotate(float DeltaYaw, float DeltaPitch)

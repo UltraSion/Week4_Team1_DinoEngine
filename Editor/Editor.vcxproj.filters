@@ -69,9 +69,6 @@
     <ClCompile Include="Source\UI\OutlinerWindow.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Source\UI\PreviewViewportClient.cpp">
-      <Filter>Source\UI</Filter>
-    </ClCompile>
     <ClCompile Include="Source\UI\PropertyWindow.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -103,6 +100,7 @@
       <Filter>ThirdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="EditorGlobals.cpp" />
+    <ClCompile Include="Source\UI\ViewportWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -141,9 +139,6 @@
     <ClInclude Include="Source\UI\OutlinerWindow.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Source\UI\PreviewViewportClient.h">
-      <Filter>Source\UI</Filter>
-    </ClInclude>
     <ClInclude Include="Source\UI\PropertyWindow.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
@@ -178,6 +173,7 @@
       <Filter>ThirdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="EditorGlobals.h" />
+    <ClInclude Include="Source\UI\ViewportWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">

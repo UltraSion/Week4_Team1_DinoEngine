@@ -14,13 +14,20 @@ struct FRasterizerStateOption {
 	D3D11_CULL_MODE CullMode = D3D11_CULL_BACK;
 	bool DepthClipEnable = true;
 	int DepthBias = 0;
+	float SlopeScaledDepthBias = 0.0f;
+	float DepthBiasClamp = 0.0f;
 
 	uint32 ToKey() const {
+		const int32 QuantizedSlopeBias = static_cast<int32>(SlopeScaledDepthBias * 16.0f);
+		const int32 QuantizedBiasClamp = static_cast<int32>(DepthBiasClamp * 16.0f);
+
 		uint32 key = 0;
 		key |= (static_cast<uint32>(FillMode) & 0x7);				// 3 bit
 		key |= (static_cast<uint32>(CullMode) & 0x7) << 3;			// 3 bit
 		key |= (DepthClipEnable ? 1 : 0) << 6;						// 1 bit
-		key |= (static_cast<uint32>(DepthBias) & 0xFFFF) << 7;		// 16 bit
+		key |= (static_cast<uint32>(DepthBias) & 0x3FF) << 7;		// 10 bit
+		key |= (static_cast<uint32>(QuantizedSlopeBias) & 0x3FF) << 17;		// 10 bit
+		key |= (static_cast<uint32>(QuantizedBiasClamp) & 0x1F) << 27;		// 5 bit
 		return key;
 	}
 };
@@ -57,6 +64,7 @@ struct FDepthStencilStateOption {
 		key |= (StencilEnable ? 1 : 0) << 3;							// 1 bit
 		key |= (static_cast<uint32>(StencilReadMask) & 0xFF) << 6;		// 8 bit
 		key |= (static_cast<uint32>(StencilWriteMask) & 0xFF) << 14;	// 8 bit
+		key |= (static_cast<uint32>(DepthFunc) & 0x7) << 22;			// 3 bit
 		return key;
 	}
 };

@@ -1,5 +1,14 @@
 #include "Core/FEngine.h"
 
+class FClientEngine : public FEngine
+{
+protected:
+	FViewportClient* CreateViewportClient() override
+	{
+		return new FGameViewportClient();
+	}
+};
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 {
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -9,7 +18,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 		return -1;
 	}
 
-	FEngine Engine;
+	FClientEngine Engine;
 	if (!Engine.Initialize(hInstance, L"Jungle Client", 1280, 720))
 		return -1;
 

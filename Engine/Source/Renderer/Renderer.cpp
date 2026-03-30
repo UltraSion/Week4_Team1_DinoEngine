@@ -15,6 +15,8 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
+ENGINE_API FRenderer* GRenderer = nullptr;
+
 static FVector GetCameraWorldPositionFromViewMatrix(const FMatrix& ViewMatrix)
 {
 	const FMatrix InvView = ViewMatrix.GetInverse();
@@ -331,16 +333,21 @@ void FRenderer::EndFrame()
 	if (GUIPostPresent) GUIPostPresent();
 }
 
-void FRenderer::SubmitCommands(const FRenderCommandQueue& Queue)
+void FRenderer::SubmitCommands(const FRenderCommandQueue& InQueue)
 {
-	ViewMatrix = Queue.ViewMatrix;
-	ProjectionMatrix = Queue.ProjectionMatrix;
+	ViewMatrix = InQueue.ViewMatrix;
+	ProjectionMatrix = InQueue.ProjectionMatrix;
 
-	for (const auto& Cmd : Queue.Commands)
+	for (const auto& Cmd : InQueue.Commands)
 	{
 		if (Cmd.MeshData) Cmd.MeshData->UpdateVertexAndIndexBuffer(Device);
 		AddCommand(Cmd);
 	}
+}
+
+void FRenderer::SetViewport(D3D11_VIEWPORT* Viewport)
+{
+	DeviceContext->RSSetViewports(1, Viewport);
 }
 
 void FRenderer::AddCommand(const FRenderCommand& Command)

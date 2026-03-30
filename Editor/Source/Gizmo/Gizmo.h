@@ -54,10 +54,10 @@ public:
 	EGizmoCoordinateSpace GetCoordinateSpace() const { return CoordinateSpace; }
 	void ToggleCoordinateSpace();
 
-	void BuildRenderCommands(AActor* SelectedActor, const FCamera* Camera, FRenderCommandQueue& OutQueue) const;
-	bool BeginDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
-	bool UpdateDrag(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
-	void UpdateHover(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	void BuildRenderCommands(AActor* SelectedActor, FCamera* InCamera, FRenderCommandQueue& OutQueue) const;
+	bool BeginDrag(AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	bool UpdateDrag(AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	void UpdateHover(AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
 	void ClearHover();
 	void EndDrag();
 
@@ -67,11 +67,11 @@ private:
 	bool EnsureTranslationMeshes() const;
 	bool EnsureRotationMeshes(const FCamera* Camera, const FVector& GizmoWorldLocation) const;
 	bool EnsureScaleMeshes() const;
-	EGizmoAxis HitTestAxis(AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
-	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
-	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
-	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
-	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, ULevel* Level, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	EGizmoAxis HitTestAxis(AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const;
+	bool BeginAxisDrag(EGizmoAxis Axis, AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	bool BeginTranslationDrag(EGizmoAxis Axis, AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	bool BeginRotationDrag(EGizmoAxis Axis, AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
+	bool BeginScaleDrag(EGizmoAxis Axis, AActor* SelectedActor, FCamera* InCamera, const FPicker& Picker, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight);
 	EGizmoAxis GetDisplayAxis() const;
 	RotationDesc BuildRotationDesc(const FCamera* Camera, const FVector& GizmoWorldLocation) const;
 	FQuat GetGizmoRotation(const AActor* Actor) const;

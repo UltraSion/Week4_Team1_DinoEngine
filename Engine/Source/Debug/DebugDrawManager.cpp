@@ -21,42 +21,47 @@ void FDebugDrawManager::DrawCube(const FVector& Center, const FVector& Extent, c
 void FDebugDrawManager::DrawWorldAxis(float Length)
 {
 	bDrawWorldAxis = true;
+	WorldAxisLength = Length;
 }
 
 void FDebugDrawManager::Flush(FRenderer* Renderer, const FShowFlags& ShowFlags, UWorld* World)
 {
+	if (!Renderer)
+	{
+		return;
+	}
 
-	if (!Renderer) return;
+	const bool bShowDebugDraw = ShowFlags.HasFlag(EEngineShowFlags::SF_DebugDraw);
+	const bool bShowWorldAxis = ShowFlags.HasFlag(EEngineShowFlags::SF_WorldAxis) || bDrawWorldAxis;
 
-	// 디버그 드로우 전체 꺼져있으면 스킵
-	if (!ShowFlags.HasFlag(EEngineShowFlags::SF_DebugDraw))
+	if (!bShowDebugDraw && !bShowWorldAxis)
 	{
 		Clear();
 		return;
 	}
 
-
-	if (ShowFlags.HasFlag(EEngineShowFlags::SF_Collision) && World)
+	if (bShowDebugDraw && ShowFlags.HasFlag(EEngineShowFlags::SF_Collision) && World)
 	{
 		DrawAllCollisionBounds(Renderer, World);
 	}
 
-	for (const auto& Cube : Cubes)
+	if (bShowDebugDraw)
 	{
-		Renderer->DrawCube(Cube.Center, Cube.Extent, Cube.Color);
-	}
-	for (const auto& Line : Lines)
-	{
-		Renderer->DrawLine(Line.Start, Line.End, Line.Color);
+		for (const auto& Cube : Cubes)
+		{
+			Renderer->DrawCube(Cube.Center, Cube.Extent, Cube.Color);
+		}
+		for (const auto& Line : Lines)
+		{
+			Renderer->DrawLine(Line.Start, Line.End, Line.Color);
+		}
 	}
 
-
-	// 월드 축
-	if (ShowFlags.HasFlag(EEngineShowFlags::SF_WorldAxis))
+	if (bShowWorldAxis)
 	{
-		Renderer->DrawLine({ 0,0,0 }, { 1000,0,0 }, { 1,0,0,1 });  // X: Red
-		Renderer->DrawLine({ 0,0,0 }, { 0,1000,0 }, { 0,1,0,1 });  // Y: Green
-		Renderer->DrawLine({ 0,0,0 }, { 0,0,1000 }, { 0,0,1,1 });  // Z: Blue
+		Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { WorldAxisLength, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
+		Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, WorldAxisLength, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f });
+		Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, WorldAxisLength }, { 0.0f, 0.0f, 1.0f, 1.0f });
 	}
 
 	Renderer->ExecuteLineCommands();
@@ -68,6 +73,7 @@ void FDebugDrawManager::Clear()
 	Lines.clear();
 	Cubes.clear();
 	bDrawWorldAxis = false;
+	WorldAxisLength = 1000.0f;
 }
 
 void FDebugDrawManager::DrawAllCollisionBounds(FRenderer* Renderer, UWorld* World)

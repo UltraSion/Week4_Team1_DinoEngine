@@ -126,7 +126,7 @@ void UWorld::DestroyActor(AActor* InActor)
 
 ULevel* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device)
 {
-	// ì´ë¯¸ ë¡œë“œëëŠ”ì§€ í™•ì¸
+	// ÀÌ¹Ì ·ÎµåµÆ´ÂÁö È®ÀÎ
 	if (ULevel* Existing = FindStreamingLevel(LevelName))
 	{
 		return Existing;
@@ -141,7 +141,7 @@ ULevel* UWorld::LoadStreamingLevel(const FString& LevelName, ID3D11Device* Devic
 	}
 	StreamingLevels.push_back(NewLevel);
 
-	// ì´ë¯¸ ê²Œìž„ ì§„í–‰ ì¤‘ì´ë©´ BeginPlay í˜¸ì¶œ
+	// ÀÌ¹Ì °ÔÀÓ ÁøÇà ÁßÀÌ¸é BeginPlay È£Ãâ
 	if (bBegunPlay)
 	{
 		NewLevel->BeginPlay();

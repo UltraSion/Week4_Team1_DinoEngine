@@ -35,6 +35,7 @@
     <ClInclude Include="Source\Component\StaticMeshComponent.h" />
     <ClInclude Include="Source\Component\TextComponent.h" />
     <ClInclude Include="Source\CoreMinimal.h" />
+    <ClInclude Include="Source\Core\ViewportContext.h" />
     <ClInclude Include="Source\EngineAPI.h" />
     <ClInclude Include="Source\Actor\Actor.h" />
     <ClInclude Include="Source\Actor\AttachTestActor.h" />
@@ -73,6 +74,8 @@
     <ClInclude Include="Source\Input\InputMappingContext.h" />
     <ClInclude Include="Source\Input\InputModifier.h" />
     <ClInclude Include="Source\Input\inputTrigger.h" />
+    <ClInclude Include="Source\Math\Point.h" />
+    <ClInclude Include="Source\Math\Rect.h" />
     <ClInclude Include="Source\Math\Frustum.h" />
     <ClInclude Include="Source\Math\MathUtility.h" />
     <ClInclude Include="Source\Math\Matrix.h" />
@@ -138,7 +141,8 @@
     <ClInclude Include="Source\Types\Set.h" />
     <ClInclude Include="Source\Types\StaticArray.h" />
     <ClInclude Include="Source\Types\String.h" />
-    <ClInclude Include="Source\Types\WeakObjectPtr.h" />
+    <ClInclude Include="Source\UI\SWindow.h" />
+    <ClInclude Include="Source\UI\WindowManager.h" />
     <ClInclude Include="Source\World\Level.h" />
     <ClInclude Include="Source\World\LevelManager.h" />
     <ClInclude Include="Source\World\RenderCollector.h" />
@@ -148,9 +152,11 @@
     <ClInclude Include="Source\World\WorldContext.h" />
     <ClInclude Include="ThirdParty\stb_image.h" />
     <ClInclude Include="ThirdParty\nlohmann\json.hpp" />
+    <ClInclude Include="Source\Core\Viewport.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PrimitiveLineBatch.cpp" />
+    <ClCompile Include="Source\Math\Rect.cpp" />
     <ClCompile Include="Source\Actor\Actor.cpp" />
     <ClCompile Include="Source\Actor\AttachTestActor.cpp" />
     <ClCompile Include="Source\Actor\CubeActor.cpp" />
@@ -186,6 +192,7 @@
     <ClCompile Include="Source\Core\Paths.cpp" />
     <ClCompile Include="Source\Core\ShowFlags.cpp" />
     <ClCompile Include="Source\Core\ViewportClient.cpp" />
+    <ClCompile Include="Source\Core\ViewportContext.cpp" />
     <ClCompile Include="Source\Debug\DebugDrawManager.cpp" />
     <ClCompile Include="Source\Debug\EngineLog.cpp" />
     <ClCompile Include="Source\Input\EnhancedInputManager.cpp" />
@@ -235,10 +242,13 @@
     <ClCompile Include="Source\Serializer\Archive.cpp" />
     <ClCompile Include="Source\Serializer\SceneSerializer.cpp" />
     <ClCompile Include="Source\Types\Name.cpp" />
+    <ClCompile Include="Source\UI\SWindow.cpp" />
+    <ClCompile Include="Source\UI\WindowManager.cpp" />
     <ClCompile Include="Source\World\Level.cpp" />
     <ClCompile Include="Source\World\RenderCollector.cpp" />
     <ClCompile Include="Source\World\LevelManager.cpp" />
     <ClCompile Include="Source\World\World.cpp" />
+    <ClCompile Include="Source\Core\Viewport.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -368,6 +378,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)Source\;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -378,7 +389,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;_DEBUG;_CONSOLE;IS_OBJ_VIEWER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>

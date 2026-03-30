@@ -9,7 +9,7 @@
 #include "Component/SubUVComponent.h"
 #include "Component/TextComponent.h"
 #include "Component/UUIDBillboardComponent.h"
-#include "Actor/SkySphereActor.h" 
+#include "Actor/SkySphereActor.h"
 #include <limits>
 
 FRay FPicker::ScreenToRay(const FCamera* Camera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
@@ -22,9 +22,8 @@ FRay FPicker::ScreenToRay(const FCamera* Camera, int32 ScreenX, int32 ScreenY, i
 	const FMatrix ViewMatrix = Camera->GetViewMatrix();
 	const FMatrix ProjMatrix = Camera->GetProjectionMatrix();
 	const FMatrix ViewInverse = ViewMatrix.GetInverse();
-	//Ndc convert missing center pixel lerp (0.5) Half-pixel offset added
-	const float NdcX = (2.0f * (ScreenX+0.5f) / ScreenWidth) - 1.0f;
-	const float NdcY = 1.0f - (2.0f * (ScreenY+0.5f) / ScreenHeight);
+	const float NdcX = (2.0f * (ScreenX + 0.5f) / ScreenWidth) - 1.0f;
+	const float NdcY = 1.0f - (2.0f * (ScreenY + 0.5f) / ScreenHeight);
 
 	if (Camera->IsOrthographic())
 	{
@@ -57,9 +56,7 @@ FRay FPicker::ScreenToRay(const FCamera* Camera, int32 ScreenX, int32 ScreenY, i
 	return { RayOrigin, RayDirectionWorld };
 }
 
-bool FPicker::RayTriangleIntersect(const FRay& Ray,
-								   const FVector& V0, const FVector& V1, const FVector& V2,
-								   float& OutDistance) const
+bool FPicker::RayTriangleIntersect(const FRay& Ray, const FVector& V0, const FVector& V1, const FVector& V2, float& OutDistance) const
 {
 	constexpr float Epsilon = 1.e-6f;
 
@@ -68,8 +65,6 @@ bool FPicker::RayTriangleIntersect(const FRay& Ray,
 
 	const FVector H = FVector::CrossProduct(Ray.Direction, Edge2);
 	const float A = FVector::DotProduct(Edge1, H);
-
-	// Render path와 동일하게 back-face는 picking 대상에서 제외한다.
 	if (A <= Epsilon)
 	{
 		return false;
@@ -100,41 +95,32 @@ bool FPicker::RayTriangleIntersect(const FRay& Ray,
 	return false;
 }
 
-AActor* FPicker::PickActor(ULevel* Level, int32 ScreenX, int32 ScreenY,
-						   int32 ScreenWidth, int32 ScreenHeight) const
+AActor* FPicker::PickActor(const TArray<AActor*>& InActors, const FCamera* InCamera, int32 ScreenX, int32 ScreenY, int32 ScreenWidth, int32 ScreenHeight) const
 {
-	if (!Level || !Level->GetCamera())
+	if (!InCamera)
 	{
 		return nullptr;
 	}
 
-	FCamera* Camera = Level->GetCamera();
-	const FRay Ray = ScreenToRay(Camera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+	const FRay Ray = ScreenToRay(InCamera, ScreenX, ScreenY, ScreenWidth, ScreenHeight);
 
 	AActor* ClosestActor = nullptr;
 	float ClosestDistance = (std::numeric_limits<float>::max)();
 
-	for (AActor* Actor : Level->GetActors())
+	for (AActor* Actor : InActors)
 	{
-		if (!Actor || Actor->IsPendingDestroy())
+		if (!Actor || Actor->IsPendingDestroy() || !Actor->IsVisible() || Actor->IsA<ASkySphereActor>())
 		{
 			continue;
 		}
-		if (!Actor->IsVisible() )
-			continue;
-		if (Actor->IsA<ASkySphereActor>())
-			continue;
-		
+
 		for (UActorComponent* Component : Actor->GetComponents())
 		{
-			if (!Component->IsA(UPrimitiveComponent::StaticClass()))
+			if (!Component->IsA(UPrimitiveComponent::StaticClass()) || Component->IsA(UUUIDBillboardComponent::StaticClass()))
 			{
 				continue;
 			}
-			if (Component->IsA(UUUIDBillboardComponent::StaticClass()))
-			{
-				continue;
-			}
+
 			UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
 			if (!PrimitiveComponent)
 			{

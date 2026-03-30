@@ -140,6 +140,9 @@ void FMaterial::RegisterParameter(const FString& ParamName, int32 BufferIndex, u
 
 bool FMaterial::SetParameterData(const FString& ParamName, const void* Data, uint32 DataSize)
 {
+	if (ParameterMap.empty())
+		return false;
+
 	auto It = ParameterMap.find(ParamName);
 	if (It == ParameterMap.end())
 	{
