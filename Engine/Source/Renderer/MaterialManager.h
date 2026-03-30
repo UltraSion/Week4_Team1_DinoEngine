@@ -30,7 +30,7 @@ public:
 	TArray<FString> GetLoadedPaths() const;
 
 	void Clear();
-
+	void CreateDefaultWhiteTexture(ID3D11Device* Device);
 private:
 	FMaterialManager() = default;
 
@@ -39,3 +39,4 @@ private:
 	// 이름 기반 캐시 (JSON의 "Name" 필드)
 	TMap<FString, std::shared_ptr<FMaterial>> NameCache;
 };
+extern ENGINE_API std::shared_ptr<struct FMaterialTexture> GDefaultWhiteTexture;

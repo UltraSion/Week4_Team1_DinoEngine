@@ -255,6 +255,10 @@ void FEditorUI::AttachToRenderer()
 				fclose(FileHandle);
 
 				Font = IO.Fonts->AddFontFromMemoryTTF(FontData, static_cast<int>(Size), 16.0f, &FontConfig, IO.Fonts->GetGlyphRangesKorean());
+				ImFontConfig MergeConfig;
+				MergeConfig.MergeMode = true;
+				IO.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.0f, &MergeConfig, IO.Fonts->GetGlyphRangesChineseFull());
+
 			}
 
 			if (!Font)

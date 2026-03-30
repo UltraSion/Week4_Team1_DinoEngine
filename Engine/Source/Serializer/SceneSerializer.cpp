@@ -65,7 +65,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 
 	Json["Primitives"] = Primitives;
 	Json["NextUUID"] = FObjectFactory::GetLastUUID();
-	std::ofstream File(FilePath);
+	std::ofstream File(std::filesystem::path(FilePath).wstring());
 	if (File.is_open())
 	{
 		File << std::setw(2) << Json << std::endl;
@@ -74,7 +74,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 
 bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device)
 {
-	std::ifstream File(FilePath);
+	std::ifstream File(std::filesystem::path(FilePath).wstring());
 	if (!File.is_open())
 	{
 		return false;

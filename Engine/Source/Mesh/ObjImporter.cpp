@@ -11,7 +11,8 @@
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
-	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)));
+	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
+
 	if (!File.is_open()) return false;
 	OutInfo.ObjDirectory = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path().string();
 	std::string Line;
@@ -127,7 +128,7 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 // FObjImporter::ParseMtl
 bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& OutMaterials)
 {
-	std::ifstream File(FPaths::ToAbsolutePath(FilePath));
+	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
 	if (!File.is_open()) return false;
 
 	FObjMaterialInfo* Current = nullptr;
@@ -232,39 +233,40 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	for (uint32 s = 0; s < MeshData->Sections.size(); ++s)
 	{
 		FString TexPath = "";
+		FVector DiffuseColor(1.0f, 1.0f, 1.0f);
 		if (s < Info.MaterialNames.size())
 		{
 			FString MatName = Info.MaterialNames[s]; // 현재 섹션이 요구하는 머티리얼 이름
 			for (const auto& Mtl : Info.Materials)
 			{
 				// 이름이 일치하고, 텍스처(map_Kd)가 존재한다면
-				if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
+				for (const auto& Mtl : Info.Materials)
 				{
-		
-					//AssetRegistry에게 텍스처 검색 요청
-					FAssetData TexData;
-					if (FAssetRegistry::Get().GetAssetByObjectPath(Mtl.DiffuseTexturePath, TexData))
+					if (Mtl.Name == MatName)
 					{
-						// 찾았으면 에셋의 상대경로를 그대로 사용
-						TexPath = TexData.AssetPath;
-					}
-					else
-					{
-						// 에셋 매니저에서도 못 찾았을 경우 기존 같은 폴더 로직 폴백
-						std::filesystem::path Dir(Info.ObjDirectory);
-						TexPath = (Dir / Mtl.DiffuseTexturePath).string();
-					}
+						// 일단 색상은 무조건
+						DiffuseColor = Mtl.DiffuseColor;
 
-					break;
-				}	if (Mtl.Name == MatName && !Mtl.DiffuseTexturePath.empty())
-				{
-					// 절대 경로로 조립
-					TexPath = (Dir / Mtl.DiffuseTexturePath).string();
-					break;
+						// 텍스처가 있으면 경로 파싱
+						if (!Mtl.DiffuseTexturePath.empty())
+						{
+							FAssetData TexData;
+							if (FAssetRegistry::Get().GetAssetByObjectPath(Mtl.DiffuseTexturePath, TexData))
+							{
+								TexPath = TexData.AssetPath;
+							}
+							else
+							{
+								TexPath = (Dir / Mtl.DiffuseTexturePath).string();
+							}
+						}
+						break;
+					}
 				}
 			}
 		}
 		Mesh->ImportedTexturePaths.push_back(TexPath);
+		Mesh->ImportedDiffuseColors.push_back(DiffuseColor);
 	}
 	return Mesh;
 }

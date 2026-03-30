@@ -12,6 +12,14 @@ FAssetRegistry& FAssetRegistry::Get()
 void FAssetRegistry::SearchAllAssets(const FString& RootDir)
 {
 	namespace fs = std::filesystem;
+	auto SafeString = [](const auto& PathObj) -> std::string {
+		auto U8Str = PathObj.u8string();
+		return std::string(U8Str.begin(), U8Str.end());
+	};
+	auto SafeGenericString = [](const auto& PathObj) -> std::string {
+		auto U8Str = PathObj.generic_u8string();
+		return std::string(U8Str.begin(), U8Str.end());
+	};
 	if (!fs::exists(RootDir))
 	{
 		UE_LOG("[AssetRegistry] Root dir does not exist: %s\n", RootDir.c_str());
@@ -23,14 +31,14 @@ void FAssetRegistry::SearchAllAssets(const FString& RootDir)
 		if (entry.is_regular_file())
 		{
 			FAssetData Data;
-			Data.AssetName = entry.path().filename().string(); // 예: "wood.png"
+			Data.AssetName = SafeString(entry.path().filename());
 
 			// 프로젝트 기준 상대 경로로 통일 (슬래시 변환)
-			Data.AssetPath = fs::relative(entry.path(), FPaths::ProjectRoot()).generic_string();
+			Data.AssetPath = SafeGenericString(fs::relative(entry.path(), FPaths::ProjectRoot()));
 			std::replace(Data.AssetPath.begin(), Data.AssetPath.end(), '\\', '/');
 
 			// 확장자를 보고 AssetClass(타입) 분류
-			std::string Ext = entry.path().extension().string();
+			std::string Ext = SafeString(entry.path().extension());
 			std::transform(Ext.begin(), Ext.end(), Ext.begin(), ::tolower);
 
 			if (Ext == ".obj") Data.AssetClass = "StaticMesh";
@@ -49,9 +57,15 @@ void FAssetRegistry::SearchAllAssets(const FString& RootDir)
 }
 bool FAssetRegistry::GetAssetByObjectPath(const FString& ObjectName, FAssetData& OutData) const
 {
-	namespace fs = std::filesystem;
-	// 입력값에 경로가 섞여 있어도 순수 파일명만 추출
-	std::string SearchKey = fs::path(ObjectName).filename().string();
+	//fs::path를 쓰지 않고 순수 문자열 파싱으로 파일명만 추출 (인코딩 크래시 완벽 차단)
+	std::string SearchKey = ObjectName;
+	size_t SlashPos = SearchKey.find_last_of("/\\");
+	if (SlashPos != std::string::npos)
+	{
+		SearchKey = SearchKey.substr(SlashPos + 1);
+	}
+
+	// 소문자로 변환 (대소문자 무시 검색용)
 	std::transform(SearchKey.begin(), SearchKey.end(), SearchKey.begin(), ::tolower);
 
 	auto It = RegistryData.find(SearchKey);

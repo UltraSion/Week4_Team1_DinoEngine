@@ -7,9 +7,8 @@
 #include "Debug/EngineLog.h"
 #include "ThirdParty/nlohmann/json.hpp"
 #include <fstream>
-
+ENGINE_API std::shared_ptr<FMaterialTexture> GDefaultWhiteTexture;
 // ─── HLSL cbuffer 패킹 유틸 ───
-
 namespace
 {
 	// 타입별 바이트 크기
@@ -92,7 +91,7 @@ std::shared_ptr<FMaterial> FMaterialManager::LoadFromFile(
 	}
 
 	// JSON 파일 로드
-	std::ifstream File(InFilePath);
+	std::ifstream File(std::filesystem::path(InFilePath).wstring());
 	if (!File.is_open())
 	{
 		return nullptr;
@@ -389,4 +388,33 @@ void FMaterialManager::Clear()
 {
 	PathCache.clear();
 	NameCache.clear();
+}
+
+void FMaterialManager::CreateDefaultWhiteTexture(ID3D11Device* Device)
+{
+	uint32 WhitePixel = 0xFFFFFFFF; // RGBA (1, 1, 1, 1)
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = 1;
+	desc.Height = 1;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	D3D11_SUBRESOURCE_DATA initData = {};
+	initData.pSysMem = &WhitePixel;
+	initData.SysMemPitch = 4;
+
+	ID3D11Texture2D* texture = nullptr;
+	Device->CreateTexture2D(&desc, &initData, &texture);
+
+	ID3D11ShaderResourceView* srv = nullptr;
+	Device->CreateShaderResourceView(texture, nullptr, &srv);
+	texture->Release();
+	GDefaultWhiteTexture = std::make_shared<FMaterialTexture>();
+	GDefaultWhiteTexture->TextureSRV = srv;
+	// 생성된 srv를 담은 FMaterialTexture를 GDefaultWhiteTexture에 보관!
 }

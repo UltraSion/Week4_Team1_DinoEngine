@@ -47,39 +47,61 @@ void FPaths::Initialize()
 	// 최종 폴백: 실행 파일 디렉토리 사용
 	SetRoot(ExeDir);
 }
-
+//단순히 바이트 복사만 하던 방식을 버리고 Windows API를 이용해 완벽한 UTF-8 -> UTF-16 변환 수행
 std::wstring FPaths::ToWide(const FString& Path)
 {
-	return std::wstring(Path.begin(), Path.end());
+	if (Path.empty()) return std::wstring();
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &Path[0], (int)Path.size(), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_UTF8, 0, &Path[0], (int)Path.size(), &wstrTo[0], size_needed);
+	return wstrTo;
 }
-
+//fs::path.string()을 쓰지 않고 u8string()을 거쳐 안전하게 UTF-8로 추출 및 조작
 std::string FPaths::ToRelativePath(const FString& Path)
 {
-	FString Root = ProjectRoot().string();
+	auto u8Root = ProjectRoot().u8string();
+	FString Root(u8Root.begin(), u8Root.end());
 	FString RelativePath = Path;
 
 	if (RelativePath.starts_with(Root))
 	{
-		RelativePath = RelativePath.substr(Root.length(), RelativePath.length() - Root.length());
+		RelativePath = RelativePath.substr(Root.length());
+		// 앞에 슬래시가 남아있다면 제거 (예: "/Assets/..." -> "Assets/...")
+		if (!RelativePath.empty() && (RelativePath.front() == '/' || RelativePath.front() == '\\'))
+		{
+			RelativePath = RelativePath.substr(1);
+		}
 	}
-	else
-		return Path;
 
 	return RelativePath;
 }
-
+//fs::path 생성자를 거치지 않고 순수 문자열 결합을 사용하여 인코딩 크래시 원천 차단
 std::string FPaths::ToAbsolutePath(const FString& Path)
 {
-	FString Root = ProjectRoot().string();
-	FString AbsolutePath = Path;
+	auto u8Root = ProjectRoot().u8string();
+	FString Root(u8Root.begin(), u8Root.end());
 
-	if (AbsolutePath.starts_with(Root))
+	// 이미 절대 경로라면 그대로 반환
+	if (Path.starts_with(Root))
 	{
 		return Path;
 	}
-	else
-		AbsolutePath = (ProjectRoot() / Path).string();
 
+	FString AbsolutePath = Root;
+	// Root 끝에 슬래시가 없으면 추가
+	if (!AbsolutePath.empty() && AbsolutePath.back() != '/' && AbsolutePath.back() != '\\')
+	{
+		AbsolutePath += "/";
+	}
+
+	// Path 시작에 슬래시가 있으면 제거하여 중복 방지
+	FString SafePath = Path;
+	if (!SafePath.empty() && (SafePath.front() == '/' || SafePath.front() == '\\'))
+	{
+		SafePath = SafePath.substr(1);
+	}
+
+	AbsolutePath += SafePath;
 	return AbsolutePath;
 }
 

@@ -50,21 +50,46 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRe
 		if (i < StaticMeshRenderData->ImportedTexturePaths.size())
 		{
 			FString TexPath = StaticMeshRenderData->ImportedTexturePaths[i];
-			if (!TexPath.empty() && std::filesystem::exists(FPaths::ToAbsolutePath(TexPath)))
+			if (!TexPath.empty())
 			{
-				LoadTextureToSlot(Device, TexPath, i);
-				bTextureLoaded = true;
+				//  fs::exists 대신, 우리가 새로 만든 안전한 ToWide()를 사용하여 파일 존재 여부 확인
+				std::wstring WidePath = FPaths::ToWide(FPaths::ToAbsolutePath(TexPath));
+				DWORD dwAttrib = GetFileAttributesW(WidePath.c_str());
+				bool bExists = (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+
+				if (bExists)
+				{
+					LoadTextureToSlot(Device, TexPath, i);
+					bTextureLoaded = true;
+				}
 			}
 		}
 
 		// 텍스처가 없을 경우 기본 매테리얼 적용
 		if (!bTextureLoaded)
 		{
-			std::shared_ptr<FMaterial> DefaultMat = FMaterialManager::Get().FindByName("M_StaticMesh");
-			if (!DefaultMat) DefaultMat = FMaterialManager::Get().FindByName("M_Default");
-			if (DefaultMat)
+			std::shared_ptr<FMaterial> BaseMat = FMaterialManager::Get().FindByName("M_StaticMesh");
+			if (!BaseMat) BaseMat = FMaterialManager::Get().FindByName("M_Default");
+
+			if (BaseMat)
 			{
-				SetMaterial(i, DefaultMat.get());
+				// 원본을 건드리지 않기 위해 다이내믹 인스턴스로 복제
+				std::shared_ptr<FDynamicMaterial> DynamicMat = BaseMat->CreateDynamicMaterial();
+
+				// 배열에서 색상(Kd) 꺼내오기
+				FVector MatColor(1.0f, 1.0f, 1.0f);
+				if (i < StaticMeshRenderData->ImportedDiffuseColors.size())
+				{
+					MatColor = StaticMeshRenderData->ImportedDiffuseColors[i];
+				}
+				DynamicMat->SetVectorParameter("ColorTint", FVector4(MatColor.X, MatColor.Y, MatColor.Z, 1.0f));
+
+				// 머티리얼에 색상 전달
+				// DynamicMat->SetColor(MatColor);
+				DynamicMat->SetMaterialTexture(GDefaultWhiteTexture);
+
+				SetMaterial(i, DynamicMat.get());
+				DynamicMaterialOwners[i] = DynamicMat; // 찌꺼기 방지 맵에 저장
 			}
 		}
 	}
@@ -102,12 +127,20 @@ void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString
 		DynamicMaterialOwners[SlotIndex] = DynamicMat; // Map에 저장
 	}
 
-	// 2. 텍스처 데이터 로드 (올려주신 기존 로직과 동일)
+
 	int width = 0, height = 0, channels = 0;
-	unsigned char* data = stbi_load(
-		FPaths::ToAbsolutePath(FilePath).c_str(),
-		&width, &height, &channels, STBI_rgb_alpha);
-	if (!data) return;
+	FILE* f = nullptr;
+
+	//std::filesystem::path를 거치지 않고, 안전한 FPaths::ToWide를 직접 사용
+	std::wstring WidePath = FPaths::ToWide(FPaths::ToAbsolutePath(FilePath));
+	_wfopen_s(&f, WidePath.c_str(), L"rb");
+
+	unsigned char* data = nullptr;
+	if (f)
+	{
+		data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+		fclose(f);
+	}
 
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width = width;

@@ -170,7 +170,7 @@ bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 
 	RenderStateManager = std::make_unique<FRenderStateManager>(Device, DeviceContext);
 	RenderStateManager->PrepareCommonStates();
-
+	FMaterialManager::Get().CreateDefaultWhiteTexture(Device);
 	if (!CreateConstantBuffers()) return false;
 	SetConstantBuffers();
 	{
@@ -269,8 +269,8 @@ bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 
 	std::filesystem::path FolderIconPath = FPaths::AssetDir() / FString("Textures/FolderIcon.png");
 	std::filesystem::path FileIconPath = FPaths::AssetDir() / FString("Textures/FileIcon.png");
-	CreateTextureFromSTB(Device, FolderIconPath.string().c_str(), &FolderIconSRV);
-	CreateTextureFromSTB(Device, FileIconPath.string().c_str(), &FileIconSRV);
+	CreateTextureFromSTB(Device, FolderIconPath.wstring().c_str(), &FolderIconSRV);
+	CreateTextureFromSTB(Device, FileIconPath.wstring().c_str(), &FileIconSRV);
 
 	return true;
 }
@@ -502,10 +502,17 @@ void FRenderer::UpdateObjectConstantBuffer(const FMatrix& WorldMatrix)
 	}
 }
 
-bool FRenderer::CreateTextureFromSTB(ID3D11Device* Device, const char* FilePath, ID3D11ShaderResourceView** OutSRV)
+bool FRenderer::CreateTextureFromSTB(ID3D11Device* Device, const wchar_t* FilePath, ID3D11ShaderResourceView** OutSRV)
 {
 	int W, H, C;
-	unsigned char* Data = stbi_load(FilePath, &W, &H, &C, 4);
+	FILE* f = nullptr;
+	_wfopen_s(&f, FilePath, L"rb");
+	unsigned char* Data = nullptr;
+	if (f)
+	{
+		Data = stbi_load_from_file(f, &W, &H, &C, 4);
+		fclose(f);
+	}
 	if (!Data) return false;
 
 	D3D11_TEXTURE2D_DESC Desc = {};
