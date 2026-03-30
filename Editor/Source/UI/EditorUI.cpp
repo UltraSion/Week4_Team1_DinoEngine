@@ -11,6 +11,7 @@
 #include "Core/Paths.h"
 #include "Core/ShowFlags.h"
 #include "Debug/EngineLog.h"
+#include "FEditorEngine.h"
 #include "Object/Object.h"
 #include "Platform/Windows/Window.h"
 #include "Primitive/PrimitiveObj.h"
@@ -541,6 +542,15 @@ void FEditorUI::Render()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
+#if IS_OBJ_VIEWER
+			if (ImGui::MenuItem("New Obj"))
+			{
+				if (FEditorEngine* EditorEngine = static_cast<FEditorEngine*>(GEngine))
+				{
+					EditorEngine->OpenNewObj();
+				}
+			}
+#else
 			if (ImGui::MenuItem("New Level"))
 			{
 				if (Core)
@@ -599,7 +609,7 @@ void FEditorUI::Render()
 					}
 				}
 			}
-
+#endif
 			ImGui::EndMenu();
 		}
 

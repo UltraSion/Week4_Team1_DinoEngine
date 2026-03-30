@@ -10,6 +10,7 @@ public:
 	~FEditorEngine() override;
 
 	bool Initialize(HINSTANCE hInstance);
+	void OpenNewObj();
 	void Shutdown() override;
 
 protected:
