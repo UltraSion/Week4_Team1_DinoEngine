@@ -72,6 +72,8 @@ void UCameraComponent::FootZoom(float Value)
 	}
 #if IS_OBJ_VIEWER
 	Camera->MoveForward(Value*0.1f);
+#else
+	Camera->MoveForward(Value);
 #endif
 }
 

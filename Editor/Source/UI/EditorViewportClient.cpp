@@ -18,6 +18,7 @@
 #include "Renderer/ShaderMap.h"
 #include "Serializer/SceneSerializer.h"
 #include "World/Level.h"
+#include <cmath>
 
 namespace
 {
@@ -485,6 +486,9 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 {
 	(void)Core;
 
+	constexpr float WheelZoomForwardScale = 0.5f;
+	constexpr float WheelZoomFactor = 1.1f;
+
 	if (!InputManager)
 	{
 		return;
@@ -535,6 +539,22 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 	if (UpInput != 0.0f)
 	{
 		CameraTransform.MoveUp(UpInput * DeltaTime);
+	}
+
+	const float MouseWheelDelta = InputManager->GetMouseWheelDelta();
+	if (MouseWheelDelta != 0.0f)
+	{
+		if (CameraTransform.IsOrthographic())
+		{
+			const float ZoomFactor = MouseWheelDelta;
+			CameraTransform.SetOrthoWidth(CameraTransform.GetOrthoWidth() / ZoomFactor);
+			return;
+		}
+#if IS_OBJ_VIEWER
+		CameraTransform.MoveForward(MouseWheelDelta*0.1f);
+#else
+		CameraTransform.MoveForward(MouseWheelDelta);
+#endif
 	}
 
 	if (InputManager->IsMouseButtonDown(FInputManager::MOUSE_RIGHT))
