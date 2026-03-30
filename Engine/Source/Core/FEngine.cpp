@@ -41,7 +41,6 @@ bool FEngine::Initialize(HINSTANCE hInstance, const wchar_t* Title, int32 Width,
 
 	InputManager = new FInputManager();
 	EnhancedInput = new FEnhancedInputManager();
-	WindowManager.Initialize(InputManager, EnhancedInput);
 	PostInitialize();
 
 	App->AddMessageFilter(std::bind(&FEngine::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
@@ -81,25 +80,11 @@ bool FEngine::OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 
 void FEngine::OnResize(int32 Width, int32 Height)
 {
-	WindowManager.SetRootRect(FRect(
-		0.0f,
-		0.0f,
-		static_cast<float>((std::max)(Width, 0)),
-		static_cast<float>((std::max)(Height, 0))));
-
 	if (Core)
 	{
 		Core->OnResize(Width, Height);
 	}
-}
-
-void FEngine::SetViewportLayoutBounds(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight)
-{
-	WindowManager.SetRootRect(FRect(
-		static_cast<float>(InTopLeftX),
-		static_cast<float>(InTopLeftY),
-		static_cast<float>(InWidth),
-		static_cast<float>(InHeight)));
+	OnMainWindowResized(Width, Height);
 }
 
 void FEngine::Input(float DeltaTime)
@@ -121,22 +106,17 @@ void FEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 	{
 		InputManager->ProcessMessage(Hwnd, Msg, WParam, LParam);
 	}
-
-	WindowManager.HandleMessage(Core.get(), Hwnd, Msg, WParam, LParam);
 }
 
 void FEngine::Tick(float DeltaTime)
 {
 	Input(Core->GetTimer().GetDeltaTime());
-	WindowManager.Tick(DeltaTime);
-	WindowManager.CheckParent();
 	Render();
 }
 
 void FEngine::Shutdown()
 {
 	GEngine = nullptr;
-	WindowManager.Shutdown();
 
 	if (Core)
 	{
@@ -171,6 +151,5 @@ void FEngine::Render()
 	}
 
 	GRenderer->BeginFrame();
-	WindowManager.DrawWindows();
 	GRenderer->EndFrame();
 }

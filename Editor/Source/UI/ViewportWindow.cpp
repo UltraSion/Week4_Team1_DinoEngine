@@ -31,15 +31,15 @@ void SViewportWindow::Draw()
 		ViewportContext->Render(GEngine->GetCore(), GEngine->GetCommandQueue());
 	}
 
-	//ImGui::Begin("Viewport", nullptr);
-	//ImGui::PushID(this);
-	//if(ImGui::Button("Test Button"))
-	//{
-	//	FRect Rect = GetRect();
-	//	Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Horizontal, SplitOption::LT);
-	//}
-	//ImGui::PopID();
-	//ImGui::End();
+	ImGui::Begin("ViewportSplitTest", nullptr);
+	ImGui::PushID(this);
+	if(ImGui::Button("Test Button"))
+	{
+		FRect Rect = GetRect();
+		Split(new SViewportWindow(Rect, GEngine->CreateContext(Rect)), SplitDirection::Horizontal, SplitOption::LT);
+	}
+	ImGui::PopID();
+	ImGui::End();
 }
 
 void SViewportWindow::OnResize()

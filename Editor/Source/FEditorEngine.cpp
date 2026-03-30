@@ -15,6 +15,7 @@
 #include "Platform/Windows/Window.h"
 #include "imgui_impl_win32.h"
 
+#include <algorithm>
 #include <commdlg.h>
 #include <cmath>
 #include <filesystem>
@@ -53,8 +54,10 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		return false;
 	}
 
+	WindowManager.Initialize(InputManager, EnhancedInput);
 	const float Width = MainWindow ? static_cast<float>(MainWindow->GetWidth()) : 1280.0f;
 	const float Height = MainWindow ? static_cast<float>(MainWindow->GetHeight()) : 720.0f;
+	WindowManager.SetRootRect(FRect(0.0f, 0.0f, Width, Height));
 	WindowManager.AddWindow(new SViewportWindow(FRect(0.0f, 0.0f, Width, Height), CreateContext(FRect(0.0f, 0.0f, Width, Height))));
 
 #if IS_OBJ_VIEWER //뷰어를 시작할 때 기본적으로 obj파일을 로딩합니다
@@ -77,6 +80,7 @@ void FEditorEngine::OpenNewObj()
 void FEditorEngine::Shutdown()
 {
 	EditorUI.DetachFromRenderer();
+	WindowManager.Shutdown();
 	FEngine::Shutdown();
 }
 
@@ -114,6 +118,55 @@ void FEditorEngine::PostInitialize()
 	EditorUI.AttachToRenderer();
 
 	UE_LOG("EditorEngine initialized");
+}
+
+void FEditorEngine::SetViewportLayoutBounds(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight)
+{
+	WindowManager.SetRootRect(FRect(
+		static_cast<float>(InTopLeftX),
+		static_cast<float>(InTopLeftY),
+		static_cast<float>(InWidth),
+		static_cast<float>(InHeight)));
+}
+
+void FEditorEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+{
+	FEngine::ProcessInput(Hwnd, Msg, WParam, LParam);
+	WindowManager.HandleMessage(Core.get(), Hwnd, Msg, WParam, LParam);
+}
+
+void FEditorEngine::Tick(float DeltaTime)
+{
+	Input(Core->GetTimer().GetDeltaTime());
+	WindowManager.Tick(DeltaTime);
+	WindowManager.CheckParent();
+	Render();
+}
+
+void FEditorEngine::Render()
+{
+	if (!Core)
+	{
+		return;
+	}
+
+	if (!GRenderer || GRenderer->IsOccluded())
+	{
+		return;
+	}
+
+	GRenderer->BeginFrame();
+	WindowManager.DrawWindows();
+	GRenderer->EndFrame();
+}
+
+void FEditorEngine::OnMainWindowResized(int32 Width, int32 Height)
+{
+	WindowManager.SetRootRect(FRect(
+		0.0f,
+		0.0f,
+		static_cast<float>((std::max)(Width, 0)),
+		static_cast<float>((std::max)(Height, 0))));
 }
 
 FViewportClient* FEditorEngine::CreateViewportClient()

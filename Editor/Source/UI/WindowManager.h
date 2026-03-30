@@ -12,7 +12,7 @@ class FEnhancedInputManager;
 class FCore;
 class SViewportWindow;
 
-class ENGINE_API FWindowManager
+class FWindowManager
 {
 	TArray<SWindow*> Windows;
 	FInputManager* InputManager = nullptr;
