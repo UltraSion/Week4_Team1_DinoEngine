@@ -460,7 +460,6 @@ void FEditorUI::BuildDefaultLayout(uint32 DockID)
 	ImGuiID DockRightBottom = 0;
 	ImGui::DockBuilderSplitNode(DockRight, ImGuiDir_Up, 0.50f, &DockRightTop, &DockRightBottom);
 	ImGui::DockBuilderDockWindow("Viewport", DockCenter);
-	ImGui::DockBuilderDockWindow("Stats", DockLeft);
 	ImGui::DockBuilderDockWindow("Properties", DockRightTop);
 	ImGui::DockBuilderDockWindow("Control Panel", DockRightBottom);
 	ImGui::DockBuilderDockWindow("Console", DockBottom);
@@ -533,14 +532,7 @@ void FEditorUI::Render()
 		{
 			SyncSelectedActorProperty();
 		}
-
-		const FTimer& Timer = Core->GetTimer();
-		Stat.SetFPS(Timer.GetDisplayFPS());
-		Stat.SetFrameTimeMs(Timer.GetFrameTimeMs());
 	}
-
-	Stat.SetObjectCount(UObject::TotalAllocationCounts);
-	Stat.SetHeapUsage(UObject::TotalAllocationBytes);
 
 	if (ImGui::BeginMainMenuBar())
 	{

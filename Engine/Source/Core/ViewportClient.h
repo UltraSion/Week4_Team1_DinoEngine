@@ -50,6 +50,8 @@ public:
 	virtual void SetViewportInputState(int32 InMouseX, int32 InMouseY, const FRect& InRect);
 	void SetWorldType(ELevelType InWorldType);
 	ELevelType GetWorldType() const;
+	int32 GetViewportWidth() const { return ViewportWidth; }
+	int32 GetViewportHeight() const { return ViewportHeight; }
 
 protected:
 	FCamera CameraTransform;
