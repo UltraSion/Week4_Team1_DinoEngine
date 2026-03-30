@@ -397,6 +397,21 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 				}
 			}
 
+			if ((Msg == WM_KEYDOWN || Msg == WM_SYSKEYDOWN) && WParam == VK_OEM_3)
+			{
+				if (ImGui::GetCurrentContext())
+				{
+					const ImGuiIO& IO = ImGui::GetIO();
+					const bool bCtrlDown = (::GetKeyState(VK_CONTROL) & 0x8000) != 0;
+					const bool bAltDown = (::GetKeyState(VK_MENU) & 0x8000) != 0;
+					if (!IO.WantTextInput && !bCtrlDown && !bAltDown)
+					{
+						Console.RequestInputFocus(true);
+						return true;
+					}
+				}
+			}
+
 			bool bViewportInteractive = false;
 			if (GEngine)
 			{
