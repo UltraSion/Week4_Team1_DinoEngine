@@ -250,8 +250,7 @@ void FViewportContext::Render(FCore* Core, FRenderCommandQueue& CommandQueue)
 
 	D3D11_VIEWPORT D3DViewport = Viewport->GetD3D11Viewport();
 	GRenderer->SetViewport(&D3DViewport);
-	GRenderer->SubmitCommands(CommandQueue);
-	GRenderer->ExecuteCommands();
+	GRenderer->ExecuteCommandQueue(CommandQueue);
 	ViewportClient->PostRender(Core, GRenderer);
 	Core->GetDebugDrawManager().Flush(GRenderer, ViewportClient->GetShowFlags(), World);
 }

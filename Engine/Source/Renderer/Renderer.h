@@ -69,6 +69,7 @@ public:
 	void SetViewport(D3D11_VIEWPORT* Viewport);
 	/** 수집된 커맨드 정렬 및 실행 */
 	void ExecuteCommands();
+	void ExecuteCommandQueue(const FRenderCommandQueue& InQueue);
 	
 	/** 특정 레이어의 명령들을 실제 드로우 콜로 변환 */
 	void ExecuteRenderPass(ERenderLayer RenderLayer);
@@ -107,7 +108,10 @@ public:
 private:
 	void SetConstantBuffers();
 	void AddCommand(const FRenderCommand& Command);
+	void AddCommand(TArray<FRenderCommand>& CommandBuffer, const FRenderCommand& Command);
 	void ClearCommandList();
+	void ExecuteCommands(TArray<FRenderCommand>& InCommandList, const FMatrix& InViewMatrix, const FMatrix& InProjectionMatrix);
+	void ExecuteRenderPass(TArray<FRenderCommand>& InCommandList, ERenderLayer RenderLayer);
 	bool CreateDeviceAndSwapChain(HWND InHwnd, int32 Width, int32 Height);
 	bool CreateRenderTargetAndDepthStencil(int32 Width, int32 Height);
 	bool CreateConstantBuffers();
