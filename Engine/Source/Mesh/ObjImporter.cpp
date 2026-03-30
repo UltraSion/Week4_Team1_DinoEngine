@@ -50,12 +50,24 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 		else if (Type == "mtllib")
 		{
 			std::string MtlFileName;
-			SS >> MtlFileName;
+			// 띄어쓰기가 있는 파일명을 위해 안전하게 파싱
+			std::getline(SS >> std::ws, MtlFileName);
 
-			// .obj와 같은 디렉토리에서 .mtl 찾기
-			std::filesystem::path ObjDir
-				= std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path();
-			FString MtlPath = (ObjDir / MtlFileName).string();
+			// AssetManager에게 전체 프로젝트에서 .mtl을 찾아달라고 요청
+			FString ResolvedMtlPath = FAssetManager::Get().FindAssetPath(MtlFileName);
+
+			FString MtlPath;
+			if (!ResolvedMtlPath.empty())
+			{
+				// 찾았다면 절대 경로로 변환 (ifstream으로 읽어야 하므로)
+				MtlPath = FPaths::ToAbsolutePath(ResolvedMtlPath);
+			}
+			else
+			{
+				// 못 찾았다면 최후의 수단으로 obj와 같은 폴더에서 찾기 (기존 폴백 로직)
+				std::filesystem::path ObjDir = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path();
+				MtlPath = (ObjDir / MtlFileName).string();
+			}
 
 			ParseMtl(MtlPath, OutInfo.Materials);
 		}

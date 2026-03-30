@@ -68,6 +68,7 @@ protected:
 	float CurrentDeltaTime = 0.0f;
 	int32 ViewportTopLeftX = 0;
 	int32 ViewportTopLeftY = 0;
+	bool bIsViewportHovered = false;
 	int32 ViewportWidth = 0;
 	int32 ViewportHeight = 0;
 	int32 ViewportMouseX = 0;

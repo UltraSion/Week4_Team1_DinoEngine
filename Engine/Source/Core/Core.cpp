@@ -23,6 +23,7 @@
 
 #include <filesystem>
 #include "Mesh/ObjManager.h"
+#include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
 FCore::~FCore()
 {
@@ -45,24 +46,10 @@ bool FCore::Initialize(HWND Hwnd, int32 Width, int32 Height, ELevelType StartupL
 
 
 	FString AssetRootDir = (FPaths::ProjectRoot() / "Assets").string();
-	FAssetManager::Get().Initialize(AssetRootDir);
+	FAssetRegistry::Get().Initialize(AssetRootDir);
 	// Material
 	FMaterialManager::Get().LoadAllMaterials(GRenderer->GetDevice(), GRenderer->GetRenderStateManager().get());
-	{
-		namespace fs = std::filesystem;
-		const fs::path MeshDir = FPaths::ProjectRoot() / "Assets" / "Meshes";
-		if (fs::exists(MeshDir))
-		{
-			for (const auto& Entry : fs::directory_iterator(MeshDir))
-			{
-				if (Entry.is_regular_file() && Entry.path().extension() == ".obj")
-				{
-					const auto RelativePath = fs::relative(Entry.path(), FPaths::ProjectRoot());
-					FObjManager::LoadObjStaticMesh(RelativePath.generic_string());
-				}
-			}
-		}
-	}
+
 
 	PhysicsManager = std::make_unique<FPhysicsManager>();
 

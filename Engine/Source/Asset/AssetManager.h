@@ -6,20 +6,16 @@
 
 
 class UStaticMesh;
-class FTexture;
+struct ID3D11Device;
 
 class ENGINE_API FAssetManager
 {
 public:
 	static FAssetManager& Get();
 
-	// 엔진 초기화 시 Assets 폴더 전체 스캔
-	void Initialize(const FString& RootAssetPath);
 
-	// 파일 이름으로 실제 상대/절대 경로를 찾아 반환
-	FString FindAssetPath(const FString& FileName) const;
-
-	TArray<FString> GetAssetsByExtension(const FString& Extension) const;
+	// 에셋 이름("sword.obj" 등)을 받아서, 메모리에 로드된 메쉬를 반환 (없으면 로드함)
+	UStaticMesh* LoadStaticMesh(ID3D11Device* Device, const FString& AssetName);
 
 private:
 	FAssetManager() = default;
@@ -28,8 +24,8 @@ private:
 	FAssetManager(const FAssetManager&) = delete;
 	FAssetManager& operator=(const FAssetManager&) = delete;
 
-	// Asset Registry: [파일명(확장자 포함)] -> [프로젝트 기준 상대 경로]
-	TMap<std::string, std::string> AssetPathRegistry;
+	// 메모리에 올라간 실제 오브젝트들을 들고 있음 (메모리 캐싱)
+	TMap<std::string, UStaticMesh*> LoadedMeshes;
 
-	// std::unordered_map<std::string, UStaticMesh*> MeshCache;
+
 };
