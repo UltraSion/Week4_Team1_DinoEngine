@@ -70,7 +70,7 @@ namespace
 		return "";
 	}
 
-#if IS_OBJ_VIEWER
+	//아래는 뷰어에서만 제공되는 기능입니다
 	AObjActor* FindObjViewerActor(FCore* Core)
 	{
 		if (!Core || !Core->GetLevel())
@@ -129,7 +129,6 @@ namespace
 			"[ObjViewer] Reloaded OBJ with axis mode: %s",
 			FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp ? "Y-Up" : "Z-Up");
 	}
-#endif
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
@@ -631,15 +630,15 @@ void FEditorUI::Render()
 				{
 					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode));
 				}
-
+#if IS_OBJ_VIEWER //뷰 모드에서는 월드축을 렌더링하지 않으며 불필요한 기능을 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
-				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-#if IS_OBJ_VIEWER
-#else
-				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
 #endif
+				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+#if IS_OBJ_VIEWER 
+				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+#endif
 
 				bool bShowGrid = ActiveViewportClient->IsGridVisible();
 				if (ImGui::Checkbox("Show Grid", &bShowGrid))
@@ -659,7 +658,7 @@ void FEditorUI::Render()
 					ActiveViewportClient->SetLineThickness(Thickness);
 				}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 y-up과 z-up 전환 기능을 추가로 제공합니다.
 				ImGui::SeparatorText("OBJ Axis");
 				int AxisMode = (FPrimitiveObj::GetImportAxisMode() == FPrimitiveObj::EImportAxisMode::YUpToZUp) ? 1 : 0;
 				if (ImGui::RadioButton("Z-Up", AxisMode == 0))
@@ -764,7 +763,7 @@ void FEditorUI::Render()
 		ImGui::EndPopup();
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
 #else
 	Property.Render(Core);
 	Console.Render();

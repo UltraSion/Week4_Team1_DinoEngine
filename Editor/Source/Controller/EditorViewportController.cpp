@@ -6,6 +6,9 @@
 #include "Input/InputModifier.h"
 #include "Input/InputMappingContext.h"
 #include "Camera/Camera.h"
+
+/* 현재 이쪽 코드는 입력을 처리하고 있지 않습니다 */
+
 FEditorViewportController::~FEditorViewportController()
 {
 	Cleanup();

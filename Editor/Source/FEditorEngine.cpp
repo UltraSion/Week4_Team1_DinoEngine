@@ -54,7 +54,7 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 	const float Height = MainWindow ? static_cast<float>(MainWindow->GetHeight()) : 720.0f;
 	WindowManager.AddWindow(new SViewportWindow(FRect(0.0f, 0.0f, Width, Height), CreateContext(FRect(0.0f, 0.0f, Width, Height))));
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어를 시작할 때 기본적으로 obj파일을 로딩합니다
 	RunObjViewerStartupTest();
 #endif
 	return true;
@@ -113,7 +113,6 @@ FViewportClient* FEditorEngine::CreateViewportClient()
 
 void FEditorEngine::RunObjViewerStartupTest()
 {
-#if IS_OBJ_VIEWER
 	if (!Core || !GRenderer)
 	{
 		return;
@@ -173,5 +172,4 @@ void FEditorEngine::RunObjViewerStartupTest()
 	ViewportClient->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
 	ViewportClient->SetGridVisible(false);
 	UE_LOG("[ObjViewerTest] Loaded startup mesh: %s", SelectedPath.c_str());
-#endif
 }
