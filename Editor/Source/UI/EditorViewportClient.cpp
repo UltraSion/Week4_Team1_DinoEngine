@@ -767,19 +767,17 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 		if (USceneComponent* Root = MeshActor->GetRootComponent())
 		{
 			FTransform Transform = Root->GetRelativeTransform();
-			Transform.SetLocation(SpawnLocation);
+			FVector FinalLocation = SpawnLocation;;
+#if IS_OBJ_VIEWER
+			// 뷰어 모드일 때만 높이(Z) 보정값을 추가 계산
+			FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
+#endif
+			Transform.SetLocation(FinalLocation);
 			Root->SetRelativeTransform(Transform);
 		}
+
 #if IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
-		if (USceneComponent* Root = MeshActor->GetRootComponent())
-		{
-			FTransform Transform = Root->GetRelativeTransform();
-			FVector Location = Transform.GetLocation();
-			Location.Z -= GetObjViewerBottomZ(MeshActor);
-			Transform.SetLocation(Location);
-			Root->SetRelativeTransform(Transform);
-		}
 		RefreshObjViewerCameraPivot(MeshActor);
 		FrameObjViewerCamera(MeshActor, true);
 #else
@@ -1007,7 +1005,6 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 	FMatrix Rotation;
 	FVector Scale = FVector::OneVector;
 	int32 Interval = 10;
-	float distance = CameraTransform.GetPosition().X;
 
 	FVector CameraLocation = CameraTransform.GetPosition();
 	switch (ViewportType)
