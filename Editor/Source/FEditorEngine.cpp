@@ -58,7 +58,13 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		return false;
 	}
 
-	WindowManager.Initialize(InputManager, EnhancedInput);
+	WindowManager.Initialize(
+		InputManager,
+		EnhancedInput,
+		[this](const FRect& InRect)
+		{
+			return CreateContext(InRect);
+		});
 	const float Width = MainWindow ? static_cast<float>(MainWindow->GetWidth()) : 1280.0f;
 	const float Height = MainWindow ? static_cast<float>(MainWindow->GetHeight()) : 720.0f;
 	WindowManager.SetRootRect(FRect(0.0f, 0.0f, Width, Height));
@@ -83,9 +89,15 @@ void FEditorEngine::OpenNewObj()
 
 void FEditorEngine::Shutdown()
 {
+	EditorUI.SaveEditorSettings();
 	EditorUI.DetachFromRenderer();
 	WindowManager.Shutdown();
 	FEngine::Shutdown();
+}
+
+void FEditorEngine::SaveEditorSettings()
+{
+	EditorUI.SaveEditorSettings();
 }
 
 void FEditorEngine::PreInitialize()
@@ -117,7 +129,7 @@ void FEditorEngine::PostInitialize()
 			}
 		});
 
-	EditorUI.Initialize(Core.get());
+	EditorUI.Initialize(Core.get(), &WindowManager);
 	EditorUI.SetupWindow(MainWindow);
 	EditorUI.AttachToRenderer();
 

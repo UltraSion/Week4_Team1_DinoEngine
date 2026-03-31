@@ -75,7 +75,9 @@ protected:
 
 public:
 	SWindow* GetSideLT() { return SideLT; }
+	const SWindow* GetSideLT() const { return SideLT; }
 	SWindow* GetSideRB() { return SideRB; }
+	const SWindow* GetSideRB() const { return SideRB; }
 	virtual void SetSideLT(SWindow* InSideLT);
 	virtual void SetSideRB(SWindow* InSideRB);
 	virtual FRect GetSideLTRect() = 0;
@@ -85,7 +87,7 @@ public:
 	SSplitter(FRect InRect, SWindow* InSideLT = nullptr, SWindow* InSideRB = nullptr, float InSplitRatio = 0.5f);
 	~SSplitter() override;
 	virtual SWindow* Merge(SWindow* MainWindow) override; // 부모를 제거하고 메인 윈도우로 대체 다른 윈도우는 삭제
-	float GetSplitRatio() { return SplitRatio; }
+	float GetSplitRatio() const { return SplitRatio; }
 	virtual void SetSplitRatio(float InSplitRatio);
 	void SetMinPaneSize(float InMinPaneSize) { MinPaneSize = InMinPaneSize; OnResize(); }
 	float GetMinPaneSize() const { return MinPaneSize; }
@@ -166,9 +168,13 @@ class SSplitterC : public SWindow
 
 public:
 	SWindow* GetSideLT() { return SideLT; }
+	const SWindow* GetSideLT() const { return SideLT; }
 	SWindow* GetSideLB() { return SideLB; }
+	const SWindow* GetSideLB() const { return SideLB; }
 	SWindow* GetSideRT() { return SideRT; }
+	const SWindow* GetSideRT() const { return SideRT; }
 	SWindow* GetSideRB() { return SideRB; }
+	const SWindow* GetSideRB() const { return SideRB; }
 	virtual void SetSideLT(SWindow* InSideLT);
 	virtual void SetSideLB(SWindow* InSideLB);
 	virtual void SetSideRT(SWindow* InSideRT);
@@ -183,8 +189,8 @@ public:
 	~SSplitterC() override;
 	virtual SWindow* Merge(SWindow* MainWindow) override; // 부모를 제거하고 메인 윈도우로 대체 다른 윈도우는 삭제
 
-	float GetSplitRatioVertical() { return SplitRatioVertical; }
-	float GetSplitRatioHorizontal() { return SplitRatioHorizontal; }
+	float GetSplitRatioVertical() const { return SplitRatioVertical; }
+	float GetSplitRatioHorizontal() const { return SplitRatioHorizontal; }
 	virtual void SetSplitRatioVertical(float InSplitRatio);
 	virtual void SetSplitRatioHorizontal(float InSplitRatio);
 	void SetMinPaneSize(float InMinPaneSize) { MinPaneSize = InMinPaneSize; OnResize(); }

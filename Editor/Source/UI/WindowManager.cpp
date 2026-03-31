@@ -3,11 +3,25 @@
 #include "Core/ViewportClient.h"
 #include "Core/ViewportContext.h"
 #include "Input/InputManager.h"
+#include "EditorViewportClient.h"
 #include "ViewportWindow.h"
 #include <windowsx.h>
+#include <cstdio>
 
 namespace
 {
+	const wchar_t* const LayoutRootSection = L"ViewportLayout";
+	const wchar_t* const LayoutRootKey = L"Root";
+	const wchar_t* const LayoutTypeKey = L"Type";
+	const wchar_t* const LayoutRatioKey = L"Ratio";
+	const wchar_t* const LayoutRatioHorizontalKey = L"RatioH";
+	const wchar_t* const LayoutRatioVerticalKey = L"RatioV";
+	const wchar_t* const LayoutSideLTKey = L"LT";
+	const wchar_t* const LayoutSideLBKey = L"LB";
+	const wchar_t* const LayoutSideRTKey = L"RT";
+	const wchar_t* const LayoutSideRBKey = L"RB";
+	const wchar_t* const LayoutViewportTypeKey = L"ViewportType";
+
 	bool IsMouseMessage(UINT Msg)
 	{
 		switch (Msg)
@@ -70,6 +84,252 @@ namespace
 	{
 		return Msg == WM_MOUSEWHEEL || Msg == WM_MOUSEHWHEEL;
 	}
+
+	std::wstring BuildLayoutNodeSectionName(const std::wstring& NodeId)
+	{
+		return std::wstring(LayoutRootSection) + L"." + NodeId;
+	}
+
+	void WriteIniString(const std::wstring& IniPath, const std::wstring& Section, const wchar_t* Key, const std::wstring& Value)
+	{
+		::WritePrivateProfileStringW(Section.c_str(), Key, Value.c_str(), IniPath.c_str());
+	}
+
+	std::wstring ReadIniString(const std::wstring& IniPath, const std::wstring& Section, const wchar_t* Key)
+	{
+		wchar_t Buffer[256] = {};
+		::GetPrivateProfileStringW(Section.c_str(), Key, L"", Buffer, 256, IniPath.c_str());
+		return std::wstring(Buffer);
+	}
+
+	float ReadIniFloat(const std::wstring& IniPath, const std::wstring& Section, const wchar_t* Key, float DefaultValue)
+	{
+		const std::wstring Value = ReadIniString(IniPath, Section, Key);
+		if (Value.empty())
+		{
+			return DefaultValue;
+		}
+
+		try
+		{
+			return std::stof(Value);
+		}
+		catch (...)
+		{
+			return DefaultValue;
+		}
+	}
+
+	std::wstring ToWStringFloat(float Value)
+	{
+		wchar_t Buffer[64] = {};
+		swprintf_s(Buffer, L"%.6f", Value);
+		return std::wstring(Buffer);
+	}
+
+	std::wstring GetViewportTypeName(EEditorViewportType ViewportType)
+	{
+		switch (ViewportType)
+		{
+		case EEditorViewportType::Top:
+			return L"Top";
+		case EEditorViewportType::Front:
+			return L"Front";
+		case EEditorViewportType::Right:
+			return L"Right";
+		case EEditorViewportType::Perspective:
+		default:
+			return L"Perspective";
+		}
+	}
+
+	EEditorViewportType ParseViewportType(const std::wstring& Value)
+	{
+		if (Value == L"Top")
+		{
+			return EEditorViewportType::Top;
+		}
+		if (Value == L"Front")
+		{
+			return EEditorViewportType::Front;
+		}
+		if (Value == L"Right")
+		{
+			return EEditorViewportType::Right;
+		}
+		return EEditorViewportType::Perspective;
+	}
+
+	struct FLayoutSerializer
+	{
+		const FWindowManager& WindowManager;
+		const std::wstring& IniPath;
+		int32 NextNodeIndex = 0;
+
+		std::wstring SerializeNode(const SWindow* Window)
+		{
+			if (Window == nullptr)
+			{
+				return L"";
+			}
+
+			const std::wstring NodeId = L"Node" + std::to_wstring(NextNodeIndex++);
+			const std::wstring Section = BuildLayoutNodeSectionName(NodeId);
+
+			if (const SSplitterH* SplitterH = dynamic_cast<const SSplitterH*>(Window))
+			{
+				WriteIniString(IniPath, Section, LayoutTypeKey, L"SplitterH");
+				WriteIniString(IniPath, Section, LayoutRatioKey, ToWStringFloat(SplitterH->GetSplitRatio()));
+				WriteIniString(IniPath, Section, LayoutSideLTKey, SerializeNode(SplitterH->GetSideLT()));
+				WriteIniString(IniPath, Section, LayoutSideRBKey, SerializeNode(SplitterH->GetSideRB()));
+				return NodeId;
+			}
+
+			if (const SSplitterV* SplitterV = dynamic_cast<const SSplitterV*>(Window))
+			{
+				WriteIniString(IniPath, Section, LayoutTypeKey, L"SplitterV");
+				WriteIniString(IniPath, Section, LayoutRatioKey, ToWStringFloat(SplitterV->GetSplitRatio()));
+				WriteIniString(IniPath, Section, LayoutSideLTKey, SerializeNode(SplitterV->GetSideLT()));
+				WriteIniString(IniPath, Section, LayoutSideRBKey, SerializeNode(SplitterV->GetSideRB()));
+				return NodeId;
+			}
+
+			if (const SSplitterC* SplitterC = dynamic_cast<const SSplitterC*>(Window))
+			{
+				WriteIniString(IniPath, Section, LayoutTypeKey, L"SplitterC");
+				WriteIniString(IniPath, Section, LayoutRatioHorizontalKey, ToWStringFloat(SplitterC->GetSplitRatioHorizontal()));
+				WriteIniString(IniPath, Section, LayoutRatioVerticalKey, ToWStringFloat(SplitterC->GetSplitRatioVertical()));
+				WriteIniString(IniPath, Section, LayoutSideLTKey, SerializeNode(SplitterC->GetSideLT()));
+				WriteIniString(IniPath, Section, LayoutSideLBKey, SerializeNode(SplitterC->GetSideLB()));
+				WriteIniString(IniPath, Section, LayoutSideRTKey, SerializeNode(SplitterC->GetSideRT()));
+				WriteIniString(IniPath, Section, LayoutSideRBKey, SerializeNode(SplitterC->GetSideRB()));
+				return NodeId;
+			}
+
+			WriteIniString(IniPath, Section, LayoutTypeKey, L"Viewport");
+			if (const SViewportWindow* ViewportWindow = dynamic_cast<const SViewportWindow*>(Window))
+			{
+				const FViewportContext* Context = ViewportWindow->GetViewportContext();
+				const FEditorViewportClient* EditorViewportClient = dynamic_cast<const FEditorViewportClient*>(Context ? Context->GetViewportClient() : nullptr);
+				if (EditorViewportClient)
+				{
+					WriteIniString(IniPath, Section, LayoutViewportTypeKey, GetViewportTypeName(EditorViewportClient->GetViewportType()));
+				}
+			}
+
+			return NodeId;
+		}
+	};
+
+	struct FLayoutDeserializer
+	{
+		FWindowManager& WindowManager;
+		const std::wstring& IniPath;
+
+		SViewportWindow* CreateViewportWindow(const FRect& Rect, EEditorViewportType ViewportType) const
+		{
+			FViewportContext* Context = WindowManager.CreateViewportContext(Rect);
+			if (Context == nullptr)
+			{
+				return nullptr;
+			}
+
+			SViewportWindow* ViewportWindow = new SViewportWindow(Rect, Context);
+			if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(Context->GetViewportClient()))
+			{
+				EditorViewportClient->SetViewportType(ViewportType);
+			}
+
+			return ViewportWindow;
+		}
+
+		SWindow* DeserializeNode(const std::wstring& NodeId, const FRect& Rect) const
+		{
+			if (NodeId.empty())
+			{
+				return nullptr;
+			}
+
+			const std::wstring Section = BuildLayoutNodeSectionName(NodeId);
+			const std::wstring Type = ReadIniString(IniPath, Section, LayoutTypeKey);
+			if (Type.empty())
+			{
+				return nullptr;
+			}
+
+			if (Type == L"Viewport")
+			{
+				const EEditorViewportType ViewportType = ParseViewportType(ReadIniString(IniPath, Section, LayoutViewportTypeKey));
+				return CreateViewportWindow(Rect, ViewportType);
+			}
+
+			if (Type == L"SplitterH")
+			{
+				SSplitterH* Splitter = new SSplitterH(Rect, nullptr, nullptr, ReadIniFloat(IniPath, Section, LayoutRatioKey, 0.5f));
+				SWindow* SideLT = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideLTKey), Splitter->GetSideLTRect());
+				SWindow* SideRB = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideRBKey), Splitter->GetSideRBRect());
+				if (SideLT == nullptr || SideRB == nullptr)
+				{
+					delete SideLT;
+					delete SideRB;
+					delete Splitter;
+					return nullptr;
+				}
+				Splitter->SetSideLT(SideLT);
+				Splitter->SetSideRB(SideRB);
+				return Splitter;
+			}
+
+			if (Type == L"SplitterV")
+			{
+				SSplitterV* Splitter = new SSplitterV(Rect, nullptr, nullptr, ReadIniFloat(IniPath, Section, LayoutRatioKey, 0.5f));
+				SWindow* SideLT = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideLTKey), Splitter->GetSideLTRect());
+				SWindow* SideRB = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideRBKey), Splitter->GetSideRBRect());
+				if (SideLT == nullptr || SideRB == nullptr)
+				{
+					delete SideLT;
+					delete SideRB;
+					delete Splitter;
+					return nullptr;
+				}
+				Splitter->SetSideLT(SideLT);
+				Splitter->SetSideRB(SideRB);
+				return Splitter;
+			}
+
+			if (Type == L"SplitterC")
+			{
+				SSplitterC* Splitter = new SSplitterC(
+					Rect,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					ReadIniFloat(IniPath, Section, LayoutRatioHorizontalKey, 0.5f),
+					ReadIniFloat(IniPath, Section, LayoutRatioVerticalKey, 0.5f));
+				SWindow* SideLT = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideLTKey), Splitter->GetSideLTRect());
+				SWindow* SideLB = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideLBKey), Splitter->GetSideLBRect());
+				SWindow* SideRT = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideRTKey), Splitter->GetSideRTRect());
+				SWindow* SideRB = DeserializeNode(ReadIniString(IniPath, Section, LayoutSideRBKey), Splitter->GetSideRBRect());
+				if (SideLT == nullptr || SideLB == nullptr || SideRT == nullptr || SideRB == nullptr)
+				{
+					delete SideLT;
+					delete SideLB;
+					delete SideRT;
+					delete SideRB;
+					delete Splitter;
+					return nullptr;
+				}
+				Splitter->SetSideLT(SideLT);
+				Splitter->SetSideLB(SideLB);
+				Splitter->SetSideRT(SideRT);
+				Splitter->SetSideRB(SideRB);
+				return Splitter;
+			}
+
+			return nullptr;
+		}
+	};
 }
 
 FWindowManager::~FWindowManager()
@@ -77,14 +337,28 @@ FWindowManager::~FWindowManager()
 	Shutdown();
 }
 
-void FWindowManager::Initialize(FInputManager* InInputManager, FEnhancedInputManager* InEnhancedInputManager)
+void FWindowManager::Initialize(FInputManager* InInputManager, FEnhancedInputManager* InEnhancedInputManager, std::function<FViewportContext*(const FRect&)> InViewportContextFactory)
 {
 	InputManager = InInputManager;
 	EnhancedInputManager = InEnhancedInputManager;
+	ViewportContextFactory = std::move(InViewportContextFactory);
 }
 
 void FWindowManager::Shutdown()
 {
+	ResetWindowTree();
+	InputManager = nullptr;
+	EnhancedInputManager = nullptr;
+	ViewportContextFactory = {};
+}
+
+void FWindowManager::ResetWindowTree()
+{
+	if (MouseCaptureWindow && ::GetCapture() != nullptr)
+	{
+		::ReleaseCapture();
+	}
+
 	HoveredWindow = nullptr;
 	PressedWindow = nullptr;
 	MouseCaptureWindow = nullptr;
@@ -100,8 +374,11 @@ void FWindowManager::Shutdown()
 		delete Window;
 	}
 	Windows.clear();
-	InputManager = nullptr;
-	EnhancedInputManager = nullptr;
+}
+
+FViewportContext* FWindowManager::CreateViewportContext(const FRect& Rect) const
+{
+	return ViewportContextFactory ? ViewportContextFactory(Rect) : nullptr;
 }
 
 void FWindowManager::SetRootRect(const FRect& InRect)
@@ -515,6 +792,16 @@ void FWindowManager::AddWindow(SWindow* NewWindow)
 	Windows.push_back(NewWindow);
 }
 
+void FWindowManager::SetRootWindow(SWindow* NewRootWindow)
+{
+	ResetWindowTree();
+	if (NewRootWindow)
+	{
+		NewRootWindow->SetParent(nullptr);
+		Windows.push_back(NewRootWindow);
+	}
+}
+
 void FWindowManager::ReplaceWindow(SWindow* OldWindow, SWindow* NewWindow)
 {
 	if (OldWindow == nullptr || OldWindow == NewWindow)
@@ -539,4 +826,102 @@ void FWindowManager::QueueDestroyWindow(SWindow* Window)
 	}
 
 	PendingDestroyWindows.push_back(Window);
+}
+
+bool FWindowManager::SaveLayoutToIni(const std::wstring& IniPath) const
+{
+	if (Windows.empty() || Windows[0] == nullptr)
+	{
+		return false;
+	}
+
+	FLayoutSerializer Serializer{ *this, IniPath };
+	const std::wstring RootNodeId = Serializer.SerializeNode(Windows[0]);
+	if (RootNodeId.empty())
+	{
+		return false;
+	}
+
+	WriteIniString(IniPath, LayoutRootSection, LayoutRootKey, RootNodeId);
+	return true;
+}
+
+bool FWindowManager::LoadLayoutFromIni(const std::wstring& IniPath, const FRect& RootRect)
+{
+	if (!ViewportContextFactory)
+	{
+		return false;
+	}
+
+	const std::wstring RootNodeId = ReadIniString(IniPath, LayoutRootSection, LayoutRootKey);
+	if (RootNodeId.empty())
+	{
+		return false;
+	}
+
+	FLayoutDeserializer Deserializer{ *this, IniPath };
+	SWindow* NewRootWindow = Deserializer.DeserializeNode(RootNodeId, RootRect);
+	if (NewRootWindow == nullptr)
+	{
+		return false;
+	}
+
+	SetRootWindow(NewRootWindow);
+	NewRootWindow->SetRect(RootRect);
+	return true;
+}
+
+void FWindowManager::CollectViewportWindowsRecursive(SWindow* Window, TArray<SViewportWindow*>& OutViewportWindows) const
+{
+	if (Window == nullptr)
+	{
+		return;
+	}
+
+	if (SViewportWindow* ViewportWindow = dynamic_cast<SViewportWindow*>(Window))
+	{
+		OutViewportWindows.push_back(ViewportWindow);
+		return;
+	}
+
+	if (SSplitter* Splitter = dynamic_cast<SSplitter*>(Window))
+	{
+		CollectViewportWindowsRecursive(Splitter->GetSideLT(), OutViewportWindows);
+		CollectViewportWindowsRecursive(Splitter->GetSideRB(), OutViewportWindows);
+		return;
+	}
+
+	if (SSplitterC* SplitterC = dynamic_cast<SSplitterC*>(Window))
+	{
+		CollectViewportWindowsRecursive(SplitterC->GetSideLT(), OutViewportWindows);
+		CollectViewportWindowsRecursive(SplitterC->GetSideLB(), OutViewportWindows);
+		CollectViewportWindowsRecursive(SplitterC->GetSideRT(), OutViewportWindows);
+		CollectViewportWindowsRecursive(SplitterC->GetSideRB(), OutViewportWindows);
+	}
+}
+
+FEditorViewportClient* FWindowManager::FindPerspectiveViewportClient() const
+{
+	TArray<SViewportWindow*> ViewportWindows;
+	for (SWindow* RootWindow : Windows)
+	{
+		CollectViewportWindowsRecursive(RootWindow, ViewportWindows);
+	}
+
+	for (SViewportWindow* ViewportWindow : ViewportWindows)
+	{
+		if (ViewportWindow == nullptr)
+		{
+			continue;
+		}
+
+		FViewportContext* Context = ViewportWindow->GetViewportContext();
+		FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(Context ? Context->GetViewportClient() : nullptr);
+		if (EditorViewportClient && EditorViewportClient->GetViewportType() == EEditorViewportType::Perspective)
+		{
+			return EditorViewportClient;
+		}
+	}
+
+	return nullptr;
 }
