@@ -21,6 +21,7 @@ public:
 		EAxisDirection EngineX = EAxisDirection::PositiveX;
 		EAxisDirection EngineY = EAxisDirection::PositiveY;
 		EAxisDirection EngineZ = EAxisDirection::PositiveZ;
+		float ImportScale = 1.0f;
 	};
 
 	// .obj 파싱 -> Raw Data

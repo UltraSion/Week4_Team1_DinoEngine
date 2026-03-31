@@ -35,6 +35,7 @@
 #include "imgui_internal.h"
 
 #include <commdlg.h>
+#include <cmath>
 #include <filesystem>
 #include <windows.h>
 #include <windowsx.h>
@@ -47,6 +48,8 @@ enum class EFileDialogType
 
 namespace
 {
+	constexpr float ObjViewerImportScaleTolerance = 1.0e-4f;
+
 	ImGuiDockNode* FindCentralDockNode(ImGuiDockNode* Node)
 	{
 		if (Node == nullptr)
@@ -199,7 +202,8 @@ namespace
 	{
 		return FString("X=") + GetAxisDirectionLabel(ImportAxisMapping.EngineX)
 			+ "  Y=" + GetAxisDirectionLabel(ImportAxisMapping.EngineY)
-			+ "  Z=" + GetAxisDirectionLabel(ImportAxisMapping.EngineZ);
+			+ "  Z=" + GetAxisDirectionLabel(ImportAxisMapping.EngineZ)
+			+ "  Scale=" + std::to_string(ImportAxisMapping.ImportScale);
 	}
 
 	AStaticMeshActor* FindObjViewerMeshActor(ULevel* Level)
@@ -1108,7 +1112,8 @@ void FEditorUI::Render()
 		const bool bAppliedAxisMappingChanged =
 			LastAppliedImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
 			LastAppliedImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-			LastAppliedImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
+			LastAppliedImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ ||
+			!(std::fabs(LastAppliedImportAxisMapping.ImportScale - AppliedImportAxisMapping.ImportScale) <= ObjViewerImportScaleTolerance);
 		if (DraftAxisAssetPath != MeshAssetPath || bAppliedAxisMappingChanged)
 		{
 			DraftAxisAssetPath = MeshAssetPath;
@@ -1235,24 +1240,36 @@ void FEditorUI::Render()
 				ImGui::PopID();
 			}
 
-			const bool bHasPendingAxisChanges =
-				DraftImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
-				DraftImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-				DraftImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
+				ImGui::TextColored(LabelColor, "Import Scale:");
+				ImGui::SameLine(100.0f);
+				ImGui::SetNextItemWidth(120.0f);
+				ImGui::DragFloat("##ImportScale", &DraftImportAxisMapping.ImportScale, 0.1f, 0.1f, 10.0f);
 
-			if (bHasPendingAxisChanges)
-			{
-				ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Pending changes. Click Apply to reload.");
-			}
-			else
+				const bool bHasValidDraftScale = DraftImportAxisMapping.ImportScale > ObjViewerImportScaleTolerance;
+
+				const bool bHasPendingAxisChanges =
+					DraftImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
+					DraftImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
+					DraftImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ ||
+					!((std::fabs(DraftImportAxisMapping.ImportScale - AppliedImportAxisMapping.ImportScale) <= ObjViewerImportScaleTolerance));
+				
+				if (!bHasValidDraftScale)
+				{
+					ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.35f, 1.0f), "Import scale must be greater than 0.");
+				}
+				else if (bHasPendingAxisChanges)
+				{
+					ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Pending changes. Click Apply to reload.");
+				}
+				else
 			{
 				ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "Axis mapping is up to date.");
 			}
 
-			if (!bHasPendingAxisChanges)
-			{
-				ImGui::BeginDisabled();
-			}
+				if (!bHasPendingAxisChanges || !bHasValidDraftScale)
+				{
+					ImGui::BeginDisabled();
+				}
 			if (ImGui::Button("Apply"))
 			{
 				if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
@@ -1263,10 +1280,10 @@ void FEditorUI::Render()
 					LastAppliedImportAxisMapping = DraftImportAxisMapping;
 				}
 			}
-			if (!bHasPendingAxisChanges)
-			{
-				ImGui::EndDisabled();
-			}
+				if (!bHasPendingAxisChanges || !bHasValidDraftScale)
+				{
+					ImGui::EndDisabled();
+				}
 
 			ImGui::Unindent();
 		}
