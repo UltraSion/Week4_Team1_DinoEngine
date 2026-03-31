@@ -7,7 +7,7 @@
 #include <cmath>
 
 class FMaterial;
-
+class FArchive;
 struct FBoxSphereBounds
 {
 	FVector Center;
@@ -42,4 +42,5 @@ protected:
 public:
 	bool ShouldDrawDebugBounds() const { return bDrawDebugBounds; }
 	void SetDrawDebugBounds(bool bEnable) { bDrawDebugBounds = bEnable; }
+	virtual void Serialize(FArchive& Ar) override;
 };

@@ -7,6 +7,8 @@
 #include "Component/SceneComponent.h"
 #include "Serializer/Archive.h"
 #include "Component/StaticMeshComponent.h"
+#include "ThirdParty/nlohmann/json.hpp"
+#include "Serializer/Archive.h"
 #include "World/Level.h"
 IMPLEMENT_RTTI(AActor, UObject)
 
@@ -164,7 +166,9 @@ void AActor::Destroy()
 
 void AActor::Serialize(FArchive& Ar)
 {
-	if (Ar.IsSaving())// Save Actor property
+	UObject::Serialize(Ar);
+
+	if (Ar.IsSaving()) // Save Actor property
 	{
 		FString ClassName = GetClass()->GetName();
 		Ar.Serialize("Class", ClassName);
@@ -174,38 +178,8 @@ void AActor::Serialize(FArchive& Ar)
 		for (UActorComponent* Comp : GetComponents())
 			if (Comp) CompUUIDs.push_back(Comp->UUID);
 		Ar.SerializeUIntArray("ComponentUUIDs", CompUUIDs);
-
-		if (USceneComponent* Root = GetRootComponent())
-		{
-			const FTransform Transform = Root->GetRelativeTransform();
-
-			FVector Location = Transform.GetTranslation();
-			FVector Rotation = Transform.Rotator().Euler();
-			FVector Scale = Transform.GetScale3D();
-			Ar.Serialize("Location", Location);
-			Ar.Serialize("Rotation", Rotation);
-			Ar.Serialize("Scale", Scale);
-		}
-
-		if (UStaticMeshComponent* Comp = GetComponentByClass<UStaticMeshComponent>())
-		{
-			FString Asset = Comp->GetStaticMeshAsset();
-			Ar.Serialize("ObjStaticMeshAsset", Asset);
-			FString CompType = "StaticMeshComp";
-			Ar.Serialize("Type", CompType);
-		}
-		if (UTextComponent* TC = GetComponentByClass<UTextComponent>())
-		{
-			FString Text = TC->GetText();
-			FVector4 Color4 = TC->GetTextColor();
-			bool bBillboard = TC->IsBillboard();
-			Ar.Serialize("Text", Text);
-			Ar.Serialize("TextColor", Color4);
-			Ar.Serialize("Billboard", bBillboard);
-		
-		}
 	}
-	else//Load 
+	else // Load 
 	{
 		if (Ar.Contains("UUID"))
 		{
@@ -221,31 +195,7 @@ void AActor::Serialize(FArchive& Ar)
 			}
 			UUID = SavedUUID;
 			GUUIDToObjectMap[SavedUUID] = this;
-
 		}
-
-		//restore Transform
-		FTransform Transform;
-		if (Ar.Contains("Location"))
-		{
-			FVector Location;
-			Ar.Serialize("Location", Location);
-			Transform.SetTranslation(Location);
-		}
-		if (Ar.Contains("Rotation"))
-		{
-			FVector Rotation;
-			Ar.Serialize("Rotation", Rotation);
-			Transform.SetRotation(FRotator::MakeFromEuler(Rotation));
-		}
-		if (Ar.Contains("Scale"))
-		{
-			FVector Scale;
-			Ar.Serialize("Scale", Scale);
-			Transform.SetScale3D(Scale);
-		}
-		if (USceneComponent* Root = GetRootComponent())
-			Root->SetRelativeTransform(Transform);
 
 		// Components UUID Restore
 		if (Ar.Contains("ComponentUUIDs"))
@@ -267,24 +217,23 @@ void AActor::Serialize(FArchive& Ar)
 				GUUIDToObjectMap[CompUUIDs[i]] = Components[i];
 			}
 		}
-		//Setting Owner
+
+		// Setting Owner
 		for (UActorComponent* Comp : GetComponents())
 			if (Comp)
 				Comp->SetOwner(this);
-		if (UTextComponent* TC = GetComponentByClass<UTextComponent>())
-		{
-			FString Text = TC->GetText();
-			FVector4 TextColor = TC->GetTextColor();
-			bool bBillboard = TC->IsBillboard();
+	}
+	// RootComponent 직렬화 
+	// 만약 루트가 StaticMeshComponent라면, 위치/회전/크기부터 메쉬/매테리얼/텍스처까지 연쇄적으로 싹 다 자동 저장&로드
+	if (USceneComponent* Root = GetRootComponent())
+	{
+		Root->Serialize(Ar);
+	}
 
-			Ar.Serialize("Text", Text);
-			Ar.Serialize("TextColor", TextColor);
-			Ar.Serialize("Billboard", bBillboard);
-
-			TC->SetText(Text);
-			TC->SetTextColor(TextColor);
-			TC->SetBillboard(bBillboard);
-		}
+	// TextComponent 직렬화 (나중에 UTextComponent::Serialize 안으로 빼주시면 더 좋습니다)
+	if (UTextComponent* TC = GetComponentByClass<UTextComponent>())
+	{
+		TC->Serialize(Ar);
 	}
 }
 const FVector& AActor::GetActorLocation() const

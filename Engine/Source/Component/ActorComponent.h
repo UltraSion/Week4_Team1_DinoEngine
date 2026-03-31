@@ -2,7 +2,7 @@
 #include "Object/Object.h"
 
 class AActor;
-
+class FArchive;
 class ENGINE_API UActorComponent : public UObject
 {
 public:
@@ -21,7 +21,7 @@ public:
 	bool HasBegunPlay() const { return bBegunPlay; }
 	bool CanTick() const { return bCanEverTick && bTickEnabled; }
 	void SetComponentTickEnabled(bool bEnabled) { bTickEnabled = bEnabled; }
-
+	virtual void Serialize(class FArchive& Ar) override;
 protected:
 	TObjectPtr<AActor> Owner;
 	bool bRegistered = false;

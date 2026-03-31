@@ -7,7 +7,7 @@
 #include "Core/Paths.h"
 #include "Actor/Actor.h"
 #include "Actor/AttachTestActor.h"
-
+#include "Renderer/Renderer.h" /
 #include "Component/PrimitiveComponent.h"
 #include "World/Level.h"
 #include "Object/ObjectFactory.h" 
@@ -101,7 +101,17 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 
 	if (!Json.contains("Primitives"))
 		return false;
-
+	if (Json.contains("Materials"))//매테리얼 프리로드
+	{
+		for (const auto& MatPath : Json["Materials"])
+		{
+			FString FullPath = (FPaths::ProjectRoot() / MatPath.get<std::string>()).string();
+			if (GRenderer && GRenderer->GetRenderStateManager())
+			{
+				FMaterialManager::Get().LoadFromFile(Device, GRenderer->GetRenderStateManager().get(), FullPath);
+			}
+		}
+	}
 	FCamera* Camera = Level->GetCamera();
 	if (Camera && Json.contains("Camera"))
 	{
@@ -174,32 +184,6 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 		*static_cast<nlohmann::json*>(Ar.GetRawJson()) = Value;
 		Actor->Serialize(Ar);
 
-		if (Value.contains("Material"))
-		{
-			const FString MaterialName = Value["Material"].get<FString>();
-			const std::shared_ptr<FMaterial> Material = FMaterialManager::Get().FindByName(MaterialName);
-			if (Material)
-			{
-				if (UPrimitiveComponent* PrimitiveComponent = Actor->GetComponentByClass<UPrimitiveComponent>())
-				{
-					PrimitiveComponent->SetMaterial(Material.get());
-				}
-			}
-		}
-
-
-		if (Value.contains("ObjStaticMeshAsset"))
-		{
-			if (Actor->IsA(AStaticMeshActor::StaticClass()))
-			{
-				const FString MeshAsset = Value["ObjStaticMeshAsset"].get<FString>();
-				if (!MeshAsset.empty())
-				{
-					AStaticMeshActor* SMActor = static_cast<AStaticMeshActor*>(Actor);
-					SMActor->LoadStaticMesh(Device, MeshAsset);
-				}
-			}
-		}
 		++ActorIndex;
 
 	}

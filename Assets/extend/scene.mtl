@@ -1,0 +1,229 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl 15___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 0 0.0104096496
+Ke 1 1 1
+
+newmtl 02___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.6297637195
+Pr 0.5504954268
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 0.5098 0
+Ke 0 0 0
+
+newmtl 04___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.2334222561
+Pr 0.5809832317
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.4745 0.0157 0.0157
+Ke 0 0 0
+
+newmtl 05___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.8118 0.0941 0.0941
+Ke 0 0 0
+
+newmtl 07___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.4895198171
+Pr 0.6846417683
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0627 0.0706 0.0706
+Ke 0 0 0
+
+newmtl 08___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.4773246951
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5216 0.2471 0
+Ke 0 0 0
+
+newmtl 09___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.2578125
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5882 0.5882 0.5882
+Ke 0 0 0
+
+newmtl 10___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.3736661585
+Pr 0.6114710366
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.8941 0.8941 0.8941
+Ke 0 0 0
+
+newmtl 11___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.7765 0.0235 0.0235
+Ke 0 0 0
+
+newmtl 13___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 0.4745 0
+Ke 1 1 0
+
+newmtl 14___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0 1 1
+Ke 0 1 1
+
+newmtl 16___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.745617378
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.864824582 0.864824582 0.864824582
+Ke 0 0 0
+
+newmtl 17___Default
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.6663490854
+Pr 0.4712271341
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0196 0.0196 0.0196
+Ke 0 0 0
+
+newmtl material
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0392 0.0392 0.0392
+Ke 0 0 0
+
+newmtl Material__2594
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.270007622
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5469729369 0.5469729369 0.5469729369
+Ke 0 0 0
+
+newmtl Material__518
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.588 0.588 0.588
+Ke 0 0 0
+
+newmtl wire_016016016
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.0627 0.0627 0.0627
+Ke 0 0 0
+
+newmtl wire_135059008
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5294 0.2314 0.0314
+Ke 0 0 0
+
+newmtl wire_140088225
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.549 0.3451 0.8824
+Ke 0 0 0
+
+newmtl wire_229154215
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.898 0.6039 0.8431
+Ke 0 0 0
