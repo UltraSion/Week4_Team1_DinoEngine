@@ -1,5 +1,7 @@
 #include "StaticMeshComponent.h"
 #include "Mesh/StaticMeshRenderData.h"
+#include "Object/StaticMesh.h"
+#include "Asset/AssetManager.h"
 #include "Core/Paths.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialManager.h"
@@ -20,36 +22,39 @@ void UStaticMeshComponent::Initialize()
 
 FString UStaticMeshComponent::GetStaticMeshAsset() const
 {
-	if (StaticMeshRenderData) return StaticMeshRenderData->GetAssetPath();
+	if (StaticMesh) return StaticMesh->GetAssetPathFileName();
 	return "";
 }
 
-void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& FilePath)
-{
-	for (uint32 i = 0; i < GetNumMaterials(); ++i)
-	{
-		LoadTextureToSlot(Device, FilePath, i);
-	}
-}
 
-void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRenderData* InMesh)
+// 덤으로 LoadStaticMesh도 깔끔하게 정리할 수 있습니다.
+void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& AssetName)
 {
-	StaticMeshRenderData = InMesh;
+	UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(Device, AssetName);
+
+	// 2. 방금 위에서 훌륭하게 작성하신 SetStaticMeshData를 호출하여 컴포넌트에 적용합니다.
+	SetStaticMeshData(Device, LoadedMesh);
+}
+void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* InMesh)
+{
+	StaticMesh = InMesh;
 
 	// 이전 메쉬가 쓰던 다이내믹 매테리얼 찌꺼기 초기화
 	DynamicMaterialOwners.clear();
 
-	if (!StaticMeshRenderData || !Device) return;
+	if (!StaticMesh) return;
 
+	FStaticMeshRenderData* RenderData = StaticMesh->GetStaticMeshAsset();
+	if (!RenderData) return;
 	// LoadStaticMesh에 있던 자동 매핑 로직 이식
 	uint32 NumSlots = GetNumMaterials();
 	for (uint32 i = 0; i < NumSlots; ++i)
 	{
 		bool bTextureLoaded = false;
 
-		if (i < StaticMeshRenderData->ImportedTexturePaths.size())
+		if (Device && i < RenderData->ImportedTexturePaths.size())
 		{
-			FString TexPath = StaticMeshRenderData->ImportedTexturePaths[i];
+			FString TexPath = RenderData->ImportedTexturePaths[i];
 			if (!TexPath.empty())
 			{
 				//  fs::exists 대신, 우리가 새로 만든 안전한 ToWide()를 사용하여 파일 존재 여부 확인
@@ -78,9 +83,9 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRe
 
 				// 배열에서 색상(Kd) 꺼내오기
 				FVector MatColor(1.0f, 1.0f, 1.0f);
-				if (i < StaticMeshRenderData->ImportedDiffuseColors.size())
+				if (i < RenderData->ImportedDiffuseColors.size())
 				{
-					MatColor = StaticMeshRenderData->ImportedDiffuseColors[i];
+					MatColor = RenderData->ImportedDiffuseColors[i];
 				}
 				DynamicMat->SetVectorParameter("ColorTint", FVector4(MatColor.X, MatColor.Y, MatColor.Z, 1.0f));
 
@@ -95,109 +100,72 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRe
 	}
 }
 
-// 덤으로 LoadStaticMesh도 깔끔하게 정리할 수 있습니다.
-void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& FilePath)
+
+void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& FilePath)
 {
-	FStaticMeshRenderData* LoadedData = FObjManager::LoadObjStaticMeshAsset(FilePath);
-	SetStaticMeshData(Device, LoadedData);
+	for (uint32 i = 0; i < GetNumMaterials(); ++i)
+	{
+		LoadTextureToSlot(Device, FilePath, i);
+	}
 }
 void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString& FilePath, uint32 SlotIndex)
 {
-	if (SlotIndex >= GetNumMaterials()) return; // 유효하지 않은 슬롯 방어
+	if (SlotIndex >= GetNumMaterials()) return;
 
-	// 1. Map에서 해당 슬롯의 다이내믹 머티리얼 찾기
+	// 1. 다이내믹 머티리얼 준비
 	std::shared_ptr<FDynamicMaterial> DynamicMat;
 	auto It = DynamicMaterialOwners.find(SlotIndex);
 
 	if (It != DynamicMaterialOwners.end())
 	{
-		// 이미 이 슬롯에 할당된 머티리얼이 있으면 재사용
 		DynamicMat = It->second;
 	}
 	else
 	{
-		// 없으면 기본 머티리얼을 찾아 복제 후 새로 생성
 		std::shared_ptr<FMaterial> BaseMat = FMaterialManager::Get().FindByName("M_StaticMesh");
-		if (!BaseMat)
-			BaseMat = FMaterialManager::Get().FindByName("M_Default_Texture");
-		if (!BaseMat)
-			return;
+		if (!BaseMat) BaseMat = FMaterialManager::Get().FindByName("M_Default_Texture");
+		if (!BaseMat) return;
 
 		DynamicMat = BaseMat->CreateDynamicMaterial();
-		DynamicMaterialOwners[SlotIndex] = DynamicMat; // Map에 저장
+		DynamicMaterialOwners[SlotIndex] = DynamicMat;
 	}
 
+	//AssetManager를 통해 텍스처 로드 (여기서 중복 파일 읽기가 완벽히 차단)
+	ID3D11ShaderResourceView* srv = FAssetManager::Get().LoadTexture(Device, FilePath);
+	if (!srv) return;
 
-	int width = 0, height = 0, channels = 0;
-	FILE* f = nullptr;
-
-	//std::filesystem::path를 거치지 않고, 안전한 FPaths::ToWide를 직접 사용
-	std::wstring WidePath = FPaths::ToWide(FPaths::ToAbsolutePath(FilePath));
-	_wfopen_s(&f, WidePath.c_str(), L"rb");
-
-	unsigned char* data = nullptr;
-	if (f)
-	{
-		data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
-		fclose(f);
-	}
-
-	D3D11_TEXTURE2D_DESC desc = {};
-	desc.Width = width;
-	desc.Height = height;
-	desc.MipLevels = 1;
-	desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // ⭐ diffuse면 SRGB 추천
-	desc.SampleDesc.Count = 1;
-	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-	D3D11_SUBRESOURCE_DATA initData = {};
-	initData.pSysMem = data;
-	initData.SysMemPitch = width * 4;
-
-	ID3D11Texture2D* texture = nullptr;
-	HRESULT hr = Device->CreateTexture2D(&desc, &initData, &texture);
-	if (FAILED(hr)) { stbi_image_free(data); return; }
-
-	ID3D11ShaderResourceView* srv = nullptr;
-	hr = Device->CreateShaderResourceView(texture, nullptr, &srv);
-
-	// Texture는 SRV 만들었으면 바로 버려도 됨
-	texture->Release();
-	if (FAILED(hr)) { stbi_image_free(data); return; }
-	stbi_image_free(data);
-
-	// 3. 머티리얼 텍스처 세팅
+	//머티리얼 텍스처 세팅
 	auto MT = std::make_shared<FMaterialTexture>();
-	MT->TextureSRV = srv;
-	DynamicMat->SetMaterialTexture(MT);
+	MT->TextureSRV = srv; // MT가 소멸될 때 srv->Release()를 부르지만, AssetManager가 원본을 쥐고 있으니 안전
 
-	// ⭐ 4. 전체 반복문 대신, 인자로 받은 특정 SlotIndex에만 덮어쓰기!
+	DynamicMat->SetMaterialTexture(MT);
 	SetMaterial(SlotIndex, DynamicMat.get());
 }
 
 FMeshData* UStaticMeshComponent::GetMeshData() const
 {
-	if (StaticMeshRenderData)
-		return StaticMeshRenderData->GetMeshData();
+	if (StaticMesh && StaticMesh->GetStaticMeshAsset())
+		return StaticMesh->GetStaticMeshAsset()->GetMeshData();
 	return nullptr;
 }
 
 const TArray<FMeshSection>& UStaticMeshComponent::GetSections() const
 {
-	if (StaticMeshRenderData)
-		return StaticMeshRenderData->GetSections();
+	if (StaticMesh && StaticMesh->GetStaticMeshAsset())
+		return StaticMesh->GetStaticMeshAsset()->GetSections();
 	static TArray<FMeshSection> Empty;
 	return Empty;
 }
 
 FMaterial* UStaticMeshComponent::GetMaterial(uint32 SlotIndex) const
 {
+	// 1순위: 오버라이드 매테리얼
 	if (SlotIndex < OverrideMaterials.size() && OverrideMaterials[SlotIndex])
 		return OverrideMaterials[SlotIndex];
-	if (StaticMeshRenderData)
-		return StaticMeshRenderData->GetDefaultMaterial(SlotIndex);
+
+	// 2순위: 렌더 데이터 기본 매테리얼
+	if (StaticMesh && StaticMesh->GetStaticMeshAsset())
+		return StaticMesh->GetStaticMeshAsset()->GetDefaultMaterial(SlotIndex);
 	return nullptr;
 }
 

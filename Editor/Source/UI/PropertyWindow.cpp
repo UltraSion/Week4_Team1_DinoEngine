@@ -273,14 +273,14 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 		}
 	}
 
-	// 🚀 지연 로딩: 사용자가 콤보박스를 클릭했을 때만 AssetManager를 통해 로드!
+	// 지연 로딩: 사용자가 콤보박스를 클릭했을 때만 AssetManager를 통해 로드!
 	if (ImGui::Combo("Mesh Asset", &SelectedMeshIndex, Items.data(), static_cast<int>(Items.size())) && Core && SelectedMeshIndex > 0 && GRenderer)
 	{
 		FString SelectedPath = MeshAssets[SelectedMeshIndex - 1].AssetPath;
 		UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), SelectedPath);
 		if (LoadedMesh)
 		{
-			SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh->GetStaticMeshAsset());
+			SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh);
 		}
 	}
 
@@ -291,7 +291,7 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 			UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), RelPath);
 			if (LoadedMesh)
 			{
-				SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh->GetStaticMeshAsset());
+				SMComp->SetStaticMeshData(GRenderer->GetDevice(), LoadedMesh);
 			}
 		}
 	});

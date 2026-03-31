@@ -6,6 +6,11 @@
 #include "Mesh/StaticMeshRenderData.h"
 #include "Debug/EngineLog.h"
 #include "AssetCooker.h" 
+#include "Primitive/PrimitiveCube.h"
+#include "Primitive/PrimitiveSphere.h"
+#include "Primitive/PrimitivePlane.h"
+#include "ThirdParty/stb_image.h"
+#include "Core/Paths.h"
 #include <algorithm>
 
 FAssetManager& FAssetManager::Get()
@@ -14,9 +19,68 @@ FAssetManager& FAssetManager::Get()
 	return Instance;
 }
 
+UStaticMesh* FAssetManager::LoadBasicShape(const FString& ShapeName)
+{
+	FString FullPath = "Engine/BasicShapes/" + ShapeName;
 
+	// 1. 이미 메모리에 있는지 확인
+	auto It = LoadedMeshes.find(FullPath);
+	if (It != LoadedMeshes.end())
+	{
+		return It->second;
+	}
+
+	// 2. 코드로 Primitive 데이터 생성
+	std::shared_ptr<FMeshData> MeshData = nullptr;
+	if (ShapeName == "Cube")
+	{
+		CPrimitiveCube CubeGen;
+		MeshData = CPrimitiveBase::GetCached(CPrimitiveCube::Key);
+	}
+	else if (ShapeName == "Sphere")
+	{
+		CPrimitiveSphere SphereGen(16, 16);
+		MeshData = CPrimitiveBase::GetCached(CPrimitiveSphere::Key);
+	}
+	else if (ShapeName == "Plane")
+	{
+		CPrimitivePlane PlaneGen;
+		MeshData = CPrimitiveBase::GetCached(CPrimitivePlane::Key);
+	}
+
+	if (!MeshData) return nullptr;
+	if (MeshData->Sections.empty() && !MeshData->Indices.empty())
+	{
+		FMeshSection Sec;
+		Sec.FirstIndex = 0;
+		Sec.IndexCount = static_cast<uint32>(MeshData->Indices.size());
+		Sec.MaterialIndex = 0;
+		MeshData->Sections.push_back(Sec);
+	}
+	// 3. RenderData 세팅
+	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
+	RenderData->SetMeshData(MeshData);
+	RenderData->SetAssetPath(FullPath);
+
+	// 4. UStaticMesh 객체 생성 및 GC 보호
+	UStaticMesh* NewMesh = FObjectFactory::ConstructObject<UStaticMesh>(nullptr, ShapeName);
+	NewMesh->SetStaticMeshAsset(RenderData);
+	NewMesh->AddFlags(EObjectFlags::Standalone);
+
+	// 5. 캐시에 저장
+	LoadedMeshes[FullPath] = NewMesh;
+	UE_LOG("[AssetManager] Generated and cached basic shape: %s\n", FullPath.c_str());
+
+	return NewMesh;
+}
 UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& AssetName)
 {
+
+	if (AssetName.starts_with("Engine/BasicShapes/"))
+	{
+		FString ShapeName = AssetName.substr(19); // "Engine/BasicShapes/" 길이만큼 제거
+		return LoadBasicShape(ShapeName);
+	}
 	// 레지스트리에게 에셋 정보(경로)를 물어봄
 	FAssetData AssetData;
 	if (!FAssetRegistry::Get().GetAssetByObjectPath(AssetName, AssetData))
@@ -65,4 +129,76 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 	UE_LOG("[AssetManager] Successfully loaded and cached: %s\n", AssetData.AssetPath.c_str());
 
 	return NewMesh;
+}
+
+ID3D11ShaderResourceView* FAssetManager::LoadTexture(ID3D11Device* Device, const FString& FilePath)
+{
+	if (!Device || FilePath.empty()) return nullptr;
+
+	// 이미 메모리(캐시)에 로드된 텍스처인지 확인
+	auto It = LoadedTextures.find(FilePath);
+	if (It != LoadedTextures.end())
+	{
+		//텍스처를 반환할 때 레퍼런스 카운트를 올려줍니다.
+		// (FMaterialTexture 소멸자에서 Release()를 호출하더라도 원본이 파괴되지 않게 보호)
+		if (It->second)
+		{
+			It->second->AddRef();
+		}
+		return It->second;
+	}
+
+	//캐시에 없으면 디스크에서 로드 (기존 컴포넌트에 있던 로직 이동)
+	int width = 0, height = 0, channels = 0;
+	FILE* f = nullptr;
+
+	std::wstring WidePath = FPaths::ToWide(FPaths::ToAbsolutePath(FilePath));
+	_wfopen_s(&f, WidePath.c_str(), L"rb");
+
+	unsigned char* data = nullptr;
+	if (f)
+	{
+		data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+		fclose(f);
+	}
+
+	if (!data)
+	{
+		UE_LOG("[AssetManager] Failed to load texture file: %s\n", FilePath.c_str());
+		return nullptr;
+	}
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	D3D11_SUBRESOURCE_DATA initData = {};
+	initData.pSysMem = data;
+	initData.SysMemPitch = width * 4;
+
+	ID3D11Texture2D* texture = nullptr;
+	HRESULT hr = Device->CreateTexture2D(&desc, &initData, &texture);
+	if (FAILED(hr)) { stbi_image_free(data); return nullptr; }
+
+	ID3D11ShaderResourceView* srv = nullptr;
+	hr = Device->CreateShaderResourceView(texture, nullptr, &srv);
+
+	texture->Release();
+	stbi_image_free(data);
+
+	if (FAILED(hr)) return nullptr;
+
+	// 생성된 SRV를 캐시에 저장
+	LoadedTextures[FilePath] = srv;
+	UE_LOG("[AssetManager] Successfully loaded and cached texture: %s\n", FilePath.c_str());
+
+	// 캐시에서 꺼내주는 것과 동일하게 참조 카운트를 증가시켜서 반환
+	srv->AddRef();
+	return srv;
 }

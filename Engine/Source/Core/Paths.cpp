@@ -59,8 +59,7 @@ std::wstring FPaths::ToWide(const FString& Path)
 //fs::path.string()을 쓰지 않고 u8string()을 거쳐 안전하게 UTF-8로 추출 및 조작
 std::string FPaths::ToRelativePath(const FString& Path)
 {
-	auto u8Root = ProjectRoot().u8string();
-	FString Root(u8Root.begin(), u8Root.end());
+	FString Root = ToString(ProjectRoot().wstring());
 	FString RelativePath = Path;
 
 	if (RelativePath.starts_with(Root))
@@ -78,8 +77,7 @@ std::string FPaths::ToRelativePath(const FString& Path)
 //fs::path 생성자를 거치지 않고 순수 문자열 결합을 사용하여 인코딩 크래시 원천 차단
 std::string FPaths::ToAbsolutePath(const FString& Path)
 {
-	auto u8Root = ProjectRoot().u8string();
-	FString Root(u8Root.begin(), u8Root.end());
+	FString Root = ToString(ProjectRoot().wstring());
 
 	// 이미 절대 경로라면 그대로 반환
 	if (Path.starts_with(Root))
@@ -103,6 +101,17 @@ std::string FPaths::ToAbsolutePath(const FString& Path)
 
 	AbsolutePath += SafePath;
 	return AbsolutePath;
+}
+
+FString FPaths::ToString(const std::wstring& WPath)
+{
+	if (WPath.empty()) return FString();
+	// WideCharToMultiByte를 사용하여 UTF-16을 UTF-8로 변환
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &WPath[0], (int)WPath.size(), NULL, 0, NULL, NULL);
+	FString strTo(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, &WPath[0], (int)WPath.size(), &strTo[0], size_needed, NULL, NULL);
+	std::replace(strTo.begin(), strTo.end(), '\\', '/');
+	return strTo;
 }
 
 void FPaths::SetRoot(const std::filesystem::path& InPath)

@@ -3,6 +3,14 @@
 #include "Mesh/StaticMeshRenderData.h"
 
 IMPLEMENT_RTTI(UStaticMesh, UObject)
+UStaticMesh::~UStaticMesh()
+{
+	if (StaticMeshAsset)
+	{
+		delete StaticMeshAsset;
+		StaticMeshAsset = nullptr;
+	}
+}
 const FString& UStaticMesh::GetAssetPathFileName() const
 {
 	if (StaticMeshAsset)

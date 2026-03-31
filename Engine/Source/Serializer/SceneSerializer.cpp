@@ -7,8 +7,6 @@
 #include "Core/Paths.h"
 #include "Actor/Actor.h"
 #include "Actor/AttachTestActor.h"
-#include "Actor/CubeActor.h"
-#include "Actor/SphereActor.h"
 
 #include "Component/PrimitiveComponent.h"
 #include "World/Level.h"

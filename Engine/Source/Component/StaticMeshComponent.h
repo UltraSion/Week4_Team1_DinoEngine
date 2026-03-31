@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 
 #include"MeshComponent.h"
-#include"Mesh/StaticMeshRenderData.h"
+class UStaticMesh;
 class FDynamicMaterial;
 class ENGINE_API UStaticMeshComponent : public UMeshComponent
 {
@@ -11,13 +11,13 @@ public:
 
 	void Initialize();
 
-	void LoadStaticMesh(ID3D11Device* Device, const FString& FilePath);
+	void LoadStaticMesh(ID3D11Device* Device, const FString& AssetName);
 	FString GetStaticMeshAsset() const;
 
 	void LoadTexture(ID3D11Device* Device, const FString& FilePath);
-	void SetStaticMeshData(ID3D11Device* Device, FStaticMeshRenderData* InMesh);
+	void SetStaticMeshData(ID3D11Device* Device, UStaticMesh* InMesh);
 	void LoadTextureToSlot(ID3D11Device* Device, const FString& FilePath, uint32 SlotIndex);
-	FStaticMeshRenderData* GetStaticMesh() const { return StaticMeshRenderData; }
+	UStaticMesh* GetStaticMesh() const { return StaticMesh; }
 	// UMeshComponent 인터페이스 override
 	FMeshData* GetMeshData() const override;
 	const TArray<FMeshSection>& GetSections() const override;
@@ -26,5 +26,5 @@ public:
 
 private:
 	TMap<uint32, std::shared_ptr<FDynamicMaterial>> DynamicMaterialOwners;
-	FStaticMeshRenderData* StaticMeshRenderData = nullptr;
+	UStaticMesh* StaticMesh = nullptr;
 };

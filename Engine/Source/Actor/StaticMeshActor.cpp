@@ -7,6 +7,7 @@ IMPLEMENT_RTTI(AStaticMeshActor, AActor)
 void AStaticMeshActor::PostSpawnInitialize()
 {
 	StaticMeshComponent = FObjectFactory::ConstructObject<UStaticMeshComponent>(this);
+	SetRootComponent(StaticMeshComponent);
 	AddOwnedComponent(StaticMeshComponent);
 	if (bUseRandomColor)
 	{
@@ -17,6 +18,6 @@ void AStaticMeshActor::PostSpawnInitialize()
 }
 void AStaticMeshActor::LoadStaticMesh(ID3D11Device* Device, const FString& FilePath)
 {
-	if (StaticMeshComponent && Device)
+	if (StaticMeshComponent)
 		StaticMeshComponent->LoadStaticMesh(Device, FilePath);
 }

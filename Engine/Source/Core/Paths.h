@@ -42,7 +42,7 @@ public:
 	 * Path 의 시작이 Root 와 동일하지 않은 경우 상대 경로로 판단하여 절대 경로를 붙여 반환
 	 */
 	static std::string ToAbsolutePath(const FString& Path);
-
+	static FString ToString(const std::wstring& WPath);
 private:
 	static void SetRoot(const std::filesystem::path& InPath);
 

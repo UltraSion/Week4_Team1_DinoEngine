@@ -2,8 +2,7 @@
 #include "Core/Paths.h"
 #include "Actor/Actor.h"
 #include "Actor/AttachTestActor.h"
-#include "Actor/CubeActor.h"
-#include "Actor/SphereActor.h"
+
 #include "Actor/SubUVActor.h"
 #include "Camera/Camera.h"
 #include "Component/CameraComponent.h"

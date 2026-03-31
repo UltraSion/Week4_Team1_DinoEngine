@@ -9,6 +9,7 @@
 #include "Component/SubUVComponent.h"
 #include "Component/TextComponent.h"
 #include "Component/UUIDBillboardComponent.h"
+#include "Component/MeshComponent.h"
 #include "Actor/SkySphereActor.h"
 #include <limits>
 
@@ -152,13 +153,19 @@ AActor* FPicker::PickActor(const TArray<AActor*>& InActors, const FCamera* InCam
 
 				continue;
 			}
+			FMeshData* Mesh = nullptr;
+			if (PrimitiveComponent->GetPrimitive())
 
-			if (!PrimitiveComponent->GetPrimitive())
+
 			{
-				continue;
+				Mesh = PrimitiveComponent->GetPrimitive()->GetMeshData();
 			}
 
-			FMeshData* Mesh = PrimitiveComponent->GetPrimitive()->GetMeshData();
+			else if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
+			{
+				Mesh = static_cast<UMeshComponent*>(PrimitiveComponent)->GetMeshData();
+			}
+
 			if (!Mesh)
 			{
 				continue;

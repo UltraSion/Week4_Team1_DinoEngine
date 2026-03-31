@@ -186,20 +186,7 @@ void AActor::Serialize(FArchive& Ar)
 			Ar.Serialize("Rotation", Rotation);
 			Ar.Serialize("Scale", Scale);
 		}
-		if (UPrimitiveComponent* PrimComp = GetComponentByClass<UPrimitiveComponent>())
-		{
-			if (PrimComp->GetMaterial() && !PrimComp->GetMaterial()->GetOriginName().empty())
-			{
-				FString MatName = PrimComp->GetMaterial()->GetOriginName();
-				Ar.Serialize("Material", MatName);
-			}
 
-			if (PrimComp->GetPrimitive())
-			{
-				FString PrimFileName = PrimComp->GetPrimitiveFileName();
-				Ar.Serialize("PrimitiveFileName", PrimFileName);
-			}
-		}
 		if (UStaticMeshComponent* Comp = GetComponentByClass<UStaticMeshComponent>())
 		{
 			FString Asset = Comp->GetStaticMeshAsset();
