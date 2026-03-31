@@ -4,6 +4,7 @@
 #include "ShaderMap.h"
 #include "Material.h"
 #include "MaterialManager.h"
+#include "Core/FEngine.h"
 #include "Core/Paths.h"
 #include "Primitive/PrimitiveBase.h"
 #include <cassert>
@@ -322,6 +323,7 @@ void FRenderer::SetConstantBuffers()
 {
 	ID3D11Buffer* CBs[2] = { FrameConstantBuffer, ObjectConstantBuffer };
 	DeviceContext->VSSetConstantBuffers(0, 2, CBs);
+	DeviceContext->PSSetConstantBuffers(0, 2, CBs);
 }
 
 void FRenderer::BeginFrame()
@@ -565,6 +567,7 @@ void FRenderer::UpdateFrameConstantBuffer()
 	FFrameConstantBuffer CBData;
 	CBData.View = ViewMatrix.GetTransposed();
 	CBData.Projection = ProjectionMatrix.GetTransposed();
+	CBData.TotalTime = (GEngine && GEngine->GetCore()) ? static_cast<float>(GEngine->GetCore()->GetTimer().GetTotalTime()) : 0.0f;
 	D3D11_MAPPED_SUBRESOURCE Mapped;
 	if (SUCCEEDED(DeviceContext->Map(FrameConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
 	{

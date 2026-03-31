@@ -11,6 +11,8 @@ class FFocus
 
 	FVector TargetPosition;
 	FVector StartPosition;
+	float TargetOrthoWidth = 0.0f;
+	float StartOrthoWidth = 0.0f;
 
 	float FocusTime = 1.0f;
 	float MoveElapsedTime = 0.0f;
