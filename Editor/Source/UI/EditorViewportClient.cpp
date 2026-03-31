@@ -164,7 +164,15 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 	DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	GridMaterial->SetDepthStencilOption(DepthStencilOption);
 	GridMaterial->SetDepthStencilState(Renderer->GetRenderStateManager()->GetOrCreateDepthStencilState(DepthStencilOption));
-
+	FBlendStateOption BlendOption;
+	BlendOption.BlendEnable = true;
+	BlendOption.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	BlendOption.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	BlendOption.BlendOp = D3D11_BLEND_OP_ADD;
+	BlendOption.SrcBlendAlpha = D3D11_BLEND_ONE;
+	BlendOption.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	BlendOption.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	GridMaterial->SetBlendState(Renderer->GetRenderStateManager()->GetOrCreateBlendState(BlendOption));
 	const int32 SlotIndex = GridMaterial->CreateConstantBuffer(Device, 32);
 	if (SlotIndex >= 0)
 	{
