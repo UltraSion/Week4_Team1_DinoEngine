@@ -28,7 +28,9 @@ public:
 	const TArray<FMeshSection>& GetSections() const override;
 	FMaterial* GetMaterial(uint32 SlotIndex) const override;
 	uint32 GetNumMaterials() const override;
-
+	std::shared_ptr<FDynamicMaterial> GetOrCreateDynamicMaterialForSlot(uint32 SlotIndex);
+	void InitializeUVScrollParameters(uint32 SlotIndex, const std::shared_ptr<FDynamicMaterial>& DynamicMat);
+	TMap<uint32, std::shared_ptr<FDynamicMaterial>> DynamicMaterialOwners;
 private:
 	struct FUVScrollState
 	{
@@ -36,10 +38,8 @@ private:
 		FVector2 Speed = FVector2(0.0f, 0.0f);
 	};
 
-	std::shared_ptr<FDynamicMaterial> GetOrCreateDynamicMaterialForSlot(uint32 SlotIndex);
-	void InitializeUVScrollParameters(uint32 SlotIndex, const std::shared_ptr<FDynamicMaterial>& DynamicMat);
 
-	TMap<uint32, std::shared_ptr<FDynamicMaterial>> DynamicMaterialOwners;
+
 	TMap<uint32, FUVScrollState> UVScrollStates;
 	UStaticMesh* StaticMesh = nullptr;
 };

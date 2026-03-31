@@ -18,7 +18,7 @@ struct FMaterialTexture
 
 	FMaterialTexture(const FMaterialTexture&) = delete;
 	FMaterialTexture& operator=(const FMaterialTexture&) = delete;
-
+	FString AssetPath;
 	void Release();
 	void Bind(ID3D11DeviceContext* DeviceContext);
 };

@@ -452,6 +452,7 @@ void FRenderer::ExecuteCommands(TArray<FRenderCommand>& InCommandList, const FMa
 	UpdateFrameConstantBuffer();
 
 	ExecuteRenderPass(InCommandList, ERenderLayer::Default);
+	ExecuteRenderPass(InCommandList, ERenderLayer::Translucent);
 	ClearDepthBuffer();
 	ExecuteRenderPass(InCommandList, ERenderLayer::Overlay);
 	
