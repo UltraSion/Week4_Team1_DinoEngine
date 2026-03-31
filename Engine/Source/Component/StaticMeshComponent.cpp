@@ -5,6 +5,8 @@
 #include "Core/Paths.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialManager.h"
+#include "Serializer/Archive.h"
+#include "Renderer/Renderer.h"
 #include "Object/Class.h"
 #include <d3d11.h>
 
@@ -155,6 +157,10 @@ void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString
 	//머티리얼 텍스처 세팅
 	auto MT = std::make_shared<FMaterialTexture>();
 	MT->TextureSRV = srv; // MT가 소멸될 때 srv->Release()를 부르지만, AssetManager가 원본을 쥐고 있으니 안전
+	if (MT->TextureSRV)
+	{
+		MT->TextureSRV->AddRef();
+	}
 	MT->AssetPath = FilePath;
 	DynamicMat->SetMaterialTexture(MT);
 	SetMaterial(SlotIndex, DynamicMat.get());
@@ -295,4 +301,85 @@ FMaterial* UStaticMeshComponent::GetMaterial(uint32 SlotIndex) const
 uint32 UStaticMeshComponent::GetNumMaterials() const
 {
 	return static_cast<uint32>(GetSections().size());
+}
+
+
+void UStaticMeshComponent::Serialize(FArchive& Ar)
+{
+	UMeshComponent::Serialize(Ar);
+
+	FString MeshPath = GetStaticMeshAsset();
+	Ar.Serialize("StaticMeshAsset", MeshPath);
+
+	if (Ar.IsLoading() && !MeshPath.empty() && GRenderer)
+	{
+		LoadStaticMesh(GRenderer->GetDevice(), MeshPath);
+	}
+
+	TArray<FString> MaterialNames, TexturePaths;
+
+	if (Ar.IsSaving())
+	{
+		for (uint32 i = 0; i < GetNumMaterials(); ++i)
+		{
+			FMaterial* Mat = GetMaterial(i);
+			MaterialNames.push_back(Mat ? Mat->GetOriginName() : "M_StaticMesh");
+
+			FString TexPath = "";
+			auto It = DynamicMaterialOwners.find(i);
+			if (It != DynamicMaterialOwners.end() && It->second && It->second->GetMaterialTexture())
+				TexPath = It->second->GetMaterialTexture()->AssetPath;
+			TexturePaths.push_back(TexPath);
+		}
+	}
+
+	Ar.SerializeStringArray("SlotMaterials", MaterialNames);
+	Ar.SerializeStringArray("SlotTextures", TexturePaths);
+
+	if (Ar.IsLoading())
+	{
+		FStaticMeshRenderData* RenderData = StaticMesh ? StaticMesh->GetStaticMeshAsset() : nullptr;
+		for (uint32 i = 0; i < MaterialNames.size(); ++i)
+		{
+			FString SavedMatName = MaterialNames[i];
+			FMaterial* CurrentMat = GetMaterial(i);
+			FString CurrentMatName = CurrentMat ? CurrentMat->GetOriginName() : "";
+
+			// ⭐ [핵심 포인트] 
+			// LoadStaticMesh가 세팅해둔 매테리얼과 세이브 파일의 이름이 다를 때만 덮어씁니다!
+			if (CurrentMatName != SavedMatName)
+			{
+				if (auto Mat = FMaterialManager::Get().FindByName(SavedMatName))
+				{
+					if (std::shared_ptr<FDynamicMaterial> DynMat = Mat->CreateDynamicMaterial())
+					{
+						// 기존 텍스처 보존
+						std::shared_ptr<FMaterialTexture> OldTex = GDefaultWhiteTexture;
+						auto It = DynamicMaterialOwners.find(i);
+						if (It != DynamicMaterialOwners.end() && It->second && It->second->GetMaterialTexture())
+						{
+							OldTex = It->second->GetMaterialTexture();
+						}
+						DynMat->SetMaterialTexture(OldTex);
+
+						//  메쉬의 원본 .mtl 색상이 있다면 새 매테리얼에도 똑같이 주입
+						if (RenderData && i < RenderData->ImportedDiffuseColors.size())
+						{
+							DynMat->SetVector3Parameter("ColorTint", RenderData->ImportedDiffuseColors[i]);
+						}
+
+						DynamicMaterialOwners[i] = DynMat;
+						SetMaterial(i, DynMat.get());
+						InitializeUVScrollParameters(i, DynMat);
+					}
+				}
+			}
+
+			// 텍스처 경로가 있다면 로드
+			if (i < TexturePaths.size() && !TexturePaths[i].empty() && GRenderer)
+			{
+				LoadTextureToSlot(GRenderer->GetDevice(), TexturePaths[i], i);
+			}
+		}
+	}
 }

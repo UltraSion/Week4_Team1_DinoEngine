@@ -1,6 +1,6 @@
 #pragma once
 #include "PrimitiveComponent.h"
-
+class FArchive;
 class ENGINE_API UTextComponent : public UPrimitiveComponent
 {
 public:
@@ -9,6 +9,8 @@ public:
 	virtual void Initialize();
 
 	virtual FBoxSphereBounds GetWorldBounds() const override;
+
+	void Serialize(FArchive& Ar);
 
 	/** 표시할 텍스트 설정 - 메시 데이터가 갱신될 수 있도록 유도함 */
 	void SetText(const FString& InText);

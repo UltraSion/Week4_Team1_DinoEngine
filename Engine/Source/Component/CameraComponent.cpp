@@ -1,7 +1,7 @@
 #include "CameraComponent.h"
 #include "Object/Class.h"
 #include "Camera/Camera.h"
-
+#include "Serializer/Archive.h"
 IMPLEMENT_RTTI(UCameraComponent, USceneComponent)
 
 void UCameraComponent::Initialize()
@@ -101,4 +101,23 @@ void UCameraComponent::SetSpeed(float Inspeed)
 void UCameraComponent::SetSensitivity(float InSetSensitivity)
 {
 	Camera->SetMouseSensitivity(InSetSensitivity);
+}
+
+
+void UCameraComponent::Serialize(FArchive& Ar)
+{
+	USceneComponent::Serialize(Ar);
+
+	if (Ar.IsSaving())
+	{
+		float FOV = Camera->GetFOV();
+		float Speed = Camera->GetSpeed();
+		Ar.Serialize("FOV", FOV);
+		Ar.Serialize("Speed", Speed);
+	}
+	else
+	{
+		if (Ar.Contains("FOV")) { float F; Ar.Serialize("FOV", F); Camera->SetFOV(F); }
+		if (Ar.Contains("Speed")) { float S; Ar.Serialize("Speed", S); Camera->SetSpeed(S); }
+	}
 }

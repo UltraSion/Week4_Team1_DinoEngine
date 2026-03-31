@@ -227,13 +227,56 @@ void AActor::Serialize(FArchive& Ar)
 	// 만약 루트가 StaticMeshComponent라면, 위치/회전/크기부터 메쉬/매테리얼/텍스처까지 연쇄적으로 싹 다 자동 저장&로드
 	if (USceneComponent* Root = GetRootComponent())
 	{
-		Root->Serialize(Ar);
+		if (Ar.IsSaving())
+		{
+			FArchive CompAr(true); // RootComponent 전용 빈 도화지 생성
+			Root->Serialize(CompAr); // 여기에 마음껏 쓰게 함
+
+			// 다 쓴 도화지를 액터 도화지의 "RootComponent" 폴더에 통째
+			(*static_cast<nlohmann::json*>(Ar.GetRawJson()))["RootComponent"] = *static_cast<nlohmann::json*>(CompAr.GetRawJson());
+		}
+		else // IsLoading
+		{
+			auto& ParentJson = *static_cast<nlohmann::json*>(Ar.GetRawJson());
+			if (ParentJson.contains("RootComponent"))
+			{
+				FArchive CompAr(false);
+				*static_cast<nlohmann::json*>(CompAr.GetRawJson()) = ParentJson["RootComponent"];
+				Root->Serialize(CompAr);
+			}
+		}
 	}
 
-	// TextComponent 직렬화 (나중에 UTextComponent::Serialize 안으로 빼주시면 더 좋습니다)
-	if (UTextComponent* TC = GetComponentByClass<UTextComponent>())
+	// 2. TextComponent 직렬화 (UUIDBillboardComponent와 충돌하지 않도록 필터링)
+	UTextComponent* RealTC = nullptr;
+	for (UActorComponent* Comp : GetComponents())
 	{
-		TC->Serialize(Ar);
+		// UUID빌보드가 아닌 진짜 순수 TextComponent만 
+		if (Comp->IsA(UTextComponent::StaticClass()) && !Comp->IsA(UUUIDBillboardComponent::StaticClass()))
+		{
+			RealTC = static_cast<UTextComponent*>(Comp);
+			break;
+		}
+	}
+
+	if (RealTC)
+	{
+		if (Ar.IsSaving())
+		{
+			FArchive CompAr(true);
+			RealTC->Serialize(CompAr);
+			(*static_cast<nlohmann::json*>(Ar.GetRawJson()))["TextComponent"] = *static_cast<nlohmann::json*>(CompAr.GetRawJson());
+		}
+		else
+		{
+			auto& ParentJson = *static_cast<nlohmann::json*>(Ar.GetRawJson());
+			if (ParentJson.contains("TextComponent"))
+			{
+				FArchive CompAr(false);
+				*static_cast<nlohmann::json*>(CompAr.GetRawJson()) = ParentJson["TextComponent"];
+				RealTC->Serialize(CompAr);
+			}
+		}
 	}
 }
 const FVector& AActor::GetActorLocation() const

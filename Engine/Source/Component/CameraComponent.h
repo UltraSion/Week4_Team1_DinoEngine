@@ -2,7 +2,7 @@
 #include "SceneComponent.h"
 
 class FCamera;
-
+class FArchive;
 class ENGINE_API UCameraComponent : public USceneComponent
 {
 public:
@@ -29,6 +29,7 @@ public:
 	void SetFov(float inFov);
 	void SetSpeed(float Inspeed);
 	void SetSensitivity(float InSetSensitivity);
+	void Serialize(FArchive& Ar);
 private:
 	FCamera* Camera = nullptr;
 };

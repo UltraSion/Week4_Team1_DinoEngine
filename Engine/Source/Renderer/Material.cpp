@@ -176,7 +176,7 @@ std::unique_ptr<FDynamicMaterial> FMaterial::CreateDynamicMaterial() const
 			break;
 		}
 	}
-	if (!Device)
+	if (!Device && !ConstantBuffers.empty())
 	{
 		return nullptr;
 	}
@@ -198,7 +198,8 @@ std::unique_ptr<FDynamicMaterial> FMaterial::CreateDynamicMaterial() const
 	for (const auto& CB : ConstantBuffers)
 	{
 		FMaterialConstantBuffer NewCB;
-		if (NewCB.Create(Device, CB.Size))
+		// Device가 유효할 때만 버퍼 생성 시도
+		if (Device && NewCB.Create(Device, CB.Size))
 		{
 			if (CB.CPUData && NewCB.CPUData)
 			{
@@ -209,7 +210,10 @@ std::unique_ptr<FDynamicMaterial> FMaterial::CreateDynamicMaterial() const
 		Dynamic->ConstantBuffers.push_back(std::move(NewCB));
 	}
 
-	Device->Release();
+	if (Device)
+	{
+		Device->Release();
+	}
 	return Dynamic;
 }
 

@@ -3,6 +3,7 @@
 
 #include"MeshComponent.h"
 class UStaticMesh;
+class FArchive;
 class FDynamicMaterial;
 class ENGINE_API UStaticMeshComponent : public UMeshComponent
 {
@@ -28,6 +29,7 @@ public:
 	const TArray<FMeshSection>& GetSections() const override;
 	FMaterial* GetMaterial(uint32 SlotIndex) const override;
 	uint32 GetNumMaterials() const override;
+	void Serialize(FArchive& Ar);
 	std::shared_ptr<FDynamicMaterial> GetOrCreateDynamicMaterialForSlot(uint32 SlotIndex);
 	void InitializeUVScrollParameters(uint32 SlotIndex, const std::shared_ptr<FDynamicMaterial>& DynamicMat);
 	TMap<uint32, std::shared_ptr<FDynamicMaterial>> DynamicMaterialOwners;

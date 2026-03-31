@@ -1,6 +1,7 @@
 #include "TextComponent.h"
 #include "Object/Class.h"
 #include "Primitive/PrimitiveBase.h"
+#include "Serializer/Archive.h"
 #include <algorithm>
 
 IMPLEMENT_RTTI(UTextComponent, UPrimitiveComponent)
@@ -39,4 +40,28 @@ FBoxSphereBounds UTextComponent::GetWorldBounds() const
 
 	const FVector BoxExtent(HalfDepth, HalfWidth, HalfHeight);
 	return { Center, BoxExtent.Size(), BoxExtent };
+}
+
+
+
+void UTextComponent::Serialize(FArchive& Ar)
+{
+	UPrimitiveComponent::Serialize(Ar);
+
+	if (Ar.IsSaving())
+	{
+		FString TextStr = GetText();
+		FVector4 Color4 = GetTextColor();
+		bool bIsBillboard = IsBillboard();
+
+		Ar.Serialize("Text", TextStr);
+		Ar.Serialize("TextColor", Color4);
+		Ar.Serialize("Billboard", bIsBillboard);
+	}
+	else
+	{
+		if (Ar.Contains("Text")) { FString S; Ar.Serialize("Text", S); SetText(S); }
+		if (Ar.Contains("TextColor")) { FVector4 C; Ar.Serialize("TextColor", C); SetTextColor(C); }
+		if (Ar.Contains("Billboard")) { bool B; Ar.Serialize("Billboard", B); SetBillboard(B); }
+	}
 }
