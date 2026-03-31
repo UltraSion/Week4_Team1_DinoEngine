@@ -32,7 +32,7 @@ void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& A
 {
 	UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(Device, AssetName);
 
-	// 2. 방금 위에서 훌륭하게 작성하신 SetStaticMeshData를 호출하여 컴포넌트에 적용합니다.
+	// 2. 방금 위에서 훌륭하게 작성하신 SetStaticMeshData를 호출하여 컴포넌트에 적용합니다. -> 박상혁 왔다감ㅋㅋ
 	SetStaticMeshData(Device, LoadedMesh);
 }
 void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* InMesh)
