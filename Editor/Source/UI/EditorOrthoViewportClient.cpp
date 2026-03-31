@@ -43,7 +43,7 @@ void FEditorOrthoViewportClient::ConfigureDefaultView()
 	{
 	case EOrthoViewType::Top:
 		ViewDistance = 25.0f;
-		CameraTransform.SetRotation(0.0f, -89.0f);
+		CameraTransform.SetRotation(0.0f, -89.99f);
 		break;
 	case EOrthoViewType::Front:
 		ViewDistance = 25.0f;

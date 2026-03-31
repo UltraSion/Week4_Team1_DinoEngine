@@ -5,6 +5,11 @@ cbuffer FrameData : register(b0)
 	float4x4 Projection;
 };
 
+cbuffer ObjectData : register(b1)
+{
+	float4x4 World;
+};
+
 struct VS_OUTPUT
 {
 	float4 Pos : SV_POSITION; // 클립 공간 좌표
@@ -51,9 +56,9 @@ VS_OUTPUT main(uint id : SV_VertexID)
 	float range = 1000.0f;
 	float3 lPos = positions[id];
 	output.PlaneNo = planeno[id / 6];
-	output.LocalPos = lPos;
+	output.LocalPos = lPos * range;
 
-	float3 worldPosition = lPos * range;
+	float3 worldPosition = mul(float4(output.LocalPos, 1.0f), World).xyz;
 	output.WorldPos = worldPosition;
 	output.Pos = mul(float4(worldPosition, 1.0f), mul(View, Projection));
     

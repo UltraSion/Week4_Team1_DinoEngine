@@ -44,8 +44,8 @@ float4 main(VS_OUTPUT input) : SV_Target
 		discard;
 	}
 
-	float2 derivative = fwidth(input.WorldPos.xy);
-	float2 coord = input.WorldPos.xy / GridSize;
+	float2 derivative = fwidth(input.LocalPos.xy);
+	float2 coord = input.LocalPos.xy / GridSize;
 
 	float2 grid = abs(frac(coord - 0.5f) - 0.5f) / max(derivative / GridSize, 0.0001f);
 	float lineAlpha = saturate(LineThickness - min(grid.x, grid.y));
