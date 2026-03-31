@@ -5,11 +5,11 @@
 #include "Picking/Picker.h"
 #include "Types/CoreTypes.h"
 #include "CameraFuction/FCameraFunctionManager.h"
-#include "CameraFuction/FFocus.h"
-#include "CameraFuction/FChangePersToOrth.h"
-#include "CameraFuction/FChangeOrthoToOrtho.h"
+#include "CameraFuction/FPersToPers.h"
+#include "CameraFuction/FPerspectToOrtho.h"
+#include "CameraFuction/FOrthoToOrtho.h"
 
-class FFocus;
+class FPersToPers;
 class FEditorUI;
 class FWindow;
 class AActor;
@@ -113,9 +113,9 @@ protected:
 	mutable FGizmo Gizmo;
 
 	FCameraFunctionManager CameraFunctionManager;
-	FFocus FocusCameraFunction;
-	FChangePersToOrth ChangePersToOrthFunction;
-	FChangeOrthoToOrtho ChangeOrthoToOrthoFunction;
+	FPersToPers FocusCameraFunction;
+	FPerspectToOrtho ChangePersToOrthFunction;
+	FOrthoToOrtho ChangeOrthoToOrthoFunction;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";

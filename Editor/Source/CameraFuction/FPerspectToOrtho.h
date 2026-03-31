@@ -2,7 +2,7 @@
 #include "ICameraFunction.h"
 #include "CoreMinimal.h"
 
-class FChangePersToOrth : public ICameraFunction
+class FPerspectToOrtho : public ICameraFunction
 {
 private:
 	// ===== Projection 상태 =====

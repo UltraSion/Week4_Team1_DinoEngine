@@ -213,11 +213,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EditorGlobals.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangeOrthoToOrtho.cpp" />
+    <ClCompile Include="Source\CameraFuction\FOrthoToOrtho.cpp" />
     <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
     <ClCompile Include="Source\CameraFuction\ICameraFunction.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangePersToOrth.cpp" />
-    <ClCompile Include="Source\CameraFuction\FFocus.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPerspectToOrtho.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPersToPers.cpp" />
     <ClCompile Include="Source\FEditorEngine.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Axis\AxisRenderer.cpp" />
@@ -247,11 +247,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EditorGlobals.h" />
-    <ClInclude Include="Source\CameraFuction\FChangeOrthoToOrtho.h" />
+    <ClInclude Include="Source\CameraFuction\FOrthoToOrtho.h" />
     <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
     <ClInclude Include="Source\CameraFuction\ICameraFunction.h" />
-    <ClInclude Include="Source\CameraFuction\FChangePersToOrth.h" />
-    <ClInclude Include="Source\CameraFuction\FFocus.h" />
+    <ClInclude Include="Source\CameraFuction\FPerspectToOrtho.h" />
+    <ClInclude Include="Source\CameraFuction\FPersToPers.h" />
     <ClInclude Include="Source\FEditorEngine.h" />
     <ClInclude Include="Source\Axis\AxisRenderer.h" />
     <ClInclude Include="Source\Controller\EditorViewportController.h" />

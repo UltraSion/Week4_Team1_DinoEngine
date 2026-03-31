@@ -103,11 +103,11 @@
     <ClCompile Include="Source\UI\ViewportWindow.cpp" />
     <ClCompile Include="Source\UI\SWindow.cpp" />
     <ClCompile Include="Source\UI\WindowManager.cpp" />
-    <ClCompile Include="Source\CameraFuction\FFocus.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangePersToOrth.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPersToPers.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPerspectToOrtho.cpp" />
     <ClCompile Include="Source\CameraFuction\ICameraFunction.cpp" />
     <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangeOrthoToOrtho.cpp" />
+    <ClCompile Include="Source\CameraFuction\FOrthoToOrtho.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -183,11 +183,11 @@
     <ClInclude Include="Source\UI\ViewportWindow.h" />
     <ClInclude Include="Source\UI\WindowManager.h" />
     <ClInclude Include="Source\UI\SWindow.h" />
-    <ClInclude Include="Source\CameraFuction\FFocus.h" />
-    <ClInclude Include="Source\CameraFuction\FChangePersToOrth.h" />
+    <ClInclude Include="Source\CameraFuction\FPersToPers.h" />
+    <ClInclude Include="Source\CameraFuction\FPerspectToOrtho.h" />
     <ClInclude Include="Source\CameraFuction\ICameraFunction.h" />
     <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
-    <ClInclude Include="Source\CameraFuction\FChangeOrthoToOrtho.h" />
+    <ClInclude Include="Source\CameraFuction\FOrthoToOrtho.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">

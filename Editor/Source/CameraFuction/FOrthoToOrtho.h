@@ -15,7 +15,7 @@ class FCamera;
  * PivotPosition을 기준으로 카메라가 공전하듯 이동하면서
  * 회전이 바뀌도록 하여 "카메라가 돌아가는 느낌"을 만든다.
  */
-class FChangeOrthoToOrtho : public ICameraFunction
+class FOrthoToOrtho : public ICameraFunction
 {
 private:
 	// Rotation 벡터의 의미:

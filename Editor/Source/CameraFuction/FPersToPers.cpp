@@ -1,4 +1,4 @@
-#include "FFocus.h"
+#include "FPersToPers.h"
 
 #include "Actor/Actor.h"
 #include "Camera/Camera.h"
@@ -28,7 +28,7 @@ namespace
 	}
 }
 
-void FFocus::FocusOnActor(const AActor* TargetActor)
+void FPersToPers::FocusOnActor(const AActor* TargetActor)
 {
 	if (!Camera || !TargetActor)
 	{
@@ -64,7 +64,7 @@ void FFocus::FocusOnActor(const AActor* TargetActor)
 	bIsMoving = true;
 }
 
-void FFocus::Tick(float DeltaTime)
+void FPersToPers::Tick(float DeltaTime)
 {
 	if (!Camera || !bIsMoving)
 	{
@@ -88,7 +88,7 @@ void FFocus::Tick(float DeltaTime)
 	}
 }
 
-float FFocus::EvaluateEaseInOut(float T) const
+float FPersToPers::EvaluateEaseInOut(float T) const
 {
 	const float ClampedT = FMath::Clamp(T, 0.0f, 1.0f);
 	return ClampedT * ClampedT * (3.0f - 2.0f * ClampedT);

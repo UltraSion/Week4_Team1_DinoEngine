@@ -1,4 +1,4 @@
-#include "FChangePersToOrth.h"
+#include "FPerspectToOrtho.h"
 
 #include "Camera/Camera.h"
 #include "Math/MathUtility.h"
@@ -16,7 +16,7 @@ namespace
 	}
 }
 
-void FChangePersToOrth::StartTransition(const FVector& InTargetPosition, float InOrthoWidth, float InTransitionTime)
+void FPerspectToOrtho::StartTransition(const FVector& InTargetPosition, float InOrthoWidth, float InTransitionTime)
 {
 	if (!Camera)
 	{
@@ -43,7 +43,7 @@ void FChangePersToOrth::StartTransition(const FVector& InTargetPosition, float I
 	}
 }
 
-void FChangePersToOrth::Tick(float DeltaTime)
+void FPerspectToOrtho::Tick(float DeltaTime)
 {
 	if (!Camera || !bIsTransitioning)
 	{
@@ -87,7 +87,7 @@ void FChangePersToOrth::Tick(float DeltaTime)
 	}
 }
 
-float FChangePersToOrth::EvaluateEaseInOut(float T) const
+float FPerspectToOrtho::EvaluateEaseInOut(float T) const
 {
 	const float ClampedT = FMath::Clamp(T, 0.0f, 1.0f);
 	return ClampedT * ClampedT * (3.0f - 2.0f * ClampedT);

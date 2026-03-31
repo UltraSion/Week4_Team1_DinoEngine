@@ -6,7 +6,7 @@
 class FCamera;
 class AActor;
 
-class FFocus : public ICameraFunction
+class FPersToPers : public ICameraFunction
 {
 	FVector TargetPosition;
 	FVector StartPosition;
