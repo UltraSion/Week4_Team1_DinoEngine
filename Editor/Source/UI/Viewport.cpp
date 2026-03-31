@@ -144,7 +144,7 @@ void FViewportLegacy::Render(HWND Hwnd)
 			LevelViewport.MinDepth = 0.0f;
 			LevelViewport.MaxDepth = 1.0f;
 			GRenderer->SetLevelRenderTarget(RenderTargetView, DepthStencilView, LevelViewport);
-			dynamic_cast<FEditorEngine*>(GEngine)->SetViewportLayoutBounds(0, 0, NewWidth, NewHeight);
+			//dynamic_cast<FEditorEngine*>(GEngine)->SetViewportLayoutBounds(0, 0, NewWidth, NewHeight);
 		}
 		else
 		{

@@ -136,13 +136,9 @@ void FEditorEngine::PostInitialize()
 	UE_LOG("EditorEngine initialized");
 }
 
-void FEditorEngine::SetViewportLayoutBounds(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight)
+void FEditorEngine::SetViewportLayoutBounds(FRect InRect)
 {
-	WindowManager.SetRootRect(FRect(
-		static_cast<float>(InTopLeftX),
-		static_cast<float>(InTopLeftY),
-		static_cast<float>(InWidth),
-		static_cast<float>(InHeight)));
+	WindowManager.SetRootRect(InRect);
 }
 
 void FEditorEngine::ProcessInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -171,6 +167,8 @@ void FEditorEngine::Render()
 		return;
 	}
 
+	
+	SetViewportLayoutBounds(EditorUI.GetCentralDockSpaceRect());
 	GRenderer->BeginFrame();
 	WindowManager.RenderWindows();
 	GRenderer->EndFrame();
