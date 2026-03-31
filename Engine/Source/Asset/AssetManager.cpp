@@ -102,7 +102,6 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 		return It->second;
 	}
 
-	FString CookedPath = FAssetCooker::GetCookedPath(AssetData.AssetPath);
 
 	FStaticMeshRenderData* RenderData = nullptr;
 
@@ -121,7 +120,6 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 	{
 		// 기존 OBJ 파이프라인 
 		FString CookedPath = FAssetCooker::GetCookedPath(AssetData.AssetPath);
-		bool bRenderDataOwnedByStaticMesh = true;
 
 		if (!FAssetCooker::NeedsCook(AssetData.AssetPath, CookedPath))
 		{
