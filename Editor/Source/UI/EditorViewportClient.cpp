@@ -394,6 +394,8 @@ void FEditorViewportClient::Tick(float DeltaTime)
 	const float NewYaw = LerpAngleDegrees(ResetAnimationStartYaw, InitialCameraYaw, SmoothAlpha);
 	const float NewPitch = LerpFloat(ResetAnimationStartPitch, InitialCameraPitch, SmoothAlpha);
 	const float NewFOV = LerpFloat(ResetAnimationStartFOV, InitialCameraFOV, SmoothAlpha);
+	const FVector NewTarget =
+		ResetAnimationStartTarget + (InitialCameraTarget - ResetAnimationStartTarget) * SmoothAlpha;
 
 	CameraTransform.SetOrbitTarget(NewTarget);
 	CameraTransform.SetPosition(NewPosition);
