@@ -15,6 +15,7 @@ public:
 
 	void SetPosition(const FVector& InPosition);
 	void SetRotation(float InYaw, float InPitch);
+	void SetOrbitTarget(const FVector& InOrbitTarget); //orbit rotation을 하는 뷰어에서만 사용
 
 	void MoveForward(float Delta);
 	void MoveRight(float Delta);
@@ -48,6 +49,7 @@ public:
 	float GetOrthoWidth() const;
 	float GetOrthoHeight() const;
 	void SetOrthoWidth(float InOrthoWidth);
+	FVector GetOrbitTarget() const { return OrbitTarget; }
 
 private:
 	FVector Position = { -3.0f, -3.0f, 2.5f };
@@ -64,5 +66,5 @@ private:
 	float NearPlane = 0.1f;
 	float FarPlane = 1000.0f;
 	float OrbitDistance = 0.0f;
-	FVector PanOffset = FVector::ZeroVector;
+	FVector OrbitTarget = FVector::ZeroVector;
 };

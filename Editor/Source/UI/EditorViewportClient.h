@@ -70,6 +70,9 @@ public:
 	void SetGridVisible(bool bVisible);
 	void SaveInitialCameraState();
 	void ResetCameraToInitialState();
+	void RefreshObjViewerCameraPivot(AActor* TargetActor = nullptr);
+	void FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState);
+	float GetObjViewerBottomZ(AActor* TargetActor) const;
 
 protected:
 	virtual void ConfigureDefaultView() = 0;
@@ -117,11 +120,13 @@ protected:
 	float LineThickness = 1.0f;
 	bool bShowGrid = true;
 	FVector InitialCameraPosition = FVector::ZeroVector;
+	FVector InitialCameraTarget = FVector::ZeroVector;
 	float InitialCameraYaw = 0.0f;
 	float InitialCameraPitch = 0.0f;
 	float InitialCameraFOV = 45.0f;
 	bool bHasInitialCameraState = false;
 	FVector ResetAnimationStartPosition = FVector::ZeroVector;
+	FVector ResetAnimationStartTarget = FVector::ZeroVector;
 	float ResetAnimationStartYaw = 0.0f;
 	float ResetAnimationStartPitch = 0.0f;
 	float ResetAnimationStartFOV = 45.0f;

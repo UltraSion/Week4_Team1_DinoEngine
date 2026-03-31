@@ -12,6 +12,7 @@
 #include "World/World.h"
 #include "Camera/Camera.h"
 #include "Component/PrimitiveComponent.h"
+#include "Component/SceneComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Debug/EngineLog.h"
 #include "Math/MathUtility.h"
@@ -29,6 +30,32 @@
 
 namespace
 {
+	void SnapObjViewerActorBottomToZero(AActor* Actor, FEditorViewportClient* ViewportClient)
+	{
+#if IS_OBJ_VIEWER
+		if (!Actor || !ViewportClient)
+		{
+			return;
+		}
+
+		USceneComponent* Root = Actor->GetRootComponent();
+		if (!Root)
+		{
+			return;
+		}
+
+		FTransform Transform = Root->GetRelativeTransform();
+		FVector Location = Transform.GetLocation();
+		Location.Z -= ViewportClient->GetObjViewerBottomZ(Actor);
+		Transform.SetLocation(Location);
+		Root->SetRelativeTransform(Transform);
+		ViewportClient->RefreshObjViewerCameraPivot(Actor);
+#else
+		(void)Actor;
+		(void)ViewportClient;
+#endif
+	}
+
 	FString PromptForObjFilePath()
 	{
 		char FileName[MAX_PATH] = "";
@@ -263,9 +290,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 	if (MeshActor)
 	{
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath.string());
-#if !IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
-#endif
 	}
 	EditorUI.SyncSelectedActorProperty();
 
@@ -273,28 +298,18 @@ void FEditorEngine::RunObjViewerStartupTest()
 	{
 #if IS_OBJ_VIEWER //뷰어에서는 mesh의 크기에 따라 다른 위치에 카메라가 놓입니다. 다시 로드할 때도 적용됩니다.
 		Camera->SetFOV(60.0f);
-		float CameraDistance = 10.0f;
 		if (MeshActor)
 		{
-			if (UPrimitiveComponent* PrimitiveComponent = MeshActor->GetStaticMeshComponent())
-			{
-				const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
-				const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
-				const float HalfFovRadians = FMath::DegreesToRadians(Camera->GetFOV() * 0.5f);
-				const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-				CameraDistance = FMath::Max((SafeRadius / SafeTanHalfFov) * 1.2f, SafeRadius * 2.0f);
-			}
+			SnapObjViewerActorBottomToZero(MeshActor, ViewportClient);
+			ViewportClient->FrameObjViewerCamera(MeshActor, true);
 		}
-
-		Camera->SetPosition({ -CameraDistance, 0.0f, 0.0f });
-		Camera->SetRotation(90.0f, 0.0f);
 #else
 		Camera->SetPosition({ -6.0f, -6.0f, 5.0f });
 		Camera->SetRotation(45.0f, -30.0f);
 		Camera->SetFOV(60.0f);
+		ViewportClient->SaveInitialCameraState();
 #endif
 	}
-	ViewportClient->SaveInitialCameraState();
 
 	ViewportClient->SetRenderMode(ERenderMode::SolidWireframe);
 	ViewportClient->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
