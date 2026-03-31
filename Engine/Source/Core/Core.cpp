@@ -151,7 +151,7 @@ void FCore::Release()
 
 	FObjManager::Clear();//shared_ptr<FStaticMeshRenderData> 해제
 	CPrimitiveBase::ClearCache();//shared_ptr<FMeshData> 해제
-
+	 
 	if (GRenderer)
 	{
 		delete GRenderer;
