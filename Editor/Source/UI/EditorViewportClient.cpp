@@ -75,15 +75,15 @@ namespace
 		return Start + Delta * Alpha;
 	}
 
-	const char* GetOrthoViewLabel(EOrthoViewType OrthoViewType)
+	const char* GetOrthoViewLabel(EEditorViewportType OrthoViewType)
 	{
 		switch (OrthoViewType)
 		{
-		case EOrthoViewType::Front:
+		case EEditorViewportType::Front:
 			return "Front";
-		case EOrthoViewType::Right:
+		case EEditorViewportType::Right:
 			return "Right";
-		case EOrthoViewType::Top:
+		case EEditorViewportType::Top:
 		default:
 			return "Top";
 		}
@@ -105,7 +105,7 @@ namespace
 FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, EEditorViewportType InViewportType, ELevelType InWorldType)
 	: EditorUI(InEditorUI)
 	, MainWindow(InMainWindow)
-	, ViewportType(InViewportType)
+	, CameraViewType(InViewportType)
 {
 	SetWorldType(InWorldType);
 	SetGridVisible(bShowGrid);
@@ -346,12 +346,12 @@ UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
 
 const char* FEditorViewportClient::GetViewportLabel() const
 {
-	return GetViewportTypeLabel(ViewportType);
+	return GetViewportTypeLabel(CameraViewType);
 }
 
 void FEditorViewportClient::ConfigureDefaultView()
 {
-	if (ViewportType == EEditorViewportType::Perspective)
+	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
 		CameraTransform.SetPosition({ -5.0f, 0.0f, 2.0f });
@@ -359,21 +359,21 @@ void FEditorViewportClient::ConfigureDefaultView()
 		return;
 	}
 
-	OrthoViewType = GetOrthoViewTypeFromViewportType(ViewportType);
+	CameraViewType = GetOrthoViewTypeFromViewportType(CameraViewType);
 	CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
 	CameraTransform.SetOrthoWidth(OrthoZoom);
 	OrthoCenter = FVector::ZeroVector;
 	OrthoViewDistance = 25.0f;
 
-	switch (OrthoViewType)
+	switch (CameraViewType)
 	{
-	case EOrthoViewType::Top:
+	case EEditorViewportType::Top:
 		CameraTransform.SetRotation(0.0f, -89.99f);
 		break;
-	case EOrthoViewType::Front:
+	case EEditorViewportType::Front:
 		CameraTransform.SetRotation(0.0f, 0.0f);
 		break;
-	case EOrthoViewType::Right:
+	case EEditorViewportType::Right:
 		CameraTransform.SetRotation(90.0f, 0.0f);
 		break;
 	}
@@ -383,11 +383,6 @@ void FEditorViewportClient::ConfigureDefaultView()
 
 void FEditorViewportClient::DrawViewportSpecificOptions()
 {
-	//if (ViewportType != EEditorViewportType::Perspective)
-	//{
-	//	return;
-	//}
-
 	ImGui::Spacing();
 	static const char* OrthoViewLabels[] =
 	{
@@ -409,16 +404,17 @@ void FEditorViewportClient::DrawViewportSpecificOptions()
 			switch (Index)
 			{
 			case 0:
+				CameraViewType = EEditorViewportType::Perspective;
 				CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
 				break;
 			case 1:
-				StartOrthoTransition(EOrthoViewType::Top);
+				StartOrthoTransition(EEditorViewportType::Top);
 				break;
 			case 2:
-				StartOrthoTransition(EOrthoViewType::Front);
+				StartOrthoTransition(EEditorViewportType::Front);
 				break;
 			case 3:
-				StartOrthoTransition(EOrthoViewType::Right);
+				StartOrthoTransition(EEditorViewportType::Right);
 				break;
 			default:
 				break;
@@ -431,7 +427,7 @@ void FEditorViewportClient::DrawViewportSpecificOptions()
 
 void FEditorViewportClient::DrawControllerOptions()
 {
-	if (ViewportType == EEditorViewportType::Perspective)
+	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		float Sensitivity = CameraTransform.GetMouseSensitivity();
 		if (ImGui::SliderFloat("Mouse Sensitivity", &Sensitivity, 0.01f, 1.0f))
@@ -470,7 +466,7 @@ void FEditorViewportClient::DrawControllerOptions()
 		return;
 	}
 
-	ImGui::Text("View: %s", GetOrthoViewLabel(OrthoViewType));
+	ImGui::Text("View: %s", GetOrthoViewLabel(CameraViewType));
 
 	float Center[3] = { OrthoCenter.X, OrthoCenter.Y, OrthoCenter.Z };
 	if (ImGui::DragFloat3("Center", Center, 0.1f))
@@ -507,7 +503,7 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 		return;
 	}
 
-	if (ViewportType == EEditorViewportType::Perspective)
+	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		if (const float MouseWheelDelta = InputManager->GetMouseWheelDelta(); MouseWheelDelta != 0.0f)
 		{
@@ -997,9 +993,9 @@ void FEditorViewportClient::DrawCameraOption()
 	DrawControllerOptions();
 }
 
-void FEditorViewportClient::StartOrthoTransition(EOrthoViewType InOrthoViewType)
+void FEditorViewportClient::StartOrthoTransition(EEditorViewportType InOrthoViewType)
 {
-	if (ViewportType != EEditorViewportType::Perspective || !ChangeOrthoToOrthoFunction.IsFinished())
+	if (!ChangeOrthoToOrthoFunction.IsFinished())
 	{
 		return;
 	}
@@ -1016,18 +1012,19 @@ void FEditorViewportClient::StartOrthoTransition(EOrthoViewType InOrthoViewType)
 		return;
 	}
 
+	CameraViewType = InOrthoViewType;
 	const FVector FocusCenter = PrimitiveComponent->GetWorldBounds().Center;
 	FVector TargetRotation = FVector::ZeroVector; // X=Yaw, Y=Pitch, Z=Roll
 
 	switch (InOrthoViewType)
 	{
-	case EOrthoViewType::Top:
+	case EEditorViewportType::Top:
 		TargetRotation = FVector(0.0f, -89.99f, 0.0f);
 		break;
-	case EOrthoViewType::Front:
+	case EEditorViewportType::Front:
 		TargetRotation = FVector(0.0f, 0.0f, 0.0f);
 		break;
-	case EOrthoViewType::Right:
+	case EEditorViewportType::Right:
 		TargetRotation = FVector(90.0f, 0.0f, 0.0f);
 		break;
 	}
@@ -1094,17 +1091,17 @@ FVector FEditorViewportClient::GetOrthoUpVector() const
 	return GetViewportUpVector();
 }
 
-EOrthoViewType FEditorViewportClient::GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType)
+EEditorViewportType FEditorViewportClient::GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType)
 {
 	switch (InViewportType)
 	{
 	case EEditorViewportType::Front:
-		return EOrthoViewType::Front;
+		return EEditorViewportType::Front;
 	case EEditorViewportType::Right:
-		return EOrthoViewType::Right;
+		return EEditorViewportType::Right;
 	case EEditorViewportType::Top:
 	default:
-		return EOrthoViewType::Top;
+		return EEditorViewportType::Top;
 	}
 }
 
@@ -1353,7 +1350,7 @@ void FEditorViewportClient::OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LP
 	(void)WParam;
 	(void)LParam;
 
-	if (ViewportType == EEditorViewportType::Perspective)
+	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		if (Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK)
 		{
@@ -1377,7 +1374,7 @@ void FEditorViewportClient::OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LPar
 	(void)WParam;
 	(void)LParam;
 
-	if (ViewportType == EEditorViewportType::Perspective)
+	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		if (Msg == WM_RBUTTONUP)
 		{
@@ -1408,7 +1405,7 @@ void FEditorViewportClient::OnMouseWheel(float WheelDelta, WPARAM WParam, LPARAM
 	(void)WParam;
 	(void)LParam;
 
-	if (ViewportType != EEditorViewportType::Perspective)
+	if (CameraViewType != EEditorViewportType::Perspective)
 	{
 		PendingOrthoZoomStep += WheelDelta;
 	}
@@ -1418,7 +1415,7 @@ void FEditorViewportClient::OnKeyDown(WPARAM WParam, LPARAM LParam)
 {
 	(void)LParam;
 
-	if (ViewportType != EEditorViewportType::Perspective)
+	if (CameraViewType != EEditorViewportType::Perspective)
 	{
 		return;
 	}
@@ -1439,7 +1436,7 @@ void FEditorViewportClient::OnKeyUp(WPARAM WParam, LPARAM LParam)
 {
 	(void)LParam;
 
-	if (ViewportType != EEditorViewportType::Perspective)
+	if (CameraViewType != EEditorViewportType::Perspective)
 	{
 		return;
 	}
@@ -1472,7 +1469,7 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 	float distance = CameraTransform.GetPosition().X;
 
 	FVector CameraLocation = CameraTransform.GetPosition();
-	switch (ViewportType)
+	switch (CameraViewType)
 	{
 	case EEditorViewportType::Front:
 		Rotation = FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));

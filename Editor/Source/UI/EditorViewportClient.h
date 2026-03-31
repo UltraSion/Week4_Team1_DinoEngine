@@ -38,13 +38,6 @@ enum class EEditorViewportType : uint8_t
 	Right
 };
 
-enum class EOrthoViewType : uint8_t
-{
-	Top,
-	Front,
-	Right
-};
-
 class FEditorViewportClient : public FViewportClient
 {
 public:
@@ -59,7 +52,7 @@ public:
 	void SetGizmoMode(EGizmoMode InMode) { Gizmo.SetMode(InMode); }
 	ERenderMode GetRenderMode() const { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
-	EEditorViewportType GetViewportType() const { return ViewportType; }
+	EEditorViewportType GetViewportType() const { return CameraViewType; }
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
 	void DrawUI() override;
 	void HandleFileDoubleClick(const FString& FilePath);
@@ -102,7 +95,7 @@ protected:
 	void ApplyViewerNoCull(FMaterial* Material) const;
 	void ShowViewOptionPanel();
 	void DrawCameraOption();
-	void StartOrthoTransition(EOrthoViewType OrthoViewType);
+	void StartOrthoTransition(EEditorViewportType OrthoViewType);
 	void ResetPerspectiveMovementState();
 	void ApplyPerspectiveLookInput(float MouseDeltaX, float MouseDeltaY);
 	void ApplyPerspectivePanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime);
@@ -110,7 +103,7 @@ protected:
 	FVector GetOrthoForwardVector() const;
 	FVector GetOrthoRightVector() const;
 	FVector GetOrthoUpVector() const;
-	static EOrthoViewType GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType);
+	static EEditorViewportType GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType);
 	FVector GetViewportUpVector() const;
 	FMatrix GetGridWorldMatrix() const;
 
@@ -153,7 +146,7 @@ protected:
 	float ResetAnimationElapsed = 0.0f;
 	float ResetAnimationDuration = 0.25f;
 	bool bResetCameraAnimating = false;
-	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
+	EEditorViewportType CameraViewType = EEditorViewportType::Perspective;
 
 	// Perspective interaction state
 	bool bPerspectiveRotating = false;
@@ -166,7 +159,6 @@ protected:
 	bool bMoveDown = false;
 
 	// Ortho interaction state
-	EOrthoViewType OrthoViewType = EOrthoViewType::Top;
 	FVector OrthoCenter = FVector::ZeroVector;
 	float OrthoZoom = 24.0f;
 	float OrthoViewDistance = 25.0f;
