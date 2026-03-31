@@ -112,6 +112,7 @@ FEditorEngine::~FEditorEngine()
 void FEditorEngine::OpenNewObj()
 {
 #if IS_OBJ_VIEWER
+	bPendingObjViewerStartupPrompt = false;
 	RunObjViewerStartupTest();
 #endif
 }
@@ -163,7 +164,7 @@ void FEditorEngine::PostInitialize()
 	EditorUI.AttachToRenderer();
 
 #if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
-	RunObjViewerStartupTest();
+	bPendingObjViewerStartupPrompt = true;
 #endif
 
 	UE_LOG("EditorEngine initialized");
@@ -184,6 +185,9 @@ void FEditorEngine::Tick(float DeltaTime)
 {
 	Input(Core->GetTimer().GetDeltaTime());
 	WindowManager.Tick(DeltaTime);
+#if IS_OBJ_VIEWER
+	TryRunPendingObjViewerStartupPrompt();
+#endif
 	WindowManager.CheckParent();
 	Render();
 }
@@ -256,6 +260,15 @@ void FEditorEngine::RunObjViewerStartupTest()
 	FEditorViewportClient* ViewportClient = EditorUI.GetActiveViewportClient();
 	if (!ViewportClient)
 	{
+		ViewportClient = EditorUI.FindPerspectiveViewportClient();
+		if (ViewportClient)
+		{
+			EditorUI.SetActiveViewportClient(ViewportClient);
+		}
+	}
+
+	if (!ViewportClient)
+	{
 		return;
 	}
 
@@ -316,4 +329,32 @@ void FEditorEngine::RunObjViewerStartupTest()
 	ViewportClient->GetShowFlags().SetFlag(EEngineShowFlags::SF_WorldAxis, false);
 	ViewportClient->SetGridVisible(false);
 	UE_LOG("[ObjViewerTest] Loaded startup mesh: %s", SelectedPath.c_str());
+}
+
+bool FEditorEngine::TryRunPendingObjViewerStartupPrompt()
+{
+	if (!bPendingObjViewerStartupPrompt)
+	{
+		return false;
+	}
+
+	if (!Core || !GRenderer)
+	{
+		return false;
+	}
+
+	FEditorViewportClient* ViewportClient = EditorUI.GetActiveViewportClient();
+	if (!ViewportClient)
+	{
+		ViewportClient = EditorUI.FindPerspectiveViewportClient();
+	}
+
+	if (!ViewportClient)
+	{
+		return false;
+	}
+
+	bPendingObjViewerStartupPrompt = false;
+	RunObjViewerStartupTest();
+	return true;
 }

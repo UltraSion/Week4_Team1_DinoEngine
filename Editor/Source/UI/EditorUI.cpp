@@ -12,6 +12,8 @@
 #include "Core/Paths.h"
 #include "Core/ShowFlags.h"
 #include "Debug/EngineLog.h"
+#include "Asset/AssetCooker.h"
+#include "Asset/AssetManager.h"
 #include "FEditorEngine.h"
 #include "Object/Object.h"
 #include "Object/StaticMesh.h"
@@ -302,7 +304,13 @@ namespace
 		const float DesiredBottomZ = ViewportClient->GetObjViewerBottomZ(MeshActor);
 		MeshComponent->SetStaticMeshData(nullptr, nullptr);
 		FObjImporter::SetImportAxisMapping(ImportAxisMapping);
+		FAssetManager::Get().InvalidateStaticMesh(AssetPath);
 		FObjManager::ClearAssetCache(AssetPath);
+
+		const FString CookedPath = FAssetCooker::GetCookedPath(AssetPath);
+		std::error_code Ec;
+		std::filesystem::remove(std::filesystem::path(FPaths::ToWide(CookedPath)), Ec);
+
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath);
 		SnapObjViewerActorBottomTo(MeshActor, ViewportClient, DesiredBottomZ);
 		ViewportClient->FrameObjViewerCamera(MeshActor, true);

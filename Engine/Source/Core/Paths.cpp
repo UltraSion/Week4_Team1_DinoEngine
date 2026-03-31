@@ -1,8 +1,34 @@
 #include "Paths.h"
+#include <cctype>
 #include <filesystem>
 #include <Windows.h>
 
 namespace fs = std::filesystem;
+
+namespace
+{
+	bool IsAbsolutePathString(const FString& Path)
+	{
+		if (Path.size() >= 2 && std::isalpha(static_cast<unsigned char>(Path[0])) && Path[1] == ':')
+		{
+			return true;
+		}
+
+		if (Path.size() >= 2 && ((Path[0] == '\\' && Path[1] == '\\') || (Path[0] == '/' && Path[1] == '/')))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	FString NormalizePathSeparators(const FString& Path)
+	{
+		FString Normalized = Path;
+		std::replace(Normalized.begin(), Normalized.end(), '\\', '/');
+		return Normalized;
+	}
+}
 
 // FString FPaths::Root;
 std::filesystem::path FPaths::Root;
@@ -59,8 +85,8 @@ std::wstring FPaths::ToWide(const FString& Path)
 //fs::path.string()을 쓰지 않고 u8string()을 거쳐 안전하게 UTF-8로 추출 및 조작
 std::string FPaths::ToRelativePath(const FString& Path)
 {
-	FString Root = ToString(ProjectRoot().wstring());
-	FString RelativePath = Path;
+	FString Root = NormalizePathSeparators(ToString(ProjectRoot().wstring()));
+	FString RelativePath = NormalizePathSeparators(Path);
 
 	if (RelativePath.starts_with(Root))
 	{
@@ -77,12 +103,29 @@ std::string FPaths::ToRelativePath(const FString& Path)
 //fs::path 생성자를 거치지 않고 순수 문자열 결합을 사용하여 인코딩 크래시 원천 차단
 std::string FPaths::ToAbsolutePath(const FString& Path)
 {
-	FString Root = ToString(ProjectRoot().wstring());
-
-	// 이미 절대 경로라면 그대로 반환
-	if (Path.starts_with(Root))
+	if (Path.empty())
 	{
 		return Path;
+	}
+
+	if (IsAbsolutePathString(Path))
+	{
+		return NormalizePathSeparators(Path);
+	}
+
+	const fs::path CandidatePath(Path);
+	if (CandidatePath.is_absolute())
+	{
+		return NormalizePathSeparators(CandidatePath.string());
+	}
+
+	FString Root = NormalizePathSeparators(ToString(ProjectRoot().wstring()));
+	FString NormalizedPath = NormalizePathSeparators(Path);
+
+	// 이미 절대 경로라면 그대로 반환
+	if (NormalizedPath.starts_with(Root))
+	{
+		return NormalizedPath;
 	}
 
 	FString AbsolutePath = Root;
@@ -93,7 +136,7 @@ std::string FPaths::ToAbsolutePath(const FString& Path)
 	}
 
 	// Path 시작에 슬래시가 있으면 제거하여 중복 방지
-	FString SafePath = Path;
+	FString SafePath = NormalizedPath;
 	if (!SafePath.empty() && (SafePath.front() == '/' || SafePath.front() == '\\'))
 	{
 		SafePath = SafePath.substr(1);
