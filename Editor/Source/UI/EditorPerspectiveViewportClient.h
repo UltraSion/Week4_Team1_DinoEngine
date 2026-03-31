@@ -19,8 +19,10 @@ protected:
 private:
 	void ResetMovementState();
 	void ApplyLookInput(float MouseDeltaX, float MouseDeltaY);
+	void ApplyPanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime);
 
 	bool bRotating = false;
+	bool bPanning = false;
 	bool bMoveForward = false;
 	bool bMoveBackward = false;
 	bool bMoveRight = false;

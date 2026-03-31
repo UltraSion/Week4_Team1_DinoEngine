@@ -8,6 +8,7 @@ namespace
 	constexpr float PerspectivePitchMin = -89.0f;
 	constexpr float PerspectivePitchMax = 89.0f;
 	constexpr float PerspectiveWheelMoveScale = 1.0f;
+	constexpr float PerspectivePanMouseScale = 1.0f;
 }
 
 FEditorPerspectiveViewportClient::FEditorPerspectiveViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, ELevelType InWorldType)
@@ -76,13 +77,19 @@ void FEditorPerspectiveViewportClient::ProcessCameraInput(FCore* Core, float Del
 		CameraTransform.MoveForward(MouseWheelDelta * PerspectiveWheelMoveScale);
 	}
 
+	const float MouseDeltaX = InputManager->GetMouseDeltaX();
+	const float MouseDeltaY = InputManager->GetMouseDeltaY();
+
+	if (bPanning && (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f))
+	{
+		ApplyPanInput(MouseDeltaX, MouseDeltaY, DeltaTime);
+	}
+
 	if (!bRotating)
 	{
 		return;
 	}
 
-	const float MouseDeltaX = InputManager->GetMouseDeltaX();
-	const float MouseDeltaY = InputManager->GetMouseDeltaY();
 	if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
 	{
 		ApplyLookInput(MouseDeltaX, MouseDeltaY);
@@ -121,6 +128,10 @@ void FEditorPerspectiveViewportClient::OnMouseButtonDown(UINT Msg, WPARAM WParam
 	{
 		bRotating = true;
 	}
+	else if (Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK)
+	{
+		bPanning = true;
+	}
 }
 
 void FEditorPerspectiveViewportClient::OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -132,6 +143,10 @@ void FEditorPerspectiveViewportClient::OnMouseButtonUp(UINT Msg, WPARAM WParam, 
 	{
 		bRotating = false;
 		ResetMovementState();
+	}
+	else if (Msg == WM_MBUTTONUP)
+	{
+		bPanning = false;
 	}
 }
 
@@ -185,4 +200,20 @@ void FEditorPerspectiveViewportClient::ApplyLookInput(float MouseDeltaX, float M
 		PerspectivePitchMin,
 		PerspectivePitchMax);
 	CameraTransform.SetRotation(NewYaw, NewPitch);
+}
+
+void FEditorPerspectiveViewportClient::ApplyPanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime)
+{
+	const float PanRightAmount = -MouseDeltaX * DeltaTime * PerspectivePanMouseScale;
+	const float PanUpAmount = MouseDeltaY * DeltaTime * PerspectivePanMouseScale;
+
+	if (PanRightAmount != 0.0f)
+	{
+		CameraTransform.MoveRight(PanRightAmount);
+	}
+
+	if (PanUpAmount != 0.0f)
+	{
+		CameraTransform.OffsetPosition(GetViewportUpVector() * (PanUpAmount * CameraTransform.GetSpeed()));
+	}
 }
