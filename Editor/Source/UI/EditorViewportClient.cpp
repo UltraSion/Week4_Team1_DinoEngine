@@ -387,7 +387,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
-	Focus.MoveTowardsTarget(DeltaTime);
+	Focus.Tick(DeltaTime);
 #if IS_OBJ_VIEWER
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
