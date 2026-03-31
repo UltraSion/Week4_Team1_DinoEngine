@@ -172,6 +172,7 @@ void FControlPanelWindow::Render(FCore* Core, FEditorViewportClient* ActiveViewp
 					else if (SpawnTypeIndex == 7)
 					{
 						// 외부 StaticMesh 스폰 로직 (필요시 파일 브라우저 연동 등)
+						SMActor->LoadStaticMesh(Device, "Engine/BasicShapes/Cube");
 					}
 				}
 			}

@@ -17,5 +17,5 @@ public:
 private:
 	UStaticMeshComponent* StaticMeshComponent = nullptr;
 	URandomColorComponent* RandomColorComponent = nullptr;
-	bool bUseRandomColor = true;
+	bool bUseRandomColor = false;
 };

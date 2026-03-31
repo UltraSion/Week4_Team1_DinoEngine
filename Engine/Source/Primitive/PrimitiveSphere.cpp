@@ -36,15 +36,18 @@ void CPrimitiveSphere::Generate(int32 Segments, int32 Rings)
 			float X = SinPhi * cosf(Theta);
 			float Y = SinPhi * sinf(Theta);
 
+			//FVector Position = { X * 0.5f, Y * 0.5f, Z * 0.5f };
+			//FVector Normal = { X, Y, Z };
+
+			//// Normal 기반 색상: 각 축 방향을 RGB로 매핑
+			//float R = Normal.X * 0.5f + 0.5f;
+			//float G = Normal.Y * 0.5f + 0.5f;
+			//float B = Normal.Z * 0.5f + 0.5f;
+			//FVector4 Color = { R, G, B, 1.0f };
 			FVector Position = { X * 0.5f, Y * 0.5f, Z * 0.5f };
 			FVector Normal = { X, Y, Z };
 
-			// Normal 기반 색상: 각 축 방향을 RGB로 매핑
-			float R = Normal.X * 0.5f + 0.5f;
-			float G = Normal.Y * 0.5f + 0.5f;
-			float B = Normal.Z * 0.5f + 0.5f;
-			FVector4 Color = { R, G, B, 1.0f };
-
+			FVector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
 			Data->Vertices.push_back({ Position, Color, Normal });
 		}
 	}

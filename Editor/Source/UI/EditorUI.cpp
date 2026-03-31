@@ -362,6 +362,21 @@ void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 			}
 			else if (ActiveViewportClient)
 			{
+				if (ImGuiWindow* HoveredWindow = GImGui->HoveredWindow)
+				{
+					std::string WindowName = HoveredWindow->Name;
+
+					// 마우스가 프로퍼티 창, 콘텐츠 브라우저, 컨트롤 패널 위에 있다면 "뷰포트 스폰" 무시
+					if (WindowName.find("Properties") != std::string::npos ||
+						WindowName.find("Content Browser") != std::string::npos ||
+						WindowName.find("Control Panel") != std::string::npos ||
+						WindowName.find("Stats") != std::string::npos ||
+						WindowName.find("Outliner") != std::string::npos ||
+						WindowName.find("Console") != std::string::npos)
+					{
+						return; // 스폰하지 않고 함수 종료
+					}
+				}
 				ActiveViewportClient->HandleFileDropOnViewport(DraggingFilePath); // -> 이것도 수정
 			}
 		};

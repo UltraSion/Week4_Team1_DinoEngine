@@ -82,7 +82,7 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* 
 				std::shared_ptr<FDynamicMaterial> DynamicMat = BaseMat->CreateDynamicMaterial();
 
 				// 배열에서 색상(Kd) 꺼내오기
-				FVector MatColor(1.0f, 1.0f, 1.0f);
+				FVector MatColor(0.5f, 0.5f, 0.5f);
 				if (i < RenderData->ImportedDiffuseColors.size())
 				{
 					MatColor = RenderData->ImportedDiffuseColors[i];

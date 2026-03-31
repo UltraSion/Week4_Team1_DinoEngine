@@ -31,6 +31,7 @@ public:
 
 	void Clear();
 	void CreateDefaultWhiteTexture(ID3D11Device* Device);
+
 private:
 	FMaterialManager() = default;
 
