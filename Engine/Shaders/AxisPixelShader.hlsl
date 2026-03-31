@@ -50,8 +50,8 @@ float4 main(VS_OUTPUT input) : SV_Target
 	float2 grid = abs(frac(coord - 0.5f) - 0.5f) / max(derivative / GridSize, 0.0001f);
 	float lineAlpha = saturate(LineThickness - min(grid.x, grid.y));
 
-	float fade = pow(saturate(1.0f - dist / maxDistance), 2.0f);
-	float finalAlpha = lineAlpha * fade;
+	//float fade = pow(saturate(1.0f - dist / maxDistance), 2.0f);
+	float finalAlpha = lineAlpha;// * fade;
 
 	if (finalAlpha < 0.01f)
 	{
