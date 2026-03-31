@@ -8,9 +8,18 @@
 #include "CoreMinimal.h"
 #include "Windows.h"
 #include "imgui.h"
+#include "FEditorEngine.h"
 
 namespace
 {
+	void RequestEditorLayoutSave()
+	{
+		if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+		{
+			EditorEngine->SaveEditorSettings();
+		}
+	}
+
 	bool IsMouseMessage(UINT Msg)
 	{
 		switch (Msg)
@@ -84,6 +93,12 @@ void SWindow::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	throw std::runtime_error("This window does not support replacing child windows.");
 }
 
+SWindow* SWindow::Merge(SWindow* InWindowToKeep)
+{
+	(void)InWindowToKeep;
+	throw std::runtime_error("This window does not support merging child windows.");
+}
+
 bool SWindow::ISHover(FPoint coord) const
 {
 	return coord.X >= Rect.Position.X && coord.X <= Rect.Position.X + Rect.Size.X &&
@@ -124,6 +139,10 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 	{
 		Parent->ReplaceSide(this, NewSplitter);
 	}
+	else if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, NewSplitter);
+	}
 
 	if (InSplitOption == SplitOption::LT)
 	{
@@ -134,6 +153,63 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 	{
 		NewSplitter->SetSideLT(InNewWindow);
 		NewSplitter->SetSideRB(this);
+	}
+
+	return NewSplitter;
+}
+
+SSplitterC* SWindow::Split4(SWindow* InNewWindow1, SWindow* InNewWindow2, SWindow* InNewWindow3, SplitOption InSplitOption)
+{
+	if (InNewWindow1 == nullptr || InNewWindow2 == nullptr || InNewWindow3 == nullptr)
+	{
+		return nullptr;
+	}
+
+	SSplitterC* NewSplitter = new SSplitterC(GetRect());
+	if (NewSplitter == nullptr)
+	{
+		return nullptr;
+	}
+
+	NewSplitter->SetParent(Parent);
+	if (Parent)
+	{
+		Parent->ReplaceSide(this, NewSplitter);
+	}
+	else if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, NewSplitter);
+	}
+
+	switch (InSplitOption)
+	{
+	case SplitOption::LT:
+		NewSplitter->SetSideLT(this);
+		NewSplitter->SetSideRT(InNewWindow1);
+		NewSplitter->SetSideLB(InNewWindow2);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::RT:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(this);
+		NewSplitter->SetSideLB(InNewWindow2);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::LB:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(InNewWindow2);
+		NewSplitter->SetSideLB(this);
+		NewSplitter->SetSideRB(InNewWindow3);
+		break;
+	case SplitOption::RB:
+		NewSplitter->SetSideLT(InNewWindow1);
+		NewSplitter->SetSideRT(InNewWindow2);
+		NewSplitter->SetSideLB(InNewWindow3);
+		NewSplitter->SetSideRB(this);
+		break;
+	default:
+		delete NewSplitter;
+		return nullptr;
 	}
 
 	return NewSplitter;
@@ -186,6 +262,64 @@ void SSplitter::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	}
 
 	throw std::runtime_error("OldSide is not part of this splitter.");
+}
+
+SWindow* SSplitter::Merge(SWindow* InWindowToKeep)
+{
+	if (InWindowToKeep != SideLT && InWindowToKeep != SideRB)
+	{
+		throw std::runtime_error("InWindowToKeep is not part of this splitter.");
+	}
+
+	FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
+	SWindow* ParentWindow = GetParent();
+	SWindow* WindowToKeep = InWindowToKeep;
+	SWindow* WindowToRemove = (WindowToKeep == SideLT) ? SideRB : SideLT;
+
+	if (WindowToKeep == SideLT)
+	{
+		SideLT = nullptr;
+	}
+	else
+	{
+		SideRB = nullptr;
+	}
+
+	if (WindowToRemove == SideLT)
+	{
+		SideLT = nullptr;
+	}
+	else if (WindowToRemove == SideRB)
+	{
+		SideRB = nullptr;
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().QueueDestroyWindow(WindowToRemove);
+	}
+	else
+	{
+		delete WindowToRemove;
+	}
+
+	if (ParentWindow)
+	{
+		ParentWindow->ReplaceSide(this, WindowToKeep);
+	}
+	else
+	{
+		WindowToKeep->SetParent(nullptr);
+		WindowToKeep->SetRect(GetRect());
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, WindowToKeep);
+		EditorEngine->GetWindowManager().QueueDestroyWindow(this);
+	}
+
+	return WindowToKeep;
 }
 
 SSplitter::SSplitter(FRect InRect, SWindow* InSideLT, SWindow* InSideRB, float InSplitRatio)
@@ -272,6 +406,7 @@ void SSplitter::SetSplitRatio(float InSplitRatio)
 
 	SplitRatio = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitter::Tick(float DeltaTime)
@@ -677,6 +812,57 @@ void SSplitterC::ReplaceSide(SWindow* OldSide, SWindow* NewSide)
 	throw std::runtime_error("OldSide is not part of this quad splitter.");
 }
 
+SWindow* SSplitterC::Merge(SWindow* InWindowToKeep)
+{
+	if (InWindowToKeep != SideLT && InWindowToKeep != SideLB && InWindowToKeep != SideRT && InWindowToKeep != SideRB)
+	{
+		throw std::runtime_error("InWindowToKeep is not part of this quad splitter.");
+	}
+
+	FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
+	SWindow* ParentWindow = GetParent();
+	SWindow* WindowToKeep = InWindowToKeep;
+	SWindow* WindowsToRemove[] = { SideLT, SideLB, SideRT, SideRB };
+
+	SideLT = nullptr;
+	SideLB = nullptr;
+	SideRT = nullptr;
+	SideRB = nullptr;
+
+	for (SWindow* WindowToRemove : WindowsToRemove)
+	{
+		if (WindowToRemove && WindowToRemove != WindowToKeep)
+		{
+			if (EditorEngine)
+			{
+				EditorEngine->GetWindowManager().QueueDestroyWindow(WindowToRemove);
+			}
+			else
+			{
+				delete WindowToRemove;
+			}
+		}
+	}
+
+	if (ParentWindow)
+	{
+		ParentWindow->ReplaceSide(this, WindowToKeep);
+	}
+	else
+	{
+		WindowToKeep->SetParent(nullptr);
+		WindowToKeep->SetRect(GetRect());
+	}
+
+	if (EditorEngine)
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, WindowToKeep);
+		EditorEngine->GetWindowManager().QueueDestroyWindow(this);
+	}
+
+	return WindowToKeep;
+}
+
 SSplitterC::SSplitterC(FRect InRect, SWindow* InSideLT, SWindow* InSideLB, SWindow* InSideRT, SWindow* InSideRB, float InSplitRatioHorizontal, float InSplitRatioVertical)
 	: SWindow(InRect)
 	, SideLT(InSideLT)
@@ -728,6 +914,7 @@ void SSplitterC::SetSplitRatioVertical(float InSplitRatio)
 
 	SplitRatioVertical = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitterC::SetSplitRatioHorizontal(float InSplitRatio)
@@ -740,6 +927,7 @@ void SSplitterC::SetSplitRatioHorizontal(float InSplitRatio)
 
 	SplitRatioHorizontal = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitterC::Tick(float DeltaTime)
@@ -780,6 +968,28 @@ void SSplitterC::Render()
 	{
 		SideRB->Render();
 	}
+}
+
+SWindow* SSplitterC::GetWindow(FPoint coord)
+{
+	if (SideLT && SideLT->ISHover(coord))
+	{
+		return SideLT->GetWindow(coord);
+	}
+	if (SideLB && SideLB->ISHover(coord))
+	{
+		return SideLB->GetWindow(coord);
+	}
+	if (SideRT && SideRT->ISHover(coord))
+	{
+		return SideRT->GetWindow(coord);
+	}
+	if (SideRB && SideRB->ISHover(coord))
+	{
+		return SideRB->GetWindow(coord);
+	}
+
+	return nullptr;
 }
 
 bool SSplitterC::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)

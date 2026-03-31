@@ -19,6 +19,8 @@ enum class ERenderMode
 	NoLighting,
 	Wireframe,
 	SolidWireframe,
+	UV,
+	Normals,
 };
 
 enum class EEditorViewportType : uint8_t
@@ -44,8 +46,10 @@ public:
 	ERenderMode GetRenderMode() const { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
 	EEditorViewportType GetViewportType() const { return ViewportType; }
+	void SetViewportType(EEditorViewportType InViewportType);
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
 	virtual void DrawUI() override;
+	void DrawCameraOption(FCamera* Camera);
 
 	void HandleFileDoubleClick(const FString& FilePath);
 	void HandleFileDropOnViewport(const FString& FilePath);
@@ -72,6 +76,8 @@ private:
 	AActor* GetSelectedActor() const;
 	AActor* GetGizmoTarget() const;
 	void CreateGridResource(FRenderer* Renderer);
+	void CreateViewerDebugMaterials(FRenderer* Renderer);
+	void ApplyViewerNoCull(FMaterial* Material) const;
 
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
@@ -85,6 +91,8 @@ private:
 	std::shared_ptr<FMaterial> WireFrameMaterial = nullptr;
 	std::shared_ptr<FMaterial> SolidWireFrameFillMaterial = nullptr;
 	std::shared_ptr<FMaterial> SolidWireFrameLineMaterial = nullptr;
+	std::shared_ptr<FMaterial> ViewerUVMaterial = nullptr;
+	std::shared_ptr<FMaterial> ViewerNormalMaterial = nullptr;
 
 	std::unique_ptr<FMeshData> GridMesh;
 	std::shared_ptr<FMaterial> GridMaterial;

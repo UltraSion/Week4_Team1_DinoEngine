@@ -122,7 +122,7 @@ void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderComm
 
 	OutQueue.ViewMatrix = CameraTransform.GetViewMatrix();
 	OutQueue.ProjectionMatrix = CameraTransform.GetProjectionMatrix();
-	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, OutQueue);
+	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, &CameraTransform, OutQueue);
 }
 
 void FViewportClient::PostRender(FCore* Core, FRenderer* Renderer)

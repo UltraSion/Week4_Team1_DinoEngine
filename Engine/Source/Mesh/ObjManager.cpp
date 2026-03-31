@@ -9,7 +9,13 @@ TMap<FString, std::shared_ptr<FStaticMeshRenderData>> FObjManager::ObjStaticMesh
 
 FStaticMeshRenderData* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 {
-	auto It = ObjStaticMeshMap.find(PathFileName);
+	FString CacheKey = PathFileName;
+#if IS_OBJ_VIEWER
+	CacheKey += "|";
+	CacheKey += FObjImporter::BuildImportAxisMappingKey(FObjImporter::GetImportAxisMapping());
+#endif
+
+	auto It = ObjStaticMeshMap.find(CacheKey);
 	if (It != ObjStaticMeshMap.end())
 		return It->second.get();
 
@@ -21,7 +27,7 @@ FStaticMeshRenderData* FObjManager::LoadObjStaticMeshAsset(const FString& PathFi
 	if (!Cooked) return nullptr;
 	Cooked->SetAssetPath(PathFileName);
 
-	ObjStaticMeshMap[PathFileName] = std::shared_ptr<FStaticMeshRenderData>(Cooked);
+	ObjStaticMeshMap[CacheKey] = std::shared_ptr<FStaticMeshRenderData>(Cooked);
 	return Cooked;
 }
 

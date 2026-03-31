@@ -5,6 +5,7 @@
 #include "Actor/StaticMeshActor.h"
 #include "Actor/SkySphereActor.h"
 #include "Component/PrimitiveComponent.h"
+#include "Component/MeshComponent.h"
 #include "Core/Core.h"
 #include "Core/Paths.h"
 #include "Debug/EngineLog.h"
@@ -89,6 +90,9 @@ void FEditorViewportClient::Attach(FCore* Core)
 	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
 	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
+#if IS_OBJ_VIEWER //뷰어에서만 쓰이는 uv, normal 머테리얼입니다.
+	CreateViewerDebugMaterials(GRenderer);
+#endif
 }
 
 void FEditorViewportClient::Detach()
@@ -99,6 +103,8 @@ void FEditorViewportClient::Detach()
 	WireFrameMaterial.reset();
 	SolidWireFrameFillMaterial.reset();
 	SolidWireFrameLineMaterial.reset();
+	ViewerUVMaterial.reset();
+	ViewerNormalMaterial.reset();
 
 	if (EditorUI.GetActiveViewportClient() == this)
 	{
@@ -135,6 +141,13 @@ void FEditorViewportClient::ConfigureDefaultView()
 		CameraTransform.SetRotation(0.0f, 0.0f);
 		break;
 	}
+}
+
+void FEditorViewportClient::SetViewportType(EEditorViewportType InViewportType)
+{
+	ViewportType = InViewportType;
+	ConfigureDefaultView();
+	SaveInitialCameraState();
 }
 
 void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
@@ -184,6 +197,83 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 		GridMaterial->SetParameterData("GridSize", &GridSize, 4);
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
+}
+
+/**
+ * 뷰어에서 사용할 UV, Normal 디버그 머테리얼을 생성하는 함수입니다..
+ * 
+ * \param Renderer
+ */
+void FEditorViewportClient::CreateViewerDebugMaterials(FRenderer* Renderer)
+{
+	ID3D11Device* Device = Renderer ? Renderer->GetDevice() : nullptr;
+	FRenderStateManager* RenderStateManager = Renderer ? Renderer->GetRenderStateManager().get() : nullptr;
+	if (!Device || !RenderStateManager)
+	{
+		return;
+	}
+
+	const std::wstring ShaderDir = FPaths::ShaderDir();
+	auto VertexShader = FShaderMap::Get().GetOrCreateVertexShader(Device, (ShaderDir + L"StaticMeshVertexShader.hlsl").c_str());
+	auto UVPixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"ObjViewerUVPixelShader.hlsl").c_str());
+	auto NormalPixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"ObjViewerNormalPixelShader.hlsl").c_str());
+
+	auto CreateDebugMaterial = [&](const char* MaterialName, const std::shared_ptr<FPixelShader>& PixelShader)
+	{
+		if (!VertexShader || !PixelShader)
+		{
+			return std::shared_ptr<FMaterial>();
+		}
+
+		auto Material = std::make_shared<FMaterial>();
+		Material->SetOriginName(MaterialName);
+		Material->SetVertexShader(VertexShader);
+		Material->SetPixelShader(PixelShader);
+
+		FRasterizerStateOption RasterizerOption;
+		RasterizerOption.FillMode = D3D11_FILL_SOLID;
+		RasterizerOption.CullMode = D3D11_CULL_NONE;
+		Material->SetRasterizerOption(RasterizerOption);
+		Material->SetRasterizerState(RenderStateManager->GetOrCreateRasterizerState(RasterizerOption));
+
+		FDepthStencilStateOption DepthStencilOption;
+		DepthStencilOption.DepthEnable = true;
+		DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		Material->SetDepthStencilOption(DepthStencilOption);
+		Material->SetDepthStencilState(RenderStateManager->GetOrCreateDepthStencilState(DepthStencilOption));
+
+		const int32 SlotIndex = Material->CreateConstantBuffer(Device, 16);
+		if (SlotIndex >= 0)
+		{
+			Material->RegisterParameter("ColorTint", SlotIndex, 0, 16);
+			const FVector4 White(1.0f, 1.0f, 1.0f, 1.0f);
+			Material->SetParameterData("ColorTint", &White, 16);
+		}
+
+		return Material;
+	};
+
+	ViewerUVMaterial = CreateDebugMaterial("M_ObjViewer_UV", UVPixelShader);
+	ViewerNormalMaterial = CreateDebugMaterial("M_ObjViewer_Normal", NormalPixelShader);
+}
+
+void FEditorViewportClient::ApplyViewerNoCull(FMaterial* Material) const
+{
+	if (!Material || !GRenderer)
+	{
+		return;
+	}
+
+	const FRasterizerStateOption& CurrentOption = Material->GetRasterizerOption();
+	if (CurrentOption.CullMode == D3D11_CULL_NONE)
+	{
+		return;
+	}
+
+	FRasterizerStateOption UpdatedOption = CurrentOption;
+	UpdatedOption.CullMode = D3D11_CULL_NONE;
+	Material->SetRasterizerOption(UpdatedOption);
+	Material->SetRasterizerState(GRenderer->GetRenderStateManager()->GetOrCreateRasterizerState(UpdatedOption));
 }
 
 UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
@@ -332,6 +422,11 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
+#if IS_OBJ_VIEWER
+	// 뷰어 모드에서는 픽킹을 통한 선택 변경을 막습니다.
+	return;
+#endif
+
 	if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 	{
 		return;
@@ -387,36 +482,167 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 void FEditorViewportClient::DrawUI()
 {
 	FRect WindowRect = ViewportWindow->GetRect();
-	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X, WindowRect.Position.Y));
+	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X + WindowRect.Size.X * 0.5f, WindowRect.Position.Y));
 
 	char windowName[128];
 	sprintf_s(windowName, "ViewportButtonFrame##%p", this);
 
-	if (ImGui::Begin(windowName, nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+	if (!ImGui::Begin(windowName, nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
 	{
-		char buttonName[128];
+		ImGui::End();
+		return;
+	}
+
+	char buttonName[128];
+	bool HasParent = ViewportWindow->GetParent() != nullptr;
+	if (!HasParent)
+	{
 		sprintf_s(buttonName, "H##%p", this);
 		if (ImGui::Button(buttonName))
 		{
-			ViewportWindow->Split(
+			if (ViewportWindow->Split(
 				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
 				SplitDirection::Horizontal,
 				SplitOption::LT
-			);
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
 		}
 
 		ImGui::SameLine();
 		sprintf_s(buttonName, "V##%p", this);
 		if (ImGui::Button(buttonName))
 		{
-			ViewportWindow->Split(
+			if (ViewportWindow->Split(
 				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
 				SplitDirection::Vertical,
 				SplitOption::LT
-			);
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
+		}
+
+		ImGui::SameLine();
+		sprintf_s(buttonName, "+##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			FViewportContext* NewContext1 = GEngine->CreateContext(FRect());
+			FViewportContext* NewContext2 = GEngine->CreateContext(FRect());
+			FViewportContext* NewContext3 = GEngine->CreateContext(FRect());
+
+			if (FEditorViewportClient* NewViewportClient1 = dynamic_cast<FEditorViewportClient*>(NewContext1 ? NewContext1->GetViewportClient() : nullptr))
+			{
+				NewViewportClient1->SetViewportType(EEditorViewportType::Top);
+			}
+
+			if (FEditorViewportClient* NewViewportClient2 = dynamic_cast<FEditorViewportClient*>(NewContext2 ? NewContext2->GetViewportClient() : nullptr))
+			{
+				NewViewportClient2->SetViewportType(EEditorViewportType::Front);
+			}
+
+			if (FEditorViewportClient* NewViewportClient3 = dynamic_cast<FEditorViewportClient*>(NewContext3 ? NewContext3->GetViewportClient() : nullptr))
+			{
+				NewViewportClient3->SetViewportType(EEditorViewportType::Right);
+			}
+
+			if (ViewportWindow->Split4(
+				new SViewportWindow(FRect(), NewContext1),
+				new SViewportWindow(FRect(), NewContext2),
+				new SViewportWindow(FRect(), NewContext3),
+				SplitOption::RB
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
 		}
 	}
+	else
+	{
+		sprintf_s(buttonName, "-##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			ViewportWindow->GetParent()->Merge(ViewportWindow);
+			EditorUI.SaveEditorSettings();
+		}
+	}
+
+
+	ImGui::SameLine();
+
+
+	ImGui::SameLine();
+	DrawCameraOption(GetCamera());
 	ImGui::End();
+
+
+}
+
+void FEditorViewportClient::DrawCameraOption(FCamera* Camera)
+{
+	if (ImGui::CollapsingHeader("Camera"))
+	{
+		ImGui::SeparatorText("Camera");
+		if (Camera)
+		{
+			float Sensitivity = Camera->GetMouseSensitivity();
+			if (ImGui::SliderFloat("Mouse Sensitivity", &Sensitivity, 0.01f, 1.0f))
+			{
+				Camera->SetMouseSensitivity(Sensitivity);
+			}
+
+			float Speed = Camera->GetSpeed();
+			if (ImGui::SliderFloat("Move Speed", &Speed, 0.1f, 20.0f))
+			{
+				Camera->SetSpeed(Speed);
+			}
+
+			const FVector CameraPosition = Camera->GetPosition();
+			float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
+			if (ImGui::DragFloat3("Position", Position, 0.1f))
+			{
+				Camera->SetPosition({ Position[0], Position[1], Position[2] });
+			}
+
+			float CameraYaw = Camera->GetYaw();
+			float CameraPitch = Camera->GetPitch();
+			bool bRotationChanged = false;
+			bRotationChanged |= ImGui::DragFloat("Yaw", &CameraYaw, 0.5f);
+			bRotationChanged |= ImGui::DragFloat("Pitch", &CameraPitch, 0.5f, -89.0f, 89.0f);
+			if (bRotationChanged)
+			{
+				Camera->SetRotation(CameraYaw, CameraPitch);
+			}
+
+			int ProjectionModeIndex = (Camera->GetProjectionMode() == ECameraProjectionMode::Orthographic) ? 1 : 0;
+			const char* ProjectionModes[] = { "Perspective", "Orthographic" };
+			if (ImGui::Combo("Projection", &ProjectionModeIndex, ProjectionModes, IM_ARRAYSIZE(ProjectionModes)))
+			{
+				Camera->SetProjectionMode(
+					ProjectionModeIndex == 0
+					? ECameraProjectionMode::Perspective
+					: ECameraProjectionMode::Orthographic);
+			}
+
+			if (Camera->IsOrthographic())
+			{
+				float OrthoWidth = Camera->GetOrthoWidth();
+				if (ImGui::DragFloat("Ortho Width", &OrthoWidth, 0.5f, 1.0f, 1000.0f))
+				{
+					Camera->SetOrthoWidth(OrthoWidth);
+				}
+			}
+			else
+			{
+				float CameraFOV = Camera->GetFOV();
+				if (ImGui::SliderFloat("FOV", &CameraFOV, 10.0f, 120.0f))
+				{
+					Camera->SetFOV(CameraFOV);
+				}
+			}
+		}
+	}
 }
 
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
@@ -436,8 +662,9 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
-	if (FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice()))
+	if (FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice(), EditorUI.GetPerspectiveCamera()))
 	{
+		EditorUI.SavePerspectiveCameraInitialState();
 		UE_LOG("Level loaded: %s", FilePath.c_str());
 	}
 	else
@@ -475,7 +702,9 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 			Transform.SetLocation(SpawnLocation);
 			Root->SetRelativeTransform(Transform);
 		}
+#if !IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
+#endif
 	}
 
 
@@ -520,6 +749,36 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 
 		OutQueue.Commands = std::move(SolidWireframeCommands);
 	}
+	else if (RenderMode == ERenderMode::UV)
+	{
+		for (FRenderCommand& Command : OutQueue.Commands)
+		{
+			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerUVMaterial)
+			{
+				Command.Material = ViewerUVMaterial.get();
+			}
+		}
+	}
+	else if (RenderMode == ERenderMode::Normals)
+	{
+		for (FRenderCommand& Command : OutQueue.Commands)
+		{
+			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerNormalMaterial)
+			{
+				Command.Material = ViewerNormalMaterial.get();
+			}
+		}
+	}
+
+#if IS_OBJ_VIEWER
+	for (FRenderCommand& Command : OutQueue.Commands)
+	{
+		if (Command.RenderLayer != ERenderLayer::Overlay)
+		{
+			ApplyViewerNoCull(Command.Material);
+		}
+	}
+#endif
 
 	if (GridMesh && GridMaterial && IsGridVisible())
 	{
@@ -550,6 +809,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 	//Stat Overlay를 띄웁니다.
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
 
+#if IS_OBJ_VIEWER
+	return;
+#endif
+
 	AActor* SelectedActor = Core->GetSelectedActor();
 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())
 	{
@@ -561,7 +824,6 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		return;
 	}
 
-	return;
 	for (UActorComponent* Component : SelectedActor->GetComponents())
 	{
 		if (!Component->IsA(UPrimitiveComponent::StaticClass()))
@@ -570,7 +832,19 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 		}
 
 		UPrimitiveComponent* PrimitiveComponent = static_cast<UPrimitiveComponent*>(Component);
-		if (PrimitiveComponent->GetPrimitive())
+		if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
+		{
+			UMeshComponent* MeshComponent = static_cast<UMeshComponent*>(PrimitiveComponent);
+			if (FMeshData* MeshData = MeshComponent->GetMeshData())
+			{
+				Renderer->RenderOutline(
+					MeshData,
+					MeshComponent->GetWorldTransform());
+			}
+			continue;
+		}
+
+		if (PrimitiveComponent->GetPrimitive() && PrimitiveComponent->GetPrimitive()->GetMeshData())
 		{
 			Renderer->RenderOutline(
 				PrimitiveComponent->GetPrimitive()->GetMeshData(),

@@ -104,10 +104,6 @@ void FViewportContext::SetAcceptsInput(bool bInAcceptsInput)
 void FViewportContext::SetActive(bool bInActive)
 {
 	bActive = bInActive && AcceptsInput();
-	if (Viewport)
-	{
-		Viewport->SetFocused(bActive);
-	}
 }
 
 void FViewportContext::SetCapturing(bool bInCapturing)
@@ -207,25 +203,6 @@ bool FViewportContext::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WP
 		{
 			ViewportClient->SetViewportInputState(LocalMouseX, LocalMouseY, Viewport->GetRect());
 		}
-
-		if (Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK || Msg == WM_RBUTTONDOWN || Msg == WM_MBUTTONDOWN)
-		{
-			SetActive(true);
-			SetCapturing(true);
-		}
-		else if (Msg == WM_LBUTTONUP || Msg == WM_RBUTTONUP || Msg == WM_MBUTTONUP)
-		{
-			SetCapturing(false);
-			SetActive(bHasLocalMousePosition);
-		}
-		else if (bHasLocalMousePosition)
-		{
-			SetActive(true);
-		}
-	}
-	else if (!IsActive() && !IsCapturing())
-	{
-		return false;
 	}
 
 	ViewportClient->HandleMessage(Core, Hwnd, Msg, WParam, LParam);
@@ -273,8 +250,7 @@ void FViewportContext::Render(FCore* Core, FRenderCommandQueue& CommandQueue)
 
 	D3D11_VIEWPORT D3DViewport = Viewport->GetD3D11Viewport();
 	GRenderer->SetViewport(&D3DViewport);
-	GRenderer->SubmitCommands(CommandQueue);
-	GRenderer->ExecuteCommands();
+	GRenderer->ExecuteCommandQueue(CommandQueue);
 	ViewportClient->PostRender(Core, GRenderer);
 	Core->GetDebugDrawManager().Flush(GRenderer, ViewportClient->GetShowFlags(), World);
 }

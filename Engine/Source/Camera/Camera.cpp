@@ -201,6 +201,30 @@ void FCamera::SetFOV(float InFOV)
 	FOV = std::clamp(InFOV, 1.0f, 179.0f);
 }
 
+float FCamera::GetNearClip() const
+{
+	return NearPlane;
+}
+
+float FCamera::GetFarClip() const
+{
+	return FarPlane;
+}
+
+void FCamera::SetNearClip(float InNearClip)
+{
+	NearPlane = (std::max)(InNearClip, 0.001f);
+	if (FarPlane <= NearPlane)
+	{
+		FarPlane = NearPlane + 0.001f;
+	}
+}
+
+void FCamera::SetFarClip(float InFarClip)
+{
+	FarPlane = (std::max)(InFarClip, NearPlane + 0.001f);
+}
+
 ECameraProjectionMode FCamera::GetProjectionMode() const
 {
 	return ProjectionMode;

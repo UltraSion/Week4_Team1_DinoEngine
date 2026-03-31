@@ -59,6 +59,17 @@ void FContentBrowserWindow::Render()
 
 	bIsHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 
+	if (bFileOnDrag && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+	{
+		if (OnFileDragEnd && !SelectedFilePath.empty())
+		{
+			OnFileDragEnd(SelectedFilePath.string(), DirectoryPathUnderMouse.string());
+		}
+
+		bFileOnDrag = false;
+		SelectedFilePath.clear();
+	}
+
 	ImGui::End();
 	// 예전 수동 Drag & Drop 데드 코드 완벽히 삭제 완료!
 }
@@ -169,6 +180,8 @@ void FContentBrowserWindow::DrawGridItem(const std::filesystem::directory_entry&
 		{
 			std::string PayloadPath = Path.string();
 			ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", PayloadPath.c_str(), PayloadPath.size() + 1);
+			bFileOnDrag = true;
+			SelectedFilePath = Path;
 
 			ImGui::Image(FileIcon, ImVec2(32, 32));
 			ImGui::SameLine();

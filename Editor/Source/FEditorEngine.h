@@ -14,7 +14,8 @@ public:
 	void OpenNewObj();
 	void Shutdown() override;
 	FWindowManager& GetWindowManager() { return WindowManager; }
-	void SetViewportLayoutBounds(int32 InTopLeftX, int32 InTopLeftY, uint32 InWidth, uint32 InHeight);
+	void SaveEditorSettings();
+	void SetViewportLayoutBounds(FRect InRect);
 
 protected:
 	void PreInitialize() override;

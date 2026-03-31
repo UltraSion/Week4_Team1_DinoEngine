@@ -10,9 +10,10 @@
 #include "Renderer/SubUVRenderer.h"
 #include "Renderer/Material.h"
 #include "Component/StaticMeshComponent.h"
+#include "Camera/Camera.h"
 
 void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
-	const FShowFlags& ShowFlags, FRenderCommandQueue& OutQueue)
+	const FShowFlags& ShowFlags, const FCamera* Camera, FRenderCommandQueue& OutQueue)
 {
 	TArray<UPrimitiveComponent*> VisiblePrimitives;
 	FrustrumCull(Actors, Frustum, ShowFlags, VisiblePrimitives);
@@ -58,9 +59,9 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 					const FVector WorldPos = TextComp->GetRenderWorldPosition();
 					const FVector Scale = TextComp->GetRenderWorldScale();
 
-					if (TextComp->IsBillboard())
+					if (TextComp->IsBillboard() && Camera)
 					{
-						const FVector CameraPos = GRenderer->GetCameraPosition();
+						const FVector CameraPos = Camera->GetPosition();
 						Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);
 					}
 					else
@@ -101,9 +102,9 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 					Command.Material = SubUVMat;
 					Command.WorldMatrix = SubUVComponent->GetWorldTransform();
 
-					if (SubUVComponent->IsBillboard())
+					if (SubUVComponent->IsBillboard() && Camera)
 					{
-						const FVector CameraPos = GRenderer->GetCameraPosition();
+						const FVector CameraPos = Camera->GetPosition();
 						const FVector WorldPos = Command.WorldMatrix.GetTranslation();
 						const FVector Scale = Command.WorldMatrix.GetScaleVector();
 						Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);

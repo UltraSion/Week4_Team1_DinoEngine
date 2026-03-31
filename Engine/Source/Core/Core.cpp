@@ -370,10 +370,10 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 		return;
 	}
 
-	constexpr float Margin = 16.0f;
+	constexpr float Margin = 116.0f;
 	constexpr float Padding = 10.0f;
 	constexpr float LineSpacing = 6.0f;
-	const FVector4 BackgroundColor(0.05f, 0.05f, 0.05f, 0.78f);
+	const FVector4 BackgroundColor(0.05f, 0.05f, 0.05f, 0.08f);
 	const FVector4 BorderColor(1.0f, 1.0f, 1.0f, 0.10f);
 	const FVector4 TitleColor(0.95f, 0.95f, 0.95f, 1.0f);
 	const FVector4 ValueColor(0.80f, 0.90f, 1.0f, 1.0f);
@@ -408,9 +408,9 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 		TArray<FString> Lines;
 		char Buffer[128] = {};
 		Lines.push_back("STAT FPS");
-		snprintf(Buffer, sizeof(Buffer), "FPS                    : %.1f", Timer.GetDisplayFPS());
+		snprintf(Buffer, sizeof(Buffer), "%.2f FPS", Timer.GetDisplayFPS());
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Frame Time             : %.2f ms", Timer.GetFrameTimeMs());
+		snprintf(Buffer, sizeof(Buffer), "%.2f ms", Timer.GetFrameTimeMs());
 		Lines.push_back(Buffer);
 		const float FPSBoxWidth = 320.0f;
 		float FPSCursorBoxY = Margin;
@@ -424,13 +424,13 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 		TArray<FString> Lines;
 		char Buffer[160] = {};
 		Lines.push_back("STAT MEMORY");
-		snprintf(Buffer, sizeof(Buffer), "UObject Count          : %u", UObject::TotalAllocationCounts);
+		snprintf(Buffer, sizeof(Buffer), "UObject Count------: %u", UObject::TotalAllocationCounts);
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "UObject Bytes          : %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "UObject Bytes------: %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Usage             : %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "Heap Usage---------: %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Allocations       : %u", MallocStats.CurrentAllocationCount);
+		snprintf(Buffer, sizeof(Buffer), "Heap Allocations---: %u", MallocStats.CurrentAllocationCount);
 		Lines.push_back(Buffer);
 		DrawStatBox(Lines, 500.0f, Margin, LeftCursorBoxY);
 	}
