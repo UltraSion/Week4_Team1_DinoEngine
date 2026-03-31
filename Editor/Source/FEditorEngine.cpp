@@ -1,8 +1,6 @@
 #include "FEditorEngine.h"
 
 #include "UI/EditorViewportClient.h"
-#include "UI/EditorOrthoViewportClient.h"
-#include "UI/EditorPerspectiveViewportClient.h"
 #include "UI/ViewportWindow.h"
 #include "Core/Core.h"
 #include "Core/Viewport.h"
@@ -236,18 +234,7 @@ FViewportContext* FEditorEngine::CreateEditorViewportContext(const FRect& InRect
 
 FEditorViewportClient* FEditorEngine::CreateEditorViewportClient(EEditorViewportType InViewportType, ELevelType InWorldType)
 {
-	switch (InViewportType)
-	{
-	case EEditorViewportType::Top:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Top, InWorldType);
-	case EEditorViewportType::Front:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Front, InWorldType);
-	case EEditorViewportType::Right:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Right, InWorldType);
-	case EEditorViewportType::Perspective:
-	default:
-		return new FEditorPerspectiveViewportClient(EditorUI, MainWindow, InWorldType);
-	}
+	return new FEditorViewportClient(EditorUI, MainWindow, InViewportType, InWorldType);
 }
 
 void FEditorEngine::RunObjViewerStartupTest()

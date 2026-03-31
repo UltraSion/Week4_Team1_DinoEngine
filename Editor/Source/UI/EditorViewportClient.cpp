@@ -31,6 +31,14 @@
 
 namespace
 {
+	constexpr float PerspectivePitchMin = -89.0f;
+	constexpr float PerspectivePitchMax = 89.0f;
+	constexpr float PerspectiveWheelMoveScale = 1.0f;
+	constexpr float PerspectivePanMouseScale = 1.0f;
+	constexpr float OrthoMinZoom = 1.0f;
+	constexpr float OrthoMaxZoom = 1000.0f;
+	constexpr float OrthoZoomStepScale = 1.1f;
+
 	const char* GetViewportTypeLabel(EEditorViewportType ViewportType)
 	{
 		switch (ViewportType)
@@ -67,6 +75,20 @@ namespace
 		return Start + Delta * Alpha;
 	}
 
+	const char* GetOrthoViewLabel(EOrthoViewType OrthoViewType)
+	{
+		switch (OrthoViewType)
+		{
+		case EOrthoViewType::Front:
+			return "Front";
+		case EOrthoViewType::Right:
+			return "Right";
+		case EOrthoViewType::Top:
+		default:
+			return "Top";
+		}
+	}
+
 	FViewportContext* CreateEditorViewportContext(EEditorViewportType ViewportType)
 	{
 		FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
@@ -91,6 +113,9 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 	FocusCameraFunction.SetCamera(&CameraTransform);
 	ChangePersToOrthFunction.SetCamera(&CameraTransform);
 	ChangeOrthoToOrthoFunction.SetCamera(&CameraTransform);
+
+	ConfigureDefaultView();
+	SaveInitialCameraState();
 }
 
 void FEditorViewportClient::Attach(FCore* Core)
@@ -322,6 +347,242 @@ UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
 const char* FEditorViewportClient::GetViewportLabel() const
 {
 	return GetViewportTypeLabel(ViewportType);
+}
+
+void FEditorViewportClient::ConfigureDefaultView()
+{
+	if (ViewportType == EEditorViewportType::Perspective)
+	{
+		CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
+		CameraTransform.SetPosition({ -5.0f, 0.0f, 2.0f });
+		CameraTransform.SetRotation(0.0f, 0.0f);
+		return;
+	}
+
+	OrthoViewType = GetOrthoViewTypeFromViewportType(ViewportType);
+	CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+	CameraTransform.SetOrthoWidth(OrthoZoom);
+	OrthoCenter = FVector::ZeroVector;
+	OrthoViewDistance = 25.0f;
+
+	switch (OrthoViewType)
+	{
+	case EOrthoViewType::Top:
+		CameraTransform.SetRotation(0.0f, -89.99f);
+		break;
+	case EOrthoViewType::Front:
+		CameraTransform.SetRotation(0.0f, 0.0f);
+		break;
+	case EOrthoViewType::Right:
+		CameraTransform.SetRotation(90.0f, 0.0f);
+		break;
+	}
+
+	UpdateOrthoCameraTransform();
+}
+
+void FEditorViewportClient::DrawViewportSpecificOptions()
+{
+	//if (ViewportType != EEditorViewportType::Perspective)
+	//{
+	//	return;
+	//}
+
+	ImGui::Spacing();
+	static const char* OrthoViewLabels[] =
+	{
+		"Perspective",
+		"Ortho Top",
+		"Ortho Front",
+		"Ortho Right"
+	};
+
+	if (ImGui::BeginCombo("View Mode", "Perspective / Ortho"))
+	{
+		for (int32 Index = 0; Index < IM_ARRAYSIZE(OrthoViewLabels); ++Index)
+		{
+			if (!ImGui::Selectable(OrthoViewLabels[Index], false))
+			{
+				continue;
+			}
+
+			switch (Index)
+			{
+			case 0:
+				CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
+				break;
+			case 1:
+				StartOrthoTransition(EOrthoViewType::Top);
+				break;
+			case 2:
+				StartOrthoTransition(EOrthoViewType::Front);
+				break;
+			case 3:
+				StartOrthoTransition(EOrthoViewType::Right);
+				break;
+			default:
+				break;
+			}
+		}
+
+		ImGui::EndCombo();
+	}
+}
+
+void FEditorViewportClient::DrawControllerOptions()
+{
+	if (ViewportType == EEditorViewportType::Perspective)
+	{
+		float Sensitivity = CameraTransform.GetMouseSensitivity();
+		if (ImGui::SliderFloat("Mouse Sensitivity", &Sensitivity, 0.01f, 1.0f))
+		{
+			CameraTransform.SetMouseSensitivity(Sensitivity);
+		}
+
+		float Speed = CameraTransform.GetSpeed();
+		if (ImGui::SliderFloat("Move Speed", &Speed, 0.1f, 20.0f))
+		{
+			CameraTransform.SetSpeed(Speed);
+		}
+
+		const FVector CameraPosition = CameraTransform.GetPosition();
+		float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
+		if (ImGui::DragFloat3("Position", Position, 0.1f))
+		{
+			CameraTransform.SetPosition({ Position[0], Position[1], Position[2] });
+		}
+
+		float CameraYaw = CameraTransform.GetYaw();
+		float CameraPitch = CameraTransform.GetPitch();
+		bool bRotationChanged = false;
+		bRotationChanged |= ImGui::DragFloat("Yaw", &CameraYaw, 0.5f);
+		bRotationChanged |= ImGui::DragFloat("Pitch", &CameraPitch, 0.5f, PerspectivePitchMin, PerspectivePitchMax);
+		if (bRotationChanged)
+		{
+			CameraTransform.SetRotation(CameraYaw, FMath::Clamp(CameraPitch, PerspectivePitchMin, PerspectivePitchMax));
+		}
+
+		float CameraFOV = CameraTransform.GetFOV();
+		if (ImGui::SliderFloat("FOV", &CameraFOV, 10.0f, 120.0f))
+		{
+			CameraTransform.SetFOV(CameraFOV);
+		}
+		return;
+	}
+
+	ImGui::Text("View: %s", GetOrthoViewLabel(OrthoViewType));
+
+	float Center[3] = { OrthoCenter.X, OrthoCenter.Y, OrthoCenter.Z };
+	if (ImGui::DragFloat3("Center", Center, 0.1f))
+	{
+		OrthoCenter = { Center[0], Center[1], Center[2] };
+		UpdateOrthoCameraTransform();
+	}
+
+	float CameraYaw = CameraTransform.GetYaw();
+	float CameraPitch = CameraTransform.GetPitch();
+	bool bRotationChanged = false;
+	bRotationChanged |= ImGui::DragFloat("Yaw", &CameraYaw, 0.5f);
+	bRotationChanged |= ImGui::DragFloat("Pitch", &CameraPitch, 0.5f);
+	if (bRotationChanged)
+	{
+		CameraTransform.SetRotation(CameraYaw, CameraPitch);
+		UpdateOrthoCameraTransform();
+	}
+
+	float Zoom = OrthoZoom;
+	if (ImGui::DragFloat("Zoom", &Zoom, 0.5f, OrthoMinZoom, OrthoMaxZoom))
+	{
+		OrthoZoom = FMath::Clamp(Zoom, OrthoMinZoom, OrthoMaxZoom);
+		UpdateOrthoCameraTransform();
+	}
+}
+
+void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
+{
+	(void)Core;
+
+	if (!InputManager)
+	{
+		return;
+	}
+
+	if (ViewportType == EEditorViewportType::Perspective)
+	{
+		if (const float MouseWheelDelta = InputManager->GetMouseWheelDelta(); MouseWheelDelta != 0.0f)
+		{
+			CameraTransform.MoveForward(MouseWheelDelta * PerspectiveWheelMoveScale);
+		}
+
+		const float MouseDeltaX = InputManager->GetMouseDeltaX();
+		const float MouseDeltaY = InputManager->GetMouseDeltaY();
+
+		if (bPerspectivePanning && (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f))
+		{
+			ApplyPerspectivePanInput(MouseDeltaX, MouseDeltaY, DeltaTime);
+		}
+
+		if (!bPerspectiveRotating)
+		{
+			return;
+		}
+
+		if (MouseDeltaX != 0.0f || MouseDeltaY != 0.0f)
+		{
+			ApplyPerspectiveLookInput(MouseDeltaX, MouseDeltaY);
+		}
+
+		float ForwardInput = 0.0f;
+		float RightInput = 0.0f;
+		float UpInput = 0.0f;
+		if (bMoveForward) ForwardInput += 1.0f;
+		if (bMoveBackward) ForwardInput -= 1.0f;
+		if (bMoveRight) RightInput += 1.0f;
+		if (bMoveLeft) RightInput -= 1.0f;
+		if (bMoveUp) UpInput += 1.0f;
+		if (bMoveDown) UpInput -= 1.0f;
+
+		if (ForwardInput != 0.0f)
+		{
+			CameraTransform.MoveForward(ForwardInput * DeltaTime);
+		}
+		if (RightInput != 0.0f)
+		{
+			CameraTransform.MoveRight(RightInput * DeltaTime);
+		}
+		if (UpInput != 0.0f)
+		{
+			CameraTransform.MoveUp(UpInput * DeltaTime);
+		}
+		return;
+	}
+
+	if (PendingOrthoZoomStep != 0.0f)
+	{
+		const float ZoomScale = std::pow(OrthoZoomStepScale, PendingOrthoZoomStep);
+		OrthoZoom = FMath::Clamp(OrthoZoom / ZoomScale, OrthoMinZoom, OrthoMaxZoom);
+		PendingOrthoZoomStep = 0.0f;
+		UpdateOrthoCameraTransform();
+	}
+
+	if (!bOrthoPanning)
+	{
+		return;
+	}
+
+	const float MouseDeltaX = InputManager->GetMouseDeltaX();
+	const float MouseDeltaY = InputManager->GetMouseDeltaY();
+	if (MouseDeltaX == 0.0f && MouseDeltaY == 0.0f)
+	{
+		return;
+	}
+
+	const float UnitsPerPixelX = ViewportWidth > 0 ? CameraTransform.GetOrthoWidth() / static_cast<float>(ViewportWidth) : 0.0f;
+	const float UnitsPerPixelY = ViewportHeight > 0 ? CameraTransform.GetOrthoHeight() / static_cast<float>(ViewportHeight) : 0.0f;
+	OrthoCenter = OrthoCenter
+		- GetOrthoRightVector() * (MouseDeltaX * UnitsPerPixelX)
+		+ GetOrthoUpVector() * (MouseDeltaY * UnitsPerPixelY);
+	UpdateOrthoCameraTransform();
 }
 
 void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
@@ -736,6 +997,117 @@ void FEditorViewportClient::DrawCameraOption()
 	DrawControllerOptions();
 }
 
+void FEditorViewportClient::StartOrthoTransition(EOrthoViewType InOrthoViewType)
+{
+	if (ViewportType != EEditorViewportType::Perspective || !ChangeOrthoToOrthoFunction.IsFinished())
+	{
+		return;
+	}
+
+	AActor* SelectedActor = GetSelectedActor();
+	if (!SelectedActor)
+	{
+		return;
+	}
+
+	UPrimitiveComponent* PrimitiveComponent = SelectedActor->GetComponentByClass<UPrimitiveComponent>();
+	if (!PrimitiveComponent)
+	{
+		return;
+	}
+
+	const FVector FocusCenter = PrimitiveComponent->GetWorldBounds().Center;
+	FVector TargetRotation = FVector::ZeroVector; // X=Yaw, Y=Pitch, Z=Roll
+
+	switch (InOrthoViewType)
+	{
+	case EOrthoViewType::Top:
+		TargetRotation = FVector(0.0f, -89.99f, 0.0f);
+		break;
+	case EOrthoViewType::Front:
+		TargetRotation = FVector(0.0f, 0.0f, 0.0f);
+		break;
+	case EOrthoViewType::Right:
+		TargetRotation = FVector(90.0f, 0.0f, 0.0f);
+		break;
+	}
+
+	ChangeOrthoToOrthoFunction.StartTransition(FocusCenter, TargetRotation, 0.35f);
+	CameraFunctionManager.AddFunction(&ChangeOrthoToOrthoFunction);
+}
+
+void FEditorViewportClient::ResetPerspectiveMovementState()
+{
+	bMoveForward = false;
+	bMoveBackward = false;
+	bMoveRight = false;
+	bMoveLeft = false;
+	bMoveUp = false;
+	bMoveDown = false;
+}
+
+void FEditorViewportClient::ApplyPerspectiveLookInput(float MouseDeltaX, float MouseDeltaY)
+{
+	const float NewYaw = CameraTransform.GetYaw() + MouseDeltaX * CameraTransform.GetMouseSensitivity();
+	const float NewPitch = FMath::Clamp(
+		CameraTransform.GetPitch() - MouseDeltaY * CameraTransform.GetMouseSensitivity(),
+		PerspectivePitchMin,
+		PerspectivePitchMax);
+	CameraTransform.SetRotation(NewYaw, NewPitch);
+}
+
+void FEditorViewportClient::ApplyPerspectivePanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime)
+{
+	const float PanRightAmount = -MouseDeltaX * DeltaTime * PerspectivePanMouseScale;
+	const float PanUpAmount = MouseDeltaY * DeltaTime * PerspectivePanMouseScale;
+
+	if (PanRightAmount != 0.0f)
+	{
+		CameraTransform.MoveRight(PanRightAmount);
+	}
+
+	if (PanUpAmount != 0.0f)
+	{
+		CameraTransform.OffsetPosition(GetViewportUpVector() * (PanUpAmount * CameraTransform.GetSpeed()));
+	}
+}
+
+void FEditorViewportClient::UpdateOrthoCameraTransform()
+{
+	CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+	CameraTransform.SetOrthoWidth(OrthoZoom);
+	CameraTransform.SetPosition(OrthoCenter - GetOrthoForwardVector() * OrthoViewDistance);
+}
+
+FVector FEditorViewportClient::GetOrthoForwardVector() const
+{
+	return CameraTransform.GetForward().GetSafeNormal();
+}
+
+FVector FEditorViewportClient::GetOrthoRightVector() const
+{
+	return CameraTransform.GetRight().GetSafeNormal();
+}
+
+FVector FEditorViewportClient::GetOrthoUpVector() const
+{
+	return GetViewportUpVector();
+}
+
+EOrthoViewType FEditorViewportClient::GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType)
+{
+	switch (InViewportType)
+	{
+	case EEditorViewportType::Front:
+		return EOrthoViewType::Front;
+	case EEditorViewportType::Right:
+		return EOrthoViewType::Right;
+	case EEditorViewportType::Top:
+	default:
+		return EOrthoViewType::Top;
+	}
+}
+
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
@@ -978,16 +1350,51 @@ void FEditorViewportClient::SetGridVisible(bool bVisible)
 
 void FEditorViewportClient::OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-	(void)Msg;
 	(void)WParam;
 	(void)LParam;
+
+	if (ViewportType == EEditorViewportType::Perspective)
+	{
+		if (Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK)
+		{
+			bPerspectiveRotating = true;
+		}
+		else if (Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK)
+		{
+			bPerspectivePanning = true;
+		}
+		return;
+	}
+
+	if (Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK || Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK)
+	{
+		bOrthoPanning = true;
+	}
 }
 
 void FEditorViewportClient::OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-	(void)Msg;
 	(void)WParam;
 	(void)LParam;
+
+	if (ViewportType == EEditorViewportType::Perspective)
+	{
+		if (Msg == WM_RBUTTONUP)
+		{
+			bPerspectiveRotating = false;
+			ResetPerspectiveMovementState();
+		}
+		else if (Msg == WM_MBUTTONUP)
+		{
+			bPerspectivePanning = false;
+		}
+		return;
+	}
+
+	if (Msg == WM_MBUTTONUP || Msg == WM_RBUTTONUP)
+	{
+		bOrthoPanning = false;
+	}
 }
 
 void FEditorViewportClient::OnMouseMove(WPARAM WParam, LPARAM LParam)
@@ -998,21 +1405,55 @@ void FEditorViewportClient::OnMouseMove(WPARAM WParam, LPARAM LParam)
 
 void FEditorViewportClient::OnMouseWheel(float WheelDelta, WPARAM WParam, LPARAM LParam)
 {
-	(void)WheelDelta;
 	(void)WParam;
 	(void)LParam;
+
+	if (ViewportType != EEditorViewportType::Perspective)
+	{
+		PendingOrthoZoomStep += WheelDelta;
+	}
 }
 
 void FEditorViewportClient::OnKeyDown(WPARAM WParam, LPARAM LParam)
 {
-	(void)WParam;
 	(void)LParam;
+
+	if (ViewportType != EEditorViewportType::Perspective)
+	{
+		return;
+	}
+
+	switch (WParam)
+	{
+	case 'W': bMoveForward = true; break;
+	case 'S': bMoveBackward = true; break;
+	case 'D': bMoveRight = true; break;
+	case 'A': bMoveLeft = true; break;
+	case 'E': bMoveUp = true; break;
+	case 'Q': bMoveDown = true; break;
+	default: break;
+	}
 }
 
 void FEditorViewportClient::OnKeyUp(WPARAM WParam, LPARAM LParam)
 {
-	(void)WParam;
 	(void)LParam;
+
+	if (ViewportType != EEditorViewportType::Perspective)
+	{
+		return;
+	}
+
+	switch (WParam)
+	{
+	case 'W': bMoveForward = false; break;
+	case 'S': bMoveBackward = false; break;
+	case 'D': bMoveRight = false; break;
+	case 'A': bMoveLeft = false; break;
+	case 'E': bMoveUp = false; break;
+	case 'Q': bMoveDown = false; break;
+	default: break;
+	}
 }
 
 FVector FEditorViewportClient::GetViewportUpVector() const

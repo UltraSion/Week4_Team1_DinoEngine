@@ -63,12 +63,6 @@
     <ClCompile Include="Source\UI\EditorUI.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Source\UI\EditorOrthoViewportClient.cpp">
-      <Filter>Source\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\UI\EditorPerspectiveViewportClient.cpp">
-      <Filter>Source\UI</Filter>
-    </ClCompile>
     <ClCompile Include="Source\UI\EditorViewportClient.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -144,12 +138,6 @@
       <Filter>Source\UI</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\EditorUI.h">
-      <Filter>Source\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\UI\EditorOrthoViewportClient.h">
-      <Filter>Source\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\UI\EditorPerspectiveViewportClient.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\EditorViewportClient.h">

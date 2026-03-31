@@ -80,10 +80,10 @@ public:
 	float GetObjViewerBottomZ(AActor* TargetActor) const;
 
 protected:
-	virtual void ConfigureDefaultView() = 0;
-	virtual void DrawControllerOptions() = 0;
-	virtual void DrawViewportSpecificOptions() {}
-	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override = 0;
+	virtual void ConfigureDefaultView();
+	virtual void DrawControllerOptions();
+	virtual void DrawViewportSpecificOptions();
+	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	virtual void OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual void OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual void OnMouseMove(WPARAM WParam, LPARAM LParam);
@@ -102,6 +102,15 @@ protected:
 	void ApplyViewerNoCull(FMaterial* Material) const;
 	void ShowViewOptionPanel();
 	void DrawCameraOption();
+	void StartOrthoTransition(EOrthoViewType OrthoViewType);
+	void ResetPerspectiveMovementState();
+	void ApplyPerspectiveLookInput(float MouseDeltaX, float MouseDeltaY);
+	void ApplyPerspectivePanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime);
+	void UpdateOrthoCameraTransform();
+	FVector GetOrthoForwardVector() const;
+	FVector GetOrthoRightVector() const;
+	FVector GetOrthoUpVector() const;
+	static EOrthoViewType GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType);
 	FVector GetViewportUpVector() const;
 	FMatrix GetGridWorldMatrix() const;
 
@@ -145,4 +154,22 @@ protected:
 	float ResetAnimationDuration = 0.25f;
 	bool bResetCameraAnimating = false;
 	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
+
+	// Perspective interaction state
+	bool bPerspectiveRotating = false;
+	bool bPerspectivePanning = false;
+	bool bMoveForward = false;
+	bool bMoveBackward = false;
+	bool bMoveRight = false;
+	bool bMoveLeft = false;
+	bool bMoveUp = false;
+	bool bMoveDown = false;
+
+	// Ortho interaction state
+	EOrthoViewType OrthoViewType = EOrthoViewType::Top;
+	FVector OrthoCenter = FVector::ZeroVector;
+	float OrthoZoom = 24.0f;
+	float OrthoViewDistance = 25.0f;
+	float PendingOrthoZoomStep = 0.0f;
+	bool bOrthoPanning = false;
 };
