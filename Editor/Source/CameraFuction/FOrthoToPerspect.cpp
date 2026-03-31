@@ -1,4 +1,4 @@
-#include "FPerspectToOrtho.h"
+#include "FOrthoToPerspect.h"
 
 #include "Camera/Camera.h"
 #include "Math/MathUtility.h"
@@ -9,8 +9,9 @@ namespace
 {
 	constexpr float MinTransitionTime = 0.01f;
 	constexpr float MinOrthoWidth = 0.01f;
-	constexpr float MinOrbitDistance = 0.01f;
 	constexpr float MinPerspectiveFOV = 1.0f;
+	constexpr float MaxPerspectiveFOV = 179.0f;
+	constexpr float MinOrbitDistance = 0.01f;
 
 	float LerpFloat(float A, float B, float Alpha)
 	{
@@ -33,10 +34,10 @@ namespace
 	}
 }
 
-void FPerspectToOrtho::StartTransition(
+void FOrthoToPerspect::StartTransition(
 	const FVector& InPivotPosition,
 	const FVector& InTargetRotation,
-	float InOrthoWidth,
+	float InTargetFOV,
 	float InTransitionTime)
 {
 	if (!Camera)
@@ -46,11 +47,11 @@ void FPerspectToOrtho::StartTransition(
 
 	StartPosition = Camera->GetPosition();
 	StartRotation = FVector(Camera->GetYaw(), Camera->GetPitch(), 0.0f);
-	StartFOV = Camera->GetFOV();
+	StartOrthoWidth = Camera->GetOrthoWidth();
 
 	PivotPosition = InPivotPosition;
 	TargetRotation = InTargetRotation;
-	TargetOrthoWidth = FMath::Max(InOrthoWidth, MinOrthoWidth);
+	TargetFOV = FMath::Clamp(InTargetFOV, MinPerspectiveFOV, MaxPerspectiveFOV);
 
 	CameraDistance = FMath::Max(FVector::Dist(StartPosition, PivotPosition), MinOrbitDistance);
 	TargetPosition = CalculateOrbitPosition(PivotPosition, TargetRotation, CameraDistance);
@@ -58,23 +59,23 @@ void FPerspectToOrtho::StartTransition(
 	TransitionTime = FMath::Max(InTransitionTime, MinTransitionTime);
 	ElapsedTime = 0.0f;
 	bIsTransitioning = true;
-	bSwitchedToOrtho = false;
+	bSwitchedToPerspective = false;
 
-	Camera->SetProjectionMode(ECameraProjectionMode::Perspective);
-	Camera->SetFOV(StartFOV);
+	Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
+	Camera->SetOrthoWidth(StartOrthoWidth);
 }
 
-void FPerspectToOrtho::Tick(float DeltaTime)
+void FOrthoToPerspect::Tick(float DeltaTime)
 {
 	UpdateTransition(DeltaTime);
 }
 
-bool FPerspectToOrtho::IsFinished() const
+bool FOrthoToPerspect::IsFinished() const
 {
 	return !bIsTransitioning;
 }
 
-void FPerspectToOrtho::UpdateTransition(float DeltaTime)
+void FOrthoToPerspect::UpdateTransition(float DeltaTime)
 {
 	if (!Camera || !bIsTransitioning)
 	{
@@ -92,45 +93,45 @@ void FPerspectToOrtho::UpdateTransition(float DeltaTime)
 	Camera->SetRotation(CurrentRotation.X, CurrentRotation.Y);
 	Camera->SetPosition(CurrentPosition);
 
-	if (!bSwitchedToOrtho)
+	const float SwitchOrthoWidth = FMath::Max(StartOrthoWidth * 0.05f, MinOrthoWidth);
+	if (!bSwitchedToPerspective)
 	{
-		const float PerspectivePhaseAlpha = FMath::Clamp(Alpha / 0.5f, 0.0f, 1.0f);
-		const float PerspectiveEase = EvaluateEaseInOut(PerspectivePhaseAlpha);
-		Camera->SetFOV(LerpFloat(StartFOV, MinPerspectiveFOV, PerspectiveEase));
+		const float OrthoPhaseAlpha = FMath::Clamp(Alpha / 0.5f, 0.0f, 1.0f);
+		const float OrthoEase = EvaluateEaseInOut(OrthoPhaseAlpha);
+		Camera->SetOrthoWidth(LerpFloat(StartOrthoWidth, SwitchOrthoWidth, OrthoEase));
 
 		if (Alpha >= 0.5f)
 		{
-			bSwitchedToOrtho = true;
-			Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
-			Camera->SetOrthoWidth(FMath::Max(TargetOrthoWidth * 0.05f, MinOrthoWidth));
+			bSwitchedToPerspective = true;
+			Camera->SetProjectionMode(ECameraProjectionMode::Perspective);
+			Camera->SetFOV(MinPerspectiveFOV);
 		}
 	}
 
-	if (bSwitchedToOrtho)
+	if (bSwitchedToPerspective)
 	{
-		const float OrthoPhaseAlpha = FMath::Clamp((Alpha - 0.5f) / 0.5f, 0.0f, 1.0f);
-		const float OrthoEase = EvaluateEaseInOut(OrthoPhaseAlpha);
-		const float StartOrthoWidth = FMath::Max(TargetOrthoWidth * 0.05f, MinOrthoWidth);
-		Camera->SetOrthoWidth(LerpFloat(StartOrthoWidth, TargetOrthoWidth, OrthoEase));
+		const float PerspectivePhaseAlpha = FMath::Clamp((Alpha - 0.5f) / 0.5f, 0.0f, 1.0f);
+		const float PerspectiveEase = EvaluateEaseInOut(PerspectivePhaseAlpha);
+		Camera->SetFOV(LerpFloat(MinPerspectiveFOV, TargetFOV, PerspectiveEase));
 	}
 
 	if (Alpha >= 1.0f)
 	{
-		Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
+		Camera->SetProjectionMode(ECameraProjectionMode::Perspective);
 		Camera->SetRotation(TargetRotation.X, TargetRotation.Y);
 		Camera->SetPosition(TargetPosition);
-		Camera->SetOrthoWidth(TargetOrthoWidth);
+		Camera->SetFOV(TargetFOV);
 		bIsTransitioning = false;
 	}
 }
 
-float FPerspectToOrtho::EvaluateEaseInOut(float T) const
+float FOrthoToPerspect::EvaluateEaseInOut(float T) const
 {
 	const float ClampedT = FMath::Clamp(T, 0.0f, 1.0f);
 	return ClampedT * ClampedT * (3.0f - 2.0f * ClampedT);
 }
 
-FVector FPerspectToOrtho::CalculateOrbitPosition(
+FVector FOrthoToPerspect::CalculateOrbitPosition(
 	const FVector& InPivotPosition,
 	const FVector& InRotation,
 	float InDistance) const
@@ -147,7 +148,7 @@ FVector FPerspectToOrtho::CalculateOrbitPosition(
 	return InPivotPosition - Forward * InDistance;
 }
 
-FVector FPerspectToOrtho::InterpolateRotation(
+FVector FOrthoToPerspect::InterpolateRotation(
 	const FVector& InStartRotation,
 	const FVector& InTargetRotation,
 	float T) const

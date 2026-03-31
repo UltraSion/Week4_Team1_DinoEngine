@@ -213,6 +213,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EditorGlobals.cpp" />
+    <ClCompile Include="Source\CameraFuction\FCameraOribit.cpp" />
     <ClCompile Include="Source\CameraFuction\FOrthoToOrtho.cpp" />
     <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
     <ClCompile Include="Source\CameraFuction\ICameraFunction.cpp" />
@@ -247,6 +248,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EditorGlobals.h" />
+    <ClInclude Include="Source\CameraFuction\FCameraOribit.h" />
     <ClInclude Include="Source\CameraFuction\FOrthoToOrtho.h" />
     <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
     <ClInclude Include="Source\CameraFuction\ICameraFunction.h" />
