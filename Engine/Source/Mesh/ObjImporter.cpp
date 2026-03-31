@@ -165,10 +165,14 @@ FString FObjImporter::BuildImportAxisMappingKey(const FImportAxisMapping& InMapp
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
-	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
+	std::ifstream File(FPaths::ToWide(FPaths::ToAbsolutePath(FilePath)));
 
 	if (!File.is_open()) return false;
-	OutInfo.ObjDirectory = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path().string();
+	OutInfo.ObjDirectory = FPaths::ToAbsolutePath(FilePath);
+	size_t LastSlash = OutInfo.ObjDirectory.rfind('/');
+	if (LastSlash != std::string::npos)
+		OutInfo.ObjDirectory = OutInfo.ObjDirectory.substr(0, LastSlash);
+
 	std::string Line;
 	while (std::getline(File, Line))
 	{
@@ -219,8 +223,10 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 			else
 			{
 				// 못 찾았다면 기존 폴백 로직
-				std::filesystem::path ObjDir = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path();
-				MtlPath = (ObjDir / MtlFileName).string();
+				FString AbsPath = FPaths::ToAbsolutePath(FilePath);
+				size_t Slash = AbsPath.rfind('/');
+				FString ObjDir = (Slash != std::string::npos) ? AbsPath.substr(0, Slash) : AbsPath;
+				MtlPath = ObjDir + "/" + MtlFileName;
 			}
 			ParseMtl(MtlPath, OutInfo.Materials);
 		}
@@ -282,7 +288,7 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 // FObjImporter::ParseMtl
 bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& OutMaterials)
 {
-	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
+	std::ifstream File(FPaths::ToWide(FPaths::ToAbsolutePath(FilePath)));
 	if (!File.is_open()) return false;
 
 	FObjMaterialInfo* Current = nullptr;
@@ -391,7 +397,7 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();
 	Mesh->SetMeshData(MeshData);
 
-	std::filesystem::path Dir(Info.ObjDirectory);
+	FString Dir = Info.ObjDirectory;
 
 	for (uint32 s = 0; s < MeshData->Sections.size(); ++s)
 	{
@@ -420,7 +426,7 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 							}
 							else
 							{
-								TexPath = (Dir / Mtl.DiffuseTexturePath).string();
+								TexPath = Dir + "/" + Mtl.DiffuseTexturePath;
 							}
 						}
 						break;

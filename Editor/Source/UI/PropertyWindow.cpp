@@ -286,7 +286,7 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 	namespace fs = std::filesystem;
 	for (int i = 0; i < (int)MeshAssets.size(); ++i) {
 		FString AssetPath = MeshAssets[i].AssetPath;
-		if (fs::path(AssetPath).lexically_normal() == fs::path(CurrentAsset).lexically_normal()) {
+		if (fs::path(FPaths::ToWide(AssetPath)).lexically_normal() == fs::path(FPaths::ToWide(CurrentAsset)).lexically_normal()) {
 			SelectedMeshIndex = i + 1;
 			break;
 		}

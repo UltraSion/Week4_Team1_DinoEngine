@@ -198,9 +198,6 @@
     <ClCompile Include="Source\Primitive\PrimitiveGizmo.cpp">
       <Filter>Source\Primitive</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Primitive\PrimitiveObj.cpp">
-      <Filter>Source\Primitive</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Primitive\PrimitivePlane.cpp">
       <Filter>Source\Primitive</Filter>
     </ClCompile>
@@ -454,9 +451,6 @@
       <Filter>Source\Primitive</Filter>
     </ClInclude>
     <ClInclude Include="Source\Primitive\PrimitiveGizmo.h">
-      <Filter>Source\Primitive</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Primitive\PrimitiveObj.h">
       <Filter>Source\Primitive</Filter>
     </ClInclude>
     <ClInclude Include="Source\Primitive\PrimitivePlane.h">
