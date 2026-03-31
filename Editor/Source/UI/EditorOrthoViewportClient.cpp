@@ -51,7 +51,7 @@ void FEditorOrthoViewportClient::ConfigureDefaultView()
 		break;
 	case EOrthoViewType::Right:
 		ViewDistance = 25.0f;
-		CameraTransform.SetRotation(90.0f, 0.0f);
+		CameraTransform.SetRotation(90.f, 0.0f);
 		break;
 	}
 
@@ -69,6 +69,14 @@ void FEditorOrthoViewportClient::DrawControllerOptions()
 		OrthoCenter = { Center[0], Center[1], Center[2] };
 		UpdateCameraTransform();
 	}
+
+	float CameraYaw = CameraTransform.GetYaw();
+	float CameraPitch = CameraTransform.GetPitch();
+	ImGui::DragFloat("Yaw", &CameraYaw, 0.5f);
+	ImGui::DragFloat("Pitch", &CameraPitch, 0.5f);
+
+	CameraTransform.SetRotation(CameraYaw, CameraPitch);
+
 
 	float Zoom = OrthoZoom;
 	if (ImGui::DragFloat("Zoom", &Zoom, 0.5f, OrthoMinZoom, OrthoMaxZoom))

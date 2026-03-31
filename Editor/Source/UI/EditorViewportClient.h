@@ -4,9 +4,12 @@
 #include "Gizmo/Gizmo.h"
 #include "Picking/Picker.h"
 #include "Types/CoreTypes.h"
+#include "CameraFuction/FCameraFunctionManager.h"
 #include "CameraFuction/FFocus.h"
+#include "CameraFuction/FChangePersToOrth.h"
+#include "CameraFuction/FChangeOrthoToOrtho.h"
 
-
+class FFocus;
 class FEditorUI;
 class FWindow;
 class AActor;
@@ -79,6 +82,7 @@ public:
 protected:
 	virtual void ConfigureDefaultView() = 0;
 	virtual void DrawControllerOptions() = 0;
+	virtual void DrawViewportSpecificOptions() {}
 	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override = 0;
 	virtual void OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual void OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam);
@@ -105,7 +109,11 @@ protected:
 	FWindow* MainWindow = nullptr;
 	FPicker Picker;
 	mutable FGizmo Gizmo;
-	FFocus Focus;
+
+	FCameraFunctionManager CameraFunctionManager;
+	FFocus FocusCameraFunction;
+	FChangePersToOrth ChangePersToOrthFunction;
+	FChangeOrthoToOrtho ChangeOrthoToOrthoFunction;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";

@@ -24,6 +24,7 @@
 #include "ViewportWindow.h"
 #include "World/Level.h"
 #include "imgui.h"
+#include "CameraFuction/FFocus.h"
 
 #include <cmath>
 #include <filesystem>
@@ -86,7 +87,10 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 {
 	SetWorldType(InWorldType);
 	SetGridVisible(bShowGrid);
-	Focus.SetCamera(&CameraTransform);
+
+	FocusCameraFunction.SetCamera(&CameraTransform);
+	ChangePersToOrthFunction.SetCamera(&CameraTransform);
+	ChangeOrthoToOrthoFunction.SetCamera(&CameraTransform);
 }
 
 void FEditorViewportClient::Attach(FCore* Core)
@@ -387,7 +391,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
-	Focus.MoveTowardsTarget(DeltaTime);
+	CameraFunctionManager.Tick(DeltaTime);
 #if IS_OBJ_VIEWER
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
@@ -556,9 +560,13 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 		UE_LOG("Gizmo Space: %s", Gizmo.GetCoordinateSpace() == EGizmoCoordinateSpace::Local ? "Local" : "World");
 		return;
 	case 'F':
+		if (!FocusCameraFunction.IsFinished())
+			return;
+
 		if (AActor* TargetActor = GetGizmoTarget())
 		{
-			Focus.FocusOnActor(TargetActor);
+			FocusCameraFunction.FocusOnActor(TargetActor);
+			CameraFunctionManager.AddFunction(&FocusCameraFunction);
 		}
 		return;
 	default:
@@ -642,13 +650,16 @@ void FEditorViewportClient::DrawUI()
 		ImGui::End();
 		return;
 	}
+	char ItemName[128];
 
-	char ButtonName[128];
+	sprintf_s(ItemName, "H##%p", this);
+	ImGui::Text("%s Viewport", GetViewportLabel());
+
 	const bool bHasParent = ViewportWindow->GetParent() != nullptr;
 	if (!bHasParent)
 	{
-		sprintf_s(ButtonName, "H##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "H##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -660,8 +671,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "V##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "V##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -673,8 +684,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "+##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "+##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			SViewportWindow* TopViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Top);
 			SViewportWindow* FrontViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Front);
@@ -694,8 +705,8 @@ void FEditorViewportClient::DrawUI()
 	}
 	else
 	{
-		sprintf_s(ButtonName, "-##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "-##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			ViewportWindow->GetParent()->Merge(ViewportWindow);
 			EditorUI.SaveEditorSettings();
@@ -704,6 +715,9 @@ void FEditorViewportClient::DrawUI()
 
 	ImGui::SameLine();
 	ShowViewOptionPanel();
+
+	ImGui::SameLine();
+	DrawViewportSpecificOptions();
 
 	ImGui::SameLine();
 	DrawCameraOption();
@@ -1024,7 +1038,7 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 
 	case EEditorViewportType::Right:
 		Rotation = FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
-		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
 		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
 		break;
 	case EEditorViewportType::Top:
