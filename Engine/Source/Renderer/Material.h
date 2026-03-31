@@ -142,6 +142,8 @@ public:
 
 	// 파라미터 이름 등록 (MaterialManager에서 JSON 로드 시 호출)
 	void RegisterParameter(const FString& ParamName, int32 BufferIndex, uint32 Offset, uint32 Size);
+	bool HasParameter(const FString& ParamName) const;
+	bool GetParameterData(const FString& ParamName, void* OutData, uint32 DataSize) const;
 
 	// 독립적인 상수 버퍼를 가진 DynamicMaterial 복제본 생성
 	std::unique_ptr<class FDynamicMaterial> CreateDynamicMaterial() const;

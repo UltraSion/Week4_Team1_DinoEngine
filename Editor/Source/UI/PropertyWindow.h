@@ -29,6 +29,7 @@ private:
 	void DrawBillboardSection(AActor* SelectedActor);
 
 	void DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMComp, AActor* SelectedActor);
+	void DrawUVScrollControls(UStaticMeshComponent* SMComp, uint32 SlotIdx);
 
 	void DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMActor);
 

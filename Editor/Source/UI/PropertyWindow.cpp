@@ -249,9 +249,39 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 				}
 			});
 
+			DrawUVScrollControls(SMComp, SlotIdx);
+
 			ImGui::TreePop();
 		}
 		ImGui::PopID();
+	}
+}
+
+void FPropertyWindow::DrawUVScrollControls(UStaticMeshComponent* SMComp, uint32 SlotIdx)
+{
+	if (!SMComp)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("UV Scroll");
+	if (!SMComp->IsUVScrollSupported(SlotIdx))
+	{
+		ImGui::TextDisabled("M_StaticMesh dynamic material required");
+		return;
+	}
+
+	bool bUVScrollEnabled = SMComp->IsUVScrollEnabled(SlotIdx);
+	if (ImGui::Checkbox("Enable UV Scroll", &bUVScrollEnabled))
+	{
+		SMComp->SetUVScrollEnabled(SlotIdx, bUVScrollEnabled);
+	}
+
+	FVector2 UVScrollSpeed = SMComp->GetUVScrollSpeed(SlotIdx);
+	float SpeedValues[2] = { UVScrollSpeed.X, UVScrollSpeed.Y };
+	if (ImGui::DragFloat2("Scroll Speed", SpeedValues, 0.01f, -10.0f, 10.0f, "%.2f"))
+	{
+		SMComp->SetUVScrollSpeed(SlotIdx, FVector2(SpeedValues[0], SpeedValues[1]));
 	}
 }
 
