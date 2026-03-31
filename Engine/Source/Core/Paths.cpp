@@ -61,7 +61,7 @@ std::string FPaths::ToRelativePath(const FString& Path)
 {
 	FString Root = ToString(ProjectRoot().wstring());
 	FString RelativePath = Path;
-
+	std::replace(RelativePath.begin(), RelativePath.end(), '\\', '/');
 	if (RelativePath.starts_with(Root))
 	{
 		RelativePath = RelativePath.substr(Root.length());
@@ -79,21 +79,21 @@ std::string FPaths::ToAbsolutePath(const FString& Path)
 {
 	FString Root = ToString(ProjectRoot().wstring());
 
+	FString SafePath = Path;
+	std::replace(SafePath.begin(), SafePath.end(), '\\', '/');  
+
 	// 이미 절대 경로라면 그대로 반환
-	if (Path.starts_with(Root))
+	if (SafePath.starts_with(Root))
 	{
-		return Path;
+		return SafePath;
 	}
 
 	FString AbsolutePath = Root;
-	// Root 끝에 슬래시가 없으면 추가
 	if (!AbsolutePath.empty() && AbsolutePath.back() != '/' && AbsolutePath.back() != '\\')
 	{
 		AbsolutePath += "/";
 	}
 
-	// Path 시작에 슬래시가 있으면 제거하여 중복 방지
-	FString SafePath = Path;
 	if (!SafePath.empty() && (SafePath.front() == '/' || SafePath.front() == '\\'))
 	{
 		SafePath = SafePath.substr(1);

@@ -179,6 +179,7 @@ void FContentBrowserWindow::DrawGridItem(const std::filesystem::directory_entry&
 		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 		{
 			std::string PayloadPath = Path.string();
+			std::replace(PayloadPath.begin(), PayloadPath.end(), '\\', '/');
 			ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", PayloadPath.c_str(), PayloadPath.size() + 1);
 			bFileOnDrag = true;
 			SelectedFilePath = Path;
