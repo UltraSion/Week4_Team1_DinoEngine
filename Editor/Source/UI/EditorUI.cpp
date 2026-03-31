@@ -813,14 +813,16 @@ void FEditorUI::Render()
 				{
 					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
 				}
+#if !IS_OBJ_VIEWER //Primitives, UUID, Debug Draw에 대한 설정은 뷰어에서 건드리지 못하게 막습니다.
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+#endif
 				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
 #if !IS_OBJ_VIEWER //뷰어에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
-#endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+#endif
 
 				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
