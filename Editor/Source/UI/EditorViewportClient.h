@@ -4,6 +4,8 @@
 #include "Gizmo/Gizmo.h"
 #include "Picking/Picker.h"
 #include "Types/CoreTypes.h"
+#include "CameraFuction/FFocus.h"
+
 
 class FEditorUI;
 class FWindow;
@@ -103,6 +105,7 @@ protected:
 	FWindow* MainWindow = nullptr;
 	FPicker Picker;
 	mutable FGizmo Gizmo;
+	FFocus Focus;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";
