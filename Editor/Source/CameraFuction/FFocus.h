@@ -21,6 +21,7 @@ class FFocus : public ICameraFunction
 public:
 	void FocusOnActor(const AActor* TargetActor);
 	virtual void Tick(float DeltaTime) override;
+	virtual bool IsFinished() const override { return !bIsMoving; }
 
 private:
 	float EvaluateEaseInOut(float T) const;

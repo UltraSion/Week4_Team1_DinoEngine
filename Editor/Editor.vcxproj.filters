@@ -112,6 +112,8 @@
     <ClCompile Include="Source\CameraFuction\FFocus.cpp" />
     <ClCompile Include="Source\CameraFuction\FChangePersToOrth.cpp" />
     <ClCompile Include="Source\CameraFuction\ICameraFunction.cpp" />
+    <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
+    <ClCompile Include="Source\CameraFuction\FChangeOrthoToOrtho.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -196,6 +198,8 @@
     <ClInclude Include="Source\CameraFuction\FFocus.h" />
     <ClInclude Include="Source\CameraFuction\FChangePersToOrth.h" />
     <ClInclude Include="Source\CameraFuction\ICameraFunction.h" />
+    <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
+    <ClInclude Include="Source\CameraFuction\FChangeOrthoToOrtho.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">
