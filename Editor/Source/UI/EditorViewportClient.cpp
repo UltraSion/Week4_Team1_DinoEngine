@@ -650,13 +650,16 @@ void FEditorViewportClient::DrawUI()
 		ImGui::End();
 		return;
 	}
+	char ItemName[128];
 
-	char ButtonName[128];
+	sprintf_s(ItemName, "H##%p", this);
+	ImGui::Text("%s Viewport", GetViewportLabel());
+
 	const bool bHasParent = ViewportWindow->GetParent() != nullptr;
 	if (!bHasParent)
 	{
-		sprintf_s(ButtonName, "H##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "H##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -668,8 +671,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "V##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "V##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -681,8 +684,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "+##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "+##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			SViewportWindow* TopViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Top);
 			SViewportWindow* FrontViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Front);
@@ -702,8 +705,8 @@ void FEditorViewportClient::DrawUI()
 	}
 	else
 	{
-		sprintf_s(ButtonName, "-##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "-##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			ViewportWindow->GetParent()->Merge(ViewportWindow);
 			EditorUI.SaveEditorSettings();
@@ -1038,7 +1041,7 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 
 	case EEditorViewportType::Right:
 		Rotation = FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
-		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
 		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
 		break;
 	case EEditorViewportType::Top:
