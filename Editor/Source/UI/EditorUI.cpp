@@ -45,6 +45,26 @@ enum class EFileDialogType
 
 namespace
 {
+	ImGuiDockNode* FindCentralDockNode(ImGuiDockNode* Node)
+	{
+		if (Node == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (Node->IsCentralNode())
+		{
+			return Node;
+		}
+
+		if (ImGuiDockNode* ChildNode = FindCentralDockNode(Node->ChildNodes[0]))
+		{
+			return ChildNode;
+		}
+
+		return FindCentralDockNode(Node->ChildNodes[1]);
+	}
+
 	const char* GetAxisDirectionLabel(FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (AxisDirection)
@@ -656,6 +676,20 @@ void FEditorUI::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::DockSpace(DockID, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
 	ImGui::PopStyleVar();
+
+	CachedCentralDockSpaceRect = FRect();
+	if (ImGuiDockNode* RootNode = ImGui::DockBuilderGetNode(DockID))
+	{
+		if (ImGuiDockNode* CentralNode = FindCentralDockNode(RootNode))
+		{
+			CachedCentralDockSpaceRect = FRect(
+				CentralNode->Pos.x,
+				CentralNode->Pos.y,
+				CentralNode->Size.x,
+				CentralNode->Size.y);
+		}
+	}
+
 	ImGui::End();
 
 	if (Core)
@@ -1148,6 +1182,11 @@ FCamera* FEditorUI::GetPerspectiveCamera() const
 {
 	FEditorViewportClient* PerspectiveViewportClient = FindPerspectiveViewportClient();
 	return PerspectiveViewportClient ? PerspectiveViewportClient->GetCamera() : nullptr;
+}
+
+FRect FEditorUI::GetCentralDockSpaceRect() const
+{
+	return CachedCentralDockSpaceRect;
 }
 
 void FEditorUI::SavePerspectiveCameraInitialState() const

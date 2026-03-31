@@ -5,6 +5,7 @@
 #include "ConsoleWindow.h"
 #include "StatWindow.h"
 #include "Viewport.h"
+#include "Math/Rect.h"
 #include "Types/ObjectPtr.h"
 #include "ContentBrowserWindow.h"
 
@@ -31,6 +32,7 @@ public:
 	bool HasActiveViewportClient() const { return ActiveViewportClient != nullptr; }
 	FEditorViewportClient* FindPerspectiveViewportClient() const;
 	FCamera* GetPerspectiveCamera() const;
+	FRect GetCentralDockSpaceRect() const;
 	void SavePerspectiveCameraInitialState() const;
 	//bool GetViewportMousePosition(int32 WindowMouseX, int32 WindowMouseY, int32& OutViewportX, int32& OutViewportY, int32& OutWidth, int32& OutHeight) const;
 	//bool IsViewportInteractive() const;
@@ -59,6 +61,7 @@ private:
 	bool bViewportClientActive = false;
 	bool bLayoutInitialized = false;
 	bool bConsumeConsoleShortcutChar = false;
+	FRect CachedCentralDockSpaceRect;
 	FRenderer* CurrentRenderer = nullptr;
 	FEditorViewportClient* ActiveViewportClient = nullptr;
 	class FWindowManager* WindowManager = nullptr;
