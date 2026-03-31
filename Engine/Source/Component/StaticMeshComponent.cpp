@@ -345,8 +345,8 @@ void UStaticMeshComponent::Serialize(FArchive& Ar)
 			FMaterial* CurrentMat = GetMaterial(i);
 			FString CurrentMatName = CurrentMat ? CurrentMat->GetOriginName() : "";
 
-			// ⭐ [핵심 포인트] 
-			// LoadStaticMesh가 세팅해둔 매테리얼과 세이브 파일의 이름이 다를 때만 덮어씁니다!
+		
+			// LoadStaticMesh가 세팅해둔 매테리얼과 세이브 파일의 이름이 다를 때만 덮
 			if (CurrentMatName != SavedMatName)
 			{
 				if (auto Mat = FMaterialManager::Get().FindByName(SavedMatName))
@@ -363,10 +363,7 @@ void UStaticMeshComponent::Serialize(FArchive& Ar)
 						DynMat->SetMaterialTexture(OldTex);
 
 						//  메쉬의 원본 .mtl 색상이 있다면 새 매테리얼에도 똑같이 주입
-						if (RenderData && i < RenderData->ImportedDiffuseColors.size())
-						{
-							DynMat->SetVector3Parameter("ColorTint", RenderData->ImportedDiffuseColors[i]);
-						}
+					
 
 						DynamicMaterialOwners[i] = DynMat;
 						SetMaterial(i, DynMat.get());
@@ -379,6 +376,38 @@ void UStaticMeshComponent::Serialize(FArchive& Ar)
 			if (i < TexturePaths.size() && !TexturePaths[i].empty() && GRenderer)
 			{
 				LoadTextureToSlot(GRenderer->GetDevice(), TexturePaths[i], i);
+			}
+		}
+	}
+	uint32 NumSlots = GetNumMaterials();
+	for (uint32 i = 0; i < NumSlots; ++i)
+	{
+		FString EnabledKey = "UVEnabled_" + std::to_string(i);
+		FString SpeedKey = "UVSpeed_" + std::to_string(i);
+
+		if (Ar.IsSaving())
+		{
+			bool bEnabled = IsUVScrollEnabled(i);
+			FVector2 Speed = GetUVScrollSpeed(i);
+			FVector SpeedVec3(Speed.X, Speed.Y, 0.0f); // FArchive 저장을 위해 FVector로 임시 변환
+
+			Ar.Serialize(EnabledKey, bEnabled);
+			Ar.Serialize(SpeedKey, SpeedVec3);
+		}
+		else // IsLoading
+		{
+			if (Ar.Contains(EnabledKey))
+			{
+				bool bEnabled = false;
+				Ar.Serialize(EnabledKey, bEnabled);
+				SetUVScrollEnabled(i, bEnabled);
+			}
+
+			if (Ar.Contains(SpeedKey))
+			{
+				FVector SpeedVec3;
+				Ar.Serialize(SpeedKey, SpeedVec3);
+				SetUVScrollSpeed(i, FVector2(SpeedVec3.X, SpeedVec3.Y)); // 다시 FVector2로 변환해서 세팅
 			}
 		}
 	}
