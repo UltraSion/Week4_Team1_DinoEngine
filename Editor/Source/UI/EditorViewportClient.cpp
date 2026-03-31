@@ -346,10 +346,13 @@ void FEditorViewportClient::Tick(float DeltaTime)
 
 	const FVector NewPosition =
 		ResetAnimationStartPosition + (InitialCameraPosition - ResetAnimationStartPosition) * SmoothAlpha;
+	const FVector NewTarget =
+		ResetAnimationStartTarget + (InitialCameraTarget - ResetAnimationStartTarget) * SmoothAlpha;
 	const float NewYaw = LerpAngleDegrees(ResetAnimationStartYaw, InitialCameraYaw, SmoothAlpha);
 	const float NewPitch = LerpFloat(ResetAnimationStartPitch, InitialCameraPitch, SmoothAlpha);
 	const float NewFOV = LerpFloat(ResetAnimationStartFOV, InitialCameraFOV, SmoothAlpha);
 
+	CameraTransform.SetOrbitTarget(NewTarget);
 	CameraTransform.SetPosition(NewPosition);
 	CameraTransform.SetRotation(NewYaw, NewPitch);
 	CameraTransform.SetFOV(NewFOV);
@@ -365,6 +368,7 @@ void FEditorViewportClient::Tick(float DeltaTime)
 void FEditorViewportClient::SaveInitialCameraState()
 {
 	InitialCameraPosition = CameraTransform.GetPosition();
+	InitialCameraTarget = CameraTransform.GetOrbitTarget();
 	InitialCameraYaw = CameraTransform.GetYaw();
 	InitialCameraPitch = CameraTransform.GetPitch();
 	InitialCameraFOV = CameraTransform.GetFOV();
@@ -379,11 +383,91 @@ void FEditorViewportClient::ResetCameraToInitialState()
 	}
 
 	ResetAnimationStartPosition = CameraTransform.GetPosition();
+	ResetAnimationStartTarget = CameraTransform.GetOrbitTarget();
 	ResetAnimationStartYaw = CameraTransform.GetYaw();
 	ResetAnimationStartPitch = CameraTransform.GetPitch();
 	ResetAnimationStartFOV = CameraTransform.GetFOV();
 	ResetAnimationElapsed = 0.0f;
 	bResetCameraAnimating = true;
+}
+
+/**
+ * 대상의 월드 기준 최하단 Z 값을 반환.
+ * 
+ * \param TargetActor
+ * \return 
+ */
+float FEditorViewportClient::GetObjViewerBottomZ(AActor* TargetActor) const
+{
+	if (!TargetActor)
+	{
+		return 0.0f;
+	}
+
+	if (UPrimitiveComponent* PrimitiveComponent = TargetActor->GetComponentByClass<UPrimitiveComponent>())
+	{
+		const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
+		return Bounds.Center.Z - Bounds.BoxExtent.Z;
+	}
+	return 0.0f;
+}
+
+void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
+{
+#if IS_OBJ_VIEWER
+	if (!TargetActor)
+	{
+		TargetActor = GetSelectedActor();
+	}
+
+	if (!TargetActor)
+	{
+		return;
+	}
+
+	if (UPrimitiveComponent* PrimitiveComponent = TargetActor->GetComponentByClass<UPrimitiveComponent>())
+	{
+		CameraTransform.SetOrbitTarget(PrimitiveComponent->GetWorldBounds().Center);
+	}
+#else
+	(void)TargetActor;
+#endif
+}
+
+void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState)
+{
+#if IS_OBJ_VIEWER
+	if (!TargetActor)
+	{
+		return;
+	}
+
+	UPrimitiveComponent* PrimitiveComponent = TargetActor->GetComponentByClass<UPrimitiveComponent>();
+	if (!PrimitiveComponent)
+	{
+		return;
+	}
+
+	const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
+	CameraTransform.SetOrbitTarget(Bounds.Center);
+	CameraTransform.SetFOV(60.0f);
+
+	const float SafeRadius = FMath::Max(Bounds.Radius, 0.5f);
+	const float HalfFovRadians = FMath::DegreesToRadians(CameraTransform.GetFOV() * 0.5f);
+	const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+	const float CameraDistance = FMath::Max((SafeRadius / SafeTanHalfFov) * 1.2f, SafeRadius * 2.0f);
+
+	CameraTransform.SetPosition(Bounds.Center + FVector(-CameraDistance, 0.0f, 0.0f));
+	CameraTransform.SetRotation(90.0f, 0.0f);
+
+	if (bSaveInitialState)
+	{
+		SaveInitialCameraState();
+	}
+#else
+	(void)TargetActor;
+	(void)bSaveInitialState;
+#endif
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const
@@ -702,7 +786,19 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 			Transform.SetLocation(SpawnLocation);
 			Root->SetRelativeTransform(Transform);
 		}
-#if !IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER
+		Core->SetSelectedActor(MeshActor);
+		if (USceneComponent* Root = MeshActor->GetRootComponent())
+		{
+			FTransform Transform = Root->GetRelativeTransform();
+			FVector Location = Transform.GetLocation();
+			Location.Z -= GetObjViewerBottomZ(MeshActor);
+			Transform.SetLocation(Location);
+			Root->SetRelativeTransform(Transform);
+		}
+		RefreshObjViewerCameraPivot(MeshActor);
+		FrameObjViewerCamera(MeshActor, true);
+#else
 		Core->SetSelectedActor(MeshActor);
 #endif
 	}

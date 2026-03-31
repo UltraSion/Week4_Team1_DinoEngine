@@ -29,10 +29,17 @@ void FCamera::SetPosition(const FVector& InPosition)
 	Position = InPosition;
 
 #if IS_OBJ_VIEWER
-	PanOffset = FVector::ZeroVector;
-	OrbitDistance = Position.Size();
+	OrbitDistance = (Position - OrbitTarget).Size();
+	if (OrbitDistance <= 0.0f)
+	{
+		OrbitDistance = (Position - OrbitTarget).Size();
+		if (OrbitDistance <= 0.0f)
+		{
+			OrbitDistance = Position.Size();
+		}
+	}
 
-	const FVector ForwardToTarget = (-Position).GetSafeNormal();
+	const FVector ForwardToTarget = (OrbitTarget - Position).GetSafeNormal();
 	if (!ForwardToTarget.IsNearlyZero())
 	{
 		Yaw = FMath::RadiansToDegrees(std::atan2(ForwardToTarget.Y, ForwardToTarget.X));
@@ -40,6 +47,27 @@ void FCamera::SetPosition(const FVector& InPosition)
 	}
 #else
 #endif
+}
+
+/**
+ * orbit rotation을 할 대상을 정합니다.
+ * 
+ * \param InOrbitTarget
+ */
+void FCamera::SetOrbitTarget(const FVector& InOrbitTarget)
+{
+	OrbitTarget = InOrbitTarget;
+
+	if (OrbitDistance <= 0.0f)
+	{
+		OrbitDistance = (Position - OrbitTarget).Size();
+		if (OrbitDistance <= 0.0f)
+		{
+			OrbitDistance = Position.Size();
+		}
+	}
+
+	Position = OrbitTarget - GetForward() * OrbitDistance;
 }
 
 void FCamera::SetRotation(float InYaw, float InPitch)
@@ -53,7 +81,11 @@ void FCamera::SetRotation(float InYaw, float InPitch)
 
 	if (OrbitDistance <= 0.0f)
 	{
-		OrbitDistance = Position.Size();
+		OrbitDistance = (Position - OrbitTarget).Size();
+		if (OrbitDistance <= 0.0f)
+		{
+			OrbitDistance = Position.Size();
+		}
 	}
 
 	const float YawRad = FMath::DegreesToRadians(Yaw);
@@ -64,7 +96,7 @@ void FCamera::SetRotation(float InYaw, float InPitch)
 	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
 	ForwardToTarget.Z = sinf(PitchRad);
 
-	Position = -ForwardToTarget * OrbitDistance + PanOffset;
+	Position = OrbitTarget - ForwardToTarget * OrbitDistance;
 #else
 #endif
 }
@@ -93,12 +125,16 @@ void FCamera::MoveForward(float Delta)
 	//OrbitDistance을 업데이트해줍니다.
 	if (OrbitDistance <= 0.0f)
 	{
-		OrbitDistance = Position.Size();
+		OrbitDistance = (Position - OrbitTarget).Size();
+		if (OrbitDistance <= 0.0f)
+		{
+			OrbitDistance = Position.Size();
+		}
 	}
 
 	//카메라가 물체에 너무 붙지 않게 제한합니다.
 	OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
-	Position = -GetForward() * OrbitDistance + PanOffset;
+	Position = OrbitTarget - GetForward() * OrbitDistance;
 	return;
 #else
 	FVector Forward = GetForward();
@@ -122,7 +158,7 @@ void FCamera::OffsetPosition(const FVector& Delta)
 	Position = Position + Delta;
 
 #if IS_OBJ_VIEWER
-	PanOffset = PanOffset + Delta;
+	OrbitTarget = OrbitTarget + Delta;
 #else
 #endif
 }
@@ -138,7 +174,11 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 
 	if (OrbitDistance <= 0.0f)
 	{
-		OrbitDistance = Position.Size();
+		OrbitDistance = (Position - OrbitTarget).Size();
+		if (OrbitDistance <= 0.0f)
+		{
+			OrbitDistance = Position.Size();
+		}
 	}
 
 	const float YawRad = FMath::DegreesToRadians(Yaw);
@@ -148,14 +188,18 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 	ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
 	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
 	ForwardToTarget.Z = sinf(PitchRad);
-	Position = -ForwardToTarget * OrbitDistance + PanOffset;
+	Position = OrbitTarget - ForwardToTarget * OrbitDistance;
 #else
 #endif
 }
 
 FMatrix FCamera::GetViewMatrix() const
 {
+#if IS_OBJ_VIEWER
+	FVector Target = OrbitTarget;
+#else
 	FVector Target = Position + GetForward();
+#endif
 	return FMatrix::MakeViewLookAtLH(Position, Target, Up);
 }
 

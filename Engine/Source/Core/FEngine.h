@@ -10,7 +10,7 @@
 
 class FWindowApplication;
 class FWindow;
-class FRect;
+struct FRect;
 
 class ENGINE_API FEngine
 {
