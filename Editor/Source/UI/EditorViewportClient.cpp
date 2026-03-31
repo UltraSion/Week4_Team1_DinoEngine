@@ -995,15 +995,30 @@ FVector FEditorViewportClient::GetViewportUpVector() const
 
 FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 {
+	FVector Translation = FVector::ZeroVector;
+	FMatrix Rotation;
+	FVector Scale = FVector::OneVector;
 	switch (ViewportType)
 	{
 	case EEditorViewportType::Front:
-		return FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));
+		Rotation = FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));
+		//Translation = CameraTransform.GetPosition()
+
+
+
+
+
+		break;
+
 	case EEditorViewportType::Right:
-		return FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
+		Rotation = FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
+		break;
 	case EEditorViewportType::Top:
 	case EEditorViewportType::Perspective:
 	default:
-		return FMatrix::Identity;
+		Rotation = FMatrix::Identity;
+		break;
 	}
+
+	return FMatrix::MakeWorld(Translation, Rotation, Scale);
 }
