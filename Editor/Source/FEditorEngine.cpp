@@ -63,10 +63,10 @@ namespace
 
 		OPENFILENAMEA Ofn = {};
 		Ofn.lStructSize = sizeof(OPENFILENAMEA);
-		Ofn.lpstrFilter = "DinoAsset Files (*.dasset)\0*.dasset\0OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
+		Ofn.lpstrFilter = "Mesh Files (*.obj;*.dasset)\0*.obj;*.dasset\0OBJ Files (*.obj)\0*.obj\0DinoAsset Files (*.dasset)\0*.dasset\0All Files (*.*)\0*.*\0";
 		Ofn.lpstrFile = FileName;
 		Ofn.nMaxFile = MAX_PATH;
-		Ofn.lpstrDefExt = "dasset";
+		Ofn.lpstrDefExt = "obj";
 		Ofn.lpstrInitialDir = MeshDir.c_str();
 		Ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 

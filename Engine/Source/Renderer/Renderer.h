@@ -32,7 +32,7 @@ public:
 
 	/** 시스템 초기화 및 D3D11 장치 생성 */
 	bool Initialize(HWND InHwnd, int32 InWidth, int32 InHeight);
-	
+
 	/** 프레임 시작 처리 (렌더 타겟 클리어 등) */
 	void BeginFrame();
 	
@@ -104,7 +104,6 @@ public:
 
 	ID3D11ShaderResourceView* GetFolderIconSRV() const { return FolderIconSRV; }
 	ID3D11ShaderResourceView* GetFileIconSRV() const { return FileIconSRV; }
-
 private:
 	void SetConstantBuffers();
 	void AddCommand(const FRenderCommand& Command);

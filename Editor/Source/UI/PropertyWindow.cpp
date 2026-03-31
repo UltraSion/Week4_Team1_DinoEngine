@@ -14,6 +14,7 @@
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
 #include "Actor/Actor.h"
+#include "Debug/EngineLog.h"
 #include <algorithm>
 #include <filesystem>
 
@@ -204,7 +205,8 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 				// ==========================================
 			if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), static_cast<int>(MatItems.size())) && Core && SlotMatIndices[SlotIdx] > 0)
 			{
-				FString MatName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
+				FString MatFileName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
+				FString MatName = std::filesystem::path(MatFileName).stem().string();
 				if (auto Mat = FMaterialManager::Get().FindByName(MatName))
 				{
 					SMComp->SetMaterial(SlotIdx, Mat.get());
