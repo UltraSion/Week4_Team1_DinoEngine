@@ -1,8 +1,11 @@
 #include "FEditorEngine.h"
 
 #include "UI/EditorViewportClient.h"
+#include "UI/EditorOrthoViewportClient.h"
+#include "UI/EditorPerspectiveViewportClient.h"
 #include "UI/ViewportWindow.h"
 #include "Core/Core.h"
+#include "Core/Viewport.h"
 #include "Core/ConsoleVariableManager.h"
 #include "Core/Paths.h"
 #include "World/Level.h"
@@ -90,12 +93,14 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		EnhancedInput,
 		[this](const FRect& InRect)
 		{
-			return CreateContext(InRect);
+			return CreateEditorViewportContext(InRect, EEditorViewportType::Perspective);
 		});
 	const float Width = MainWindow ? static_cast<float>(MainWindow->GetWidth()) : 1280.0f;
 	const float Height = MainWindow ? static_cast<float>(MainWindow->GetHeight()) : 720.0f;
 	WindowManager.SetRootRect(FRect(0.0f, 0.0f, Width, Height));
-	WindowManager.AddWindow(new SViewportWindow(FRect(0.0f, 0.0f, Width, Height), CreateContext(FRect(0.0f, 0.0f, Width, Height))));
+	WindowManager.AddWindow(new SViewportWindow(
+		FRect(0.0f, 0.0f, Width, Height),
+		CreateEditorViewportContext(FRect(0.0f, 0.0f, Width, Height), EEditorViewportType::Perspective)));
 
 #if IS_OBJ_VIEWER //뷰어를 시작할 때 기본적으로 obj파일을 로딩합니다
 	RunObjViewerStartupTest();
@@ -212,7 +217,32 @@ void FEditorEngine::OnMainWindowResized(int32 Width, int32 Height)
 
 FViewportClient* FEditorEngine::CreateViewportClient()
 {
-	return new FEditorViewportClient(EditorUI, MainWindow, EEditorViewportType::Perspective, ELevelType::Editor);
+	return CreateEditorViewportClient(EEditorViewportType::Perspective, ELevelType::Editor);
+}
+
+FViewportContext* FEditorEngine::CreateEditorViewportContext(const FRect& InRect, EEditorViewportType InViewportType)
+{
+	FViewportClient* ViewportClient = CreateEditorViewportClient(InViewportType, ELevelType::Editor);
+	FViewport* Viewport = new FViewport(InRect);
+	FViewportContext* ViewportContext = new FViewportContext(Viewport, ViewportClient);
+	ViewportContext->Initialize(Core.get(), InputManager, EnhancedInput);
+	return ViewportContext;
+}
+
+FEditorViewportClient* FEditorEngine::CreateEditorViewportClient(EEditorViewportType InViewportType, ELevelType InWorldType)
+{
+	switch (InViewportType)
+	{
+	case EEditorViewportType::Top:
+		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Top, InWorldType);
+	case EEditorViewportType::Front:
+		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Front, InWorldType);
+	case EEditorViewportType::Right:
+		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Right, InWorldType);
+	case EEditorViewportType::Perspective:
+	default:
+		return new FEditorPerspectiveViewportClient(EditorUI, MainWindow, InWorldType);
+	}
 }
 
 void FEditorEngine::RunObjViewerStartupTest()

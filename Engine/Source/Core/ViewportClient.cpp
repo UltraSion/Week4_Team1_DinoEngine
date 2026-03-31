@@ -114,14 +114,33 @@ UWorld* FViewportClient::ResolveWorld(FCore* Core) const
 	}
 }
 
+FMatrix FViewportClient::GetViewMatrix() const
+{
+	return CameraTransform.GetViewMatrix();
+}
+
+FMatrix FViewportClient::GetProjectionMatrix(float AspectRatio) const
+{
+	(void)AspectRatio;
+	return CameraTransform.GetProjectionMatrix();
+}
+
+FMatrix FViewportClient::GetViewProjectionMatrix(float AspectRatio) const
+{
+	return GetViewMatrix() * GetProjectionMatrix(AspectRatio);
+}
+
 void FViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue)
 {
 	FFrustum Frustum;
-	const FMatrix ViewProjection = CameraTransform.GetViewMatrix() * CameraTransform.GetProjectionMatrix();
+	const float AspectRatio = ViewportHeight > 0 ? static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight) : 1.0f;
+	const FMatrix ViewMatrix = GetViewMatrix();
+	const FMatrix ProjectionMatrix = GetProjectionMatrix(AspectRatio);
+	const FMatrix ViewProjection = ViewMatrix * ProjectionMatrix;
 	Frustum.ExtractFromVP(ViewProjection);
 
-	OutQueue.ViewMatrix = CameraTransform.GetViewMatrix();
-	OutQueue.ProjectionMatrix = CameraTransform.GetProjectionMatrix();
+	OutQueue.ViewMatrix = ViewMatrix;
+	OutQueue.ProjectionMatrix = ProjectionMatrix;
 	RenderCollector.CollectRenderCommands(InActors, Frustum, ShowFlags, &CameraTransform, OutQueue);
 }
 

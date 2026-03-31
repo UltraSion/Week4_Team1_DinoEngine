@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/FEngine.h"
+#include "UI/EditorViewportClient.h"
 #include "UI/EditorUI.h"
 #include "UI/WindowManager.h"
 
@@ -14,6 +15,8 @@ public:
 	void OpenNewObj();
 	void Shutdown() override;
 	FWindowManager& GetWindowManager() { return WindowManager; }
+	FViewportContext* CreateEditorViewportContext(const FRect& InRect, EEditorViewportType InViewportType);
+	FEditorViewportClient* CreateEditorViewportClient(EEditorViewportType InViewportType, ELevelType InWorldType = ELevelType::Editor);
 	void SaveEditorSettings();
 	void SetViewportLayoutBounds(FRect InRect);
 

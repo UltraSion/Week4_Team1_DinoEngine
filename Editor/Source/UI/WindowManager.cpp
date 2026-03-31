@@ -1,4 +1,5 @@
 #include "WindowManager.h"
+#include "FEditorEngine.h"
 #include "Core/Viewport.h"
 #include "Core/ViewportClient.h"
 #include "Core/ViewportContext.h"
@@ -228,19 +229,16 @@ namespace
 
 		SViewportWindow* CreateViewportWindow(const FRect& Rect, EEditorViewportType ViewportType) const
 		{
-			FViewportContext* Context = WindowManager.CreateViewportContext(Rect);
+			FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine);
+			FViewportContext* Context = EditorEngine
+				? EditorEngine->CreateEditorViewportContext(Rect, ViewportType)
+				: WindowManager.CreateViewportContext(Rect);
 			if (Context == nullptr)
 			{
 				return nullptr;
 			}
 
-			SViewportWindow* ViewportWindow = new SViewportWindow(Rect, Context);
-			if (FEditorViewportClient* EditorViewportClient = dynamic_cast<FEditorViewportClient*>(Context->GetViewportClient()))
-			{
-				EditorViewportClient->SetViewportType(ViewportType);
-			}
-
-			return ViewportWindow;
+			return new SViewportWindow(Rect, Context);
 		}
 
 		SWindow* DeserializeNode(const std::wstring& NodeId, const FRect& Rect) const

@@ -10,6 +10,8 @@ class FWindow;
 class AActor;
 class ULevel;
 class UWorld;
+class FMaterial;
+struct FMeshData;
 struct FRenderCommandQueue;
 class SViewportWindow;
 
@@ -31,6 +33,13 @@ enum class EEditorViewportType : uint8_t
 	Right
 };
 
+enum class EOrthoViewType : uint8_t
+{
+	Top,
+	Front,
+	Right
+};
+
 class FEditorViewportClient : public FViewportClient
 {
 public:
@@ -46,17 +55,13 @@ public:
 	ERenderMode GetRenderMode() const { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
 	EEditorViewportType GetViewportType() const { return ViewportType; }
-	void SetViewportType(EEditorViewportType InViewportType);
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
-	virtual void DrawUI() override;
-	void DrawCameraOption(FCamera* Camera);
-
+	void DrawUI() override;
 	void HandleFileDoubleClick(const FString& FilePath);
 	void HandleFileDropOnViewport(const FString& FilePath);
 	void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue) override;
 	void PostRender(FCore* Core, FRenderer* Renderer) override;
 	void Tick(float DeltaTime) override;
-	void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	float GetGridSize() const { return GridSize; }
 	void SetGridSize(float InSize);
 	float GetLineThickness() const { return LineThickness; }
@@ -69,18 +74,30 @@ public:
 	void FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState);
 	float GetObjViewerBottomZ(AActor* TargetActor) const;
 
-private:
-	void ConfigureDefaultView();
+protected:
+	virtual void ConfigureDefaultView() = 0;
+	virtual void DrawControllerOptions() = 0;
+	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override = 0;
+	virtual void OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam);
+	virtual void OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam);
+	virtual void OnMouseMove(WPARAM WParam, LPARAM LParam);
+	virtual void OnMouseWheel(float WheelDelta, WPARAM WParam, LPARAM LParam);
+	virtual void OnKeyDown(WPARAM WParam, LPARAM LParam);
+	virtual void OnKeyUp(WPARAM WParam, LPARAM LParam);
 	bool CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const;
 	void HandleEditorHotkeys(WPARAM WParam, bool bRightMouseDown);
 	void HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor);
-	void HandleMouseMove(AActor* SelectedActor);
-	void HandleMouseRelease();
+	void HandleMouseMoveForTools(AActor* SelectedActor);
+	void HandleMouseReleaseForTools();
 	AActor* GetSelectedActor() const;
 	AActor* GetGizmoTarget() const;
 	void CreateGridResource(FRenderer* Renderer);
 	void CreateViewerDebugMaterials(FRenderer* Renderer);
 	void ApplyViewerNoCull(FMaterial* Material) const;
+	void ShowViewOptionPanel();
+	void DrawCameraOption();
+	FVector GetViewportUpVector() const;
+	FMatrix GetGridWorldMatrix() const;
 
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
