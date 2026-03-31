@@ -13,7 +13,6 @@ class FStatWindow
 {
 public:
 	void Render();
-	void SetFrameTimeMs(float InMs) { FrameTimeMs = InMs; }
 	void SetHeapUsage(uint32 InBytes) { HeapUsageBytes = InBytes; }
 
 private:

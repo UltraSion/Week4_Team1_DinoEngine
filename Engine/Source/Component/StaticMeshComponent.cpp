@@ -34,10 +34,9 @@ void UStaticMeshComponent::LoadTexture(ID3D11Device* Device, const FString& File
 
 void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, FStaticMeshRenderData* InMesh)
 {
-	StaticMeshRenderData = InMesh;
-
-	// 이전 메쉬가 쓰던 다이내믹 매테리얼 찌꺼기 초기화
+	OverrideMaterials.clear();
 	DynamicMaterialOwners.clear();
+	StaticMeshRenderData = InMesh;
 
 	if (!StaticMeshRenderData || !Device) return;
 

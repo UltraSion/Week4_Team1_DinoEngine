@@ -243,7 +243,9 @@ namespace
 			return false;
 		}
 
+		MeshComponent->SetStaticMeshData(nullptr, nullptr);
 		FObjImporter::SetImportAxisMapping(ImportAxisMapping);
+		FObjManager::ClearAssetCache(AssetPath);
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath);
 		return true;
 	}
