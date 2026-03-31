@@ -14,6 +14,11 @@ namespace
 		return A + (B - A) * Alpha;
 	}
 
+	float LerpFloat(float A, float B, float Alpha)
+	{
+		return A + (B - A) * Alpha;
+	}
+
 	float ComputeFocusDistance(float Radius, float FieldOfViewDegrees)
 	{
 		const float SafeRadius = FMath::Max(Radius, 0.5f);
@@ -38,6 +43,8 @@ void FFocus::FocusOnActor(const AActor* TargetActor)
 
 	const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
 	StartPosition = Camera->GetPosition();
+	StartOrthoWidth = Camera->GetOrthoWidth();
+	TargetOrthoWidth = StartOrthoWidth;
 
 	FVector ViewDirection = Camera->GetForward().GetSafeNormal();
 	if (ViewDirection.IsNearlyZero())
@@ -50,7 +57,7 @@ void FFocus::FocusOnActor(const AActor* TargetActor)
 
 	if (Camera->IsOrthographic())
 	{
-		Camera->SetOrthoWidth(FMath::Max(Bounds.BoxExtent.Size() * 2.4f, 1.0f));
+		TargetOrthoWidth = FMath::Max(Bounds.BoxExtent.Size() * 2.4f, 1.0f);
 	}
 
 	MoveElapsedTime = 0.0f;
@@ -66,8 +73,14 @@ void FFocus::MoveTowardsTarget(float DeltaTime)
 
 	MoveElapsedTime += DeltaTime;
 	const float MoveAlpha = FocusTime > 0.0f ? FMath::Clamp(MoveElapsedTime / FocusTime, 0.0f, 1.0f) : 1.0f;
-	const FVector CurrentPosition = LerpVector(StartPosition, TargetPosition, EvaluateEaseInOut(MoveAlpha));
+	const float EasedAlpha = EvaluateEaseInOut(MoveAlpha);
+	const FVector CurrentPosition = LerpVector(StartPosition, TargetPosition, EasedAlpha);
 	Camera->SetPosition(CurrentPosition);
+
+	if (Camera->IsOrthographic())
+	{
+		Camera->SetOrthoWidth(LerpFloat(StartOrthoWidth, TargetOrthoWidth, EasedAlpha));
+	}
 
 	if (MoveAlpha >= 1.0f)
 	{
