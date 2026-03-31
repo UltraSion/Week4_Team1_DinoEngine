@@ -29,7 +29,6 @@
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMeshRenderData.h"
 #include "Primitive/PrimitiveBase.h"
-#include "Renderer/Renderer.h"
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
@@ -274,46 +273,80 @@ namespace
 	{
 		if (!Core || !ViewportClient || !GRenderer || !FObjImporter::IsValidImportAxisMapping(ImportAxisMapping))
 		{
+			UE_LOG("[ObjViewer] Reload failed: invalid reload context");
 			return false;
 		}
 
 		ULevel* Level = ViewportClient->ResolveLevel(Core);
 		if (!Level)
 		{
+			UE_LOG("[ObjViewer] Reload failed: level not available");
 			return false;
 		}
 
 		AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
 		if (!MeshActor)
 		{
+			UE_LOG("[ObjViewer] Reload failed: mesh actor not found");
 			return false;
 		}
 
 		UStaticMeshComponent* MeshComponent = MeshActor->GetStaticMeshComponent();
 		if (!MeshComponent)
 		{
+			UE_LOG("[ObjViewer] Reload failed: mesh component not found");
 			return false;
 		}
 
 		const FString AssetPath = MeshComponent->GetStaticMeshAsset();
 		if (AssetPath.empty())
 		{
+			UE_LOG("[ObjViewer] Reload failed: mesh asset path is empty");
 			return false;
 		}
 
-		const float DesiredBottomZ = ViewportClient->GetObjViewerBottomZ(MeshActor);
-		MeshComponent->SetStaticMeshData(nullptr, nullptr);
+		USceneComponent* Root = MeshActor->GetRootComponent();
+		if (!Root)
+		{
+			UE_LOG("[ObjViewer] Reload failed: root component not found");
+			return false;
+		}
+
+		//아래 코드에서 cooked 경로를 구하고 기존 dasset를 삭제합니다.
+		//그 다음 FAssetCooker::SaveCookedStaticMesh(RenderData, AssetData.AssetPath, CookedPath);
+		const FString CookedPath = FAssetCooker::GetCookedPath(AssetPath);
+		const bool bCookedExists = std::filesystem::exists(std::filesystem::path(FPaths::ToWide(CookedPath)));
+		std::error_code Ec;
+		if (bCookedExists)
+		{
+			std::filesystem::remove(std::filesystem::path(FPaths::ToWide(CookedPath)), Ec);
+			if (Ec)
+			{
+				UE_LOG("[ObjViewer] Reload failed: could not delete cooked asset '%s' (%s)", CookedPath.c_str(), Ec.message().c_str());
+				return false;
+			}
+		}
+
+		const FTransform PreviousTransform = Root->GetRelativeTransform();
+		const FVector PreviousDisplayedLocation = GetObjViewerDisplayedLocation(MeshActor, ViewportClient);
+
 		FObjImporter::SetImportAxisMapping(ImportAxisMapping);
 		FAssetManager::Get().InvalidateStaticMesh(AssetPath);
 		FObjManager::ClearAssetCache(AssetPath);
 
-		const FString CookedPath = FAssetCooker::GetCookedPath(AssetPath);
-		std::error_code Ec;
-		std::filesystem::remove(std::filesystem::path(FPaths::ToWide(CookedPath)), Ec);
-
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath);
-		SnapObjViewerActorBottomTo(MeshActor, ViewportClient, DesiredBottomZ);
+		if (!MeshComponent->GetStaticMesh() || !MeshComponent->GetMeshData())
+		{
+			UE_LOG("[ObjViewer] Reload failed: mesh load failed for '%s'", AssetPath.c_str());
+			return false;
+		}
+
+		Root->SetRelativeTransform(PreviousTransform);
+		SnapObjViewerActorBottomTo(MeshActor, ViewportClient, PreviousDisplayedLocation.Z);
+		Core->SetSelectedActor(MeshActor);
+		//SyncSelectedActorProperty();
 		ViewportClient->FrameObjViewerCamera(MeshActor, true);
+		UE_LOG("[ObjViewer] Reloaded mesh and rebuilt cooked asset: %s", AssetPath.c_str());
 		return true;
 	}
 
@@ -1179,6 +1212,7 @@ void FEditorUI::Render()
 
 				ImGui::SameLine();
 				const bool bNegative = IsAxisNegative(RowDirection);
+				//mesh의 축 방향이 음수인지 양수인지에 따라 버튼 색상을 다르게 칠해줍니다.
 				if (bNegative)
 				{
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.3f, 0.3f, 1.0f));
@@ -1223,6 +1257,7 @@ void FEditorUI::Render()
 			{
 				if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
 				{
+					SyncSelectedActorProperty();
 					DraftAxisAssetPath = MeshAssetPath;
 					DraftImportAxisMapping = FObjImporter::GetImportAxisMapping();
 					LastAppliedImportAxisMapping = DraftImportAxisMapping;
