@@ -3,11 +3,165 @@
 #include "ObjInfo.h"
 #include "Core/Paths.h"
 #include "StaticMeshRenderData.h"
+#include <algorithm>
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include <cfloat>
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
+
+namespace
+{
+	int32 GetSourceAxisIndex(FObjImporter::EAxisDirection AxisDirection)
+	{
+		switch (AxisDirection)
+		{
+		case FObjImporter::EAxisDirection::PositiveX:
+		case FObjImporter::EAxisDirection::NegativeX:
+			return 0;
+		case FObjImporter::EAxisDirection::PositiveY:
+		case FObjImporter::EAxisDirection::NegativeY:
+			return 1;
+		case FObjImporter::EAxisDirection::PositiveZ:
+		case FObjImporter::EAxisDirection::NegativeZ:
+		default:
+			return 2;
+		}
+	}
+
+	float GetAxisSign(FObjImporter::EAxisDirection AxisDirection)
+	{
+		switch (AxisDirection)
+		{
+		case FObjImporter::EAxisDirection::NegativeX:
+		case FObjImporter::EAxisDirection::NegativeY:
+		case FObjImporter::EAxisDirection::NegativeZ:
+			return -1.0f;
+		case FObjImporter::EAxisDirection::PositiveX:
+		case FObjImporter::EAxisDirection::PositiveY:
+		case FObjImporter::EAxisDirection::PositiveZ:
+		default:
+			return 1.0f;
+		}
+	}
+
+	float GetAxisComponent(const FVector& InVector, int32 AxisIndex)
+	{
+		switch (AxisIndex)
+		{
+		case 0:
+			return InVector.X;
+		case 1:
+			return InVector.Y;
+		case 2:
+		default:
+			return InVector.Z;
+		}
+	}
+
+	FVector ApplyImportAxisMapping(const FVector& InVector, const FObjImporter::FImportAxisMapping& ImportAxisMapping)
+	{
+		auto MapAxis = [&](FObjImporter::EAxisDirection AxisDirection)
+		{
+			return GetAxisComponent(InVector, GetSourceAxisIndex(AxisDirection)) * GetAxisSign(AxisDirection);
+		};
+
+		return FVector(
+			MapAxis(ImportAxisMapping.EngineX),
+			MapAxis(ImportAxisMapping.EngineY),
+			MapAxis(ImportAxisMapping.EngineZ));
+	}
+
+	const char* GetAxisDirectionKey(FObjImporter::EAxisDirection AxisDirection)
+	{
+		switch (AxisDirection)
+		{
+		case FObjImporter::EAxisDirection::PositiveX:
+			return "PX";
+		case FObjImporter::EAxisDirection::NegativeX:
+			return "NX";
+		case FObjImporter::EAxisDirection::PositiveY:
+			return "PY";
+		case FObjImporter::EAxisDirection::NegativeY:
+			return "NY";
+		case FObjImporter::EAxisDirection::PositiveZ:
+			return "PZ";
+		case FObjImporter::EAxisDirection::NegativeZ:
+		default:
+			return "NZ";
+		}
+	}
+
+	void RecenterMeshToOrigin(FMeshData& MeshData)
+	{
+		if (MeshData.Vertices.empty())
+		{
+			return;
+		}
+
+		FVector MinCoord(FLT_MAX, FLT_MAX, FLT_MAX);
+		FVector MaxCoord(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+		for (const FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			MinCoord.X = (std::min)(MinCoord.X, Vertex.Position.X);
+			MinCoord.Y = (std::min)(MinCoord.Y, Vertex.Position.Y);
+			MinCoord.Z = (std::min)(MinCoord.Z, Vertex.Position.Z);
+
+			MaxCoord.X = (std::max)(MaxCoord.X, Vertex.Position.X);
+			MaxCoord.Y = (std::max)(MaxCoord.Y, Vertex.Position.Y);
+			MaxCoord.Z = (std::max)(MaxCoord.Z, Vertex.Position.Z);
+		}
+
+		const FVector Center = (MaxCoord - MinCoord) * 0.5f + MinCoord;
+		for (FPrimitiveVertex& Vertex : MeshData.Vertices)
+		{
+			Vertex.Position -= Center;
+		}
+	}
+}
+
+FObjImporter::FImportAxisMapping FObjImporter::ImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
+
+FObjImporter::FImportAxisMapping FObjImporter::MakeDefaultImportAxisMapping()
+{
+	FImportAxisMapping DefaultMapping;
+	return DefaultMapping;
+}
+
+void FObjImporter::SetImportAxisMapping(const FImportAxisMapping& InMapping)
+{
+	if (!IsValidImportAxisMapping(InMapping))
+	{
+		return;
+	}
+
+	ImportAxisMapping = InMapping;
+}
+
+FObjImporter::FImportAxisMapping FObjImporter::GetImportAxisMapping()
+{
+	return ImportAxisMapping;
+}
+
+bool FObjImporter::IsValidImportAxisMapping(const FImportAxisMapping& InMapping)
+{
+	const int32 XAxis = GetSourceAxisIndex(InMapping.EngineX);
+	const int32 YAxis = GetSourceAxisIndex(InMapping.EngineY);
+	const int32 ZAxis = GetSourceAxisIndex(InMapping.EngineZ);
+	return XAxis != YAxis && XAxis != ZAxis && YAxis != ZAxis;
+}
+
+FString FObjImporter::BuildImportAxisMappingKey(const FImportAxisMapping& InMapping)
+{
+	return FString(GetAxisDirectionKey(InMapping.EngineX))
+		+ "_"
+		+ GetAxisDirectionKey(InMapping.EngineY)
+		+ "_"
+		+ GetAxisDirectionKey(InMapping.EngineZ);
+}
+
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
@@ -164,6 +318,7 @@ bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& O
 FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 {
 	auto MeshData = std::make_shared<FMeshData>();
+	const FImportAxisMapping ActiveImportAxisMapping = GetImportAxisMapping();
 
 	uint32 TriCount = (uint32)Info.PositionIndices.size();
 	for (uint32 i = 0; i < TriCount; ++i)
@@ -195,6 +350,10 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 			? Info.UVs[Info.UVIndices[i]] : FVector2(0, 0);
 
 		V.Color = FVector4(1, 1, 1, 1);
+#if IS_OBJ_VIEWER
+		V.Position = ApplyImportAxisMapping(V.Position, ActiveImportAxisMapping);
+		V.Normal = ApplyImportAxisMapping(V.Normal, ActiveImportAxisMapping);
+#endif
 
 		MeshData->Vertices.push_back(V);
 		MeshData->Indices.push_back(i);
@@ -223,6 +382,10 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	}
 
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
+#if IS_OBJ_VIEWER
+	// Viewer에서는 오브젝트 중심을 원점으로 옮겨 orbit 회전 중심을 안정화합니다.
+	RecenterMeshToOrigin(*MeshData);
+#endif
 	MeshData->UpdateLocalBound();
 
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();

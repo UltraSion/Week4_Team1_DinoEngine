@@ -839,23 +839,42 @@ void FRenderer::DrawImmediateMesh(FMeshData* MeshData, FMaterial* Material, cons
 
 void FRenderer::Release()
 {
-	ClearViewportCallbacks(); ClearLevelRenderTarget();
-	TextRenderer.Release(); SubUVRenderer.Release();
-	ShaderManager.Release(); FShaderMap::Get().Clear(); FMaterialManager::Get().Clear();
-	if (NormalSampler) NormalSampler->Release();
-	if (StencilWriteState) StencilWriteState->Release();
-	if (StencilTestState) StencilTestState->Release();
-	OutlinePS.reset(); DefaultMaterial.reset(); OverlayColorMaterial.reset();
-	if (FolderIconSRV)FolderIconSRV->Release();
-	if (FileIconSRV)FileIconSRV->Release();
-	if (LineVertexBuffer) LineVertexBuffer->Release();
-	if (FrameConstantBuffer) FrameConstantBuffer->Release();
-	if (ObjectConstantBuffer) ObjectConstantBuffer->Release();
-	if (DepthStencilView) DepthStencilView->Release();
-	if (RenderTargetView) RenderTargetView->Release();
-	if (SwapChain) SwapChain->Release();
-	if (DeviceContext) DeviceContext->Release();
-	if (Device) Device->Release();
+	ClearViewportCallbacks();
+	ClearLevelRenderTarget();
+
+	if (DeviceContext)
+	{
+		// Drop pipeline references held by the immediate context before releasing GPU objects.
+		DeviceContext->ClearState();
+		DeviceContext->Flush();
+	}
+
+	TextRenderer.Release();
+	SubUVRenderer.Release();
+	ShaderManager.Release();
+
+	OutlinePS.reset();
+	DefaultMaterial.reset();
+	DefaultTextureMaterial.reset();
+	OverlayColorMaterial.reset();
+
+	FShaderMap::Get().Clear();
+	FMaterialManager::Get().Clear();
+	RenderStateManager.reset();
+
+	if (NormalSampler) { NormalSampler->Release(); NormalSampler = nullptr; }
+	if (StencilWriteState) { StencilWriteState->Release(); StencilWriteState = nullptr; }
+	if (StencilTestState) { StencilTestState->Release(); StencilTestState = nullptr; }
+	if (FolderIconSRV) { FolderIconSRV->Release(); FolderIconSRV = nullptr; }
+	if (FileIconSRV) { FileIconSRV->Release(); FileIconSRV = nullptr; }
+	if (LineVertexBuffer) { LineVertexBuffer->Release(); LineVertexBuffer = nullptr; }
+	if (FrameConstantBuffer) { FrameConstantBuffer->Release(); FrameConstantBuffer = nullptr; }
+	if (ObjectConstantBuffer) { ObjectConstantBuffer->Release(); ObjectConstantBuffer = nullptr; }
+	if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
+	if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
+	if (SwapChain) { SwapChain->Release(); SwapChain = nullptr; }
+	if (DeviceContext) { DeviceContext->Release(); DeviceContext = nullptr; }
+	if (Device) { Device->Release(); Device = nullptr; }
 }
 
 bool FRenderer::IsOccluded()

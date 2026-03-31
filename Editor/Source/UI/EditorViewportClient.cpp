@@ -90,6 +90,9 @@ void FEditorViewportClient::Attach(FCore* Core)
 	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
 	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
+#if IS_OBJ_VIEWER //뷰어에서만 쓰이는 uv, normal 머테리얼입니다.
+	CreateViewerDebugMaterials(GRenderer);
+#endif
 }
 
 void FEditorViewportClient::Detach()
@@ -100,6 +103,8 @@ void FEditorViewportClient::Detach()
 	WireFrameMaterial.reset();
 	SolidWireFrameFillMaterial.reset();
 	SolidWireFrameLineMaterial.reset();
+	ViewerUVMaterial.reset();
+	ViewerNormalMaterial.reset();
 
 	if (EditorUI.GetActiveViewportClient() == this)
 	{
@@ -192,6 +197,83 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 		GridMaterial->SetParameterData("GridSize", &GridSize, 4);
 		GridMaterial->SetParameterData("LineThickness", &LineThickness, 4);
 	}
+}
+
+/**
+ * 뷰어에서 사용할 UV, Normal 디버그 머테리얼을 생성하는 함수입니다..
+ * 
+ * \param Renderer
+ */
+void FEditorViewportClient::CreateViewerDebugMaterials(FRenderer* Renderer)
+{
+	ID3D11Device* Device = Renderer ? Renderer->GetDevice() : nullptr;
+	FRenderStateManager* RenderStateManager = Renderer ? Renderer->GetRenderStateManager().get() : nullptr;
+	if (!Device || !RenderStateManager)
+	{
+		return;
+	}
+
+	const std::wstring ShaderDir = FPaths::ShaderDir();
+	auto VertexShader = FShaderMap::Get().GetOrCreateVertexShader(Device, (ShaderDir + L"StaticMeshVertexShader.hlsl").c_str());
+	auto UVPixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"ObjViewerUVPixelShader.hlsl").c_str());
+	auto NormalPixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"ObjViewerNormalPixelShader.hlsl").c_str());
+
+	auto CreateDebugMaterial = [&](const char* MaterialName, const std::shared_ptr<FPixelShader>& PixelShader)
+	{
+		if (!VertexShader || !PixelShader)
+		{
+			return std::shared_ptr<FMaterial>();
+		}
+
+		auto Material = std::make_shared<FMaterial>();
+		Material->SetOriginName(MaterialName);
+		Material->SetVertexShader(VertexShader);
+		Material->SetPixelShader(PixelShader);
+
+		FRasterizerStateOption RasterizerOption;
+		RasterizerOption.FillMode = D3D11_FILL_SOLID;
+		RasterizerOption.CullMode = D3D11_CULL_NONE;
+		Material->SetRasterizerOption(RasterizerOption);
+		Material->SetRasterizerState(RenderStateManager->GetOrCreateRasterizerState(RasterizerOption));
+
+		FDepthStencilStateOption DepthStencilOption;
+		DepthStencilOption.DepthEnable = true;
+		DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		Material->SetDepthStencilOption(DepthStencilOption);
+		Material->SetDepthStencilState(RenderStateManager->GetOrCreateDepthStencilState(DepthStencilOption));
+
+		const int32 SlotIndex = Material->CreateConstantBuffer(Device, 16);
+		if (SlotIndex >= 0)
+		{
+			Material->RegisterParameter("ColorTint", SlotIndex, 0, 16);
+			const FVector4 White(1.0f, 1.0f, 1.0f, 1.0f);
+			Material->SetParameterData("ColorTint", &White, 16);
+		}
+
+		return Material;
+	};
+
+	ViewerUVMaterial = CreateDebugMaterial("M_ObjViewer_UV", UVPixelShader);
+	ViewerNormalMaterial = CreateDebugMaterial("M_ObjViewer_Normal", NormalPixelShader);
+}
+
+void FEditorViewportClient::ApplyViewerNoCull(FMaterial* Material) const
+{
+	if (!Material || !GRenderer)
+	{
+		return;
+	}
+
+	const FRasterizerStateOption& CurrentOption = Material->GetRasterizerOption();
+	if (CurrentOption.CullMode == D3D11_CULL_NONE)
+	{
+		return;
+	}
+
+	FRasterizerStateOption UpdatedOption = CurrentOption;
+	UpdatedOption.CullMode = D3D11_CULL_NONE;
+	Material->SetRasterizerOption(UpdatedOption);
+	Material->SetRasterizerState(GRenderer->GetRenderStateManager()->GetOrCreateRasterizerState(UpdatedOption));
 }
 
 UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
@@ -340,6 +422,11 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
+#if IS_OBJ_VIEWER
+	// 뷰어 모드에서는 픽킹을 통한 선택 변경을 막습니다.
+	return;
+#endif
+
 	if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 	{
 		return;
@@ -615,7 +702,9 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 			Transform.SetLocation(SpawnLocation);
 			Root->SetRelativeTransform(Transform);
 		}
+#if !IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
+#endif
 	}
 
 
@@ -660,6 +749,36 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 
 		OutQueue.Commands = std::move(SolidWireframeCommands);
 	}
+	else if (RenderMode == ERenderMode::UV)
+	{
+		for (FRenderCommand& Command : OutQueue.Commands)
+		{
+			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerUVMaterial)
+			{
+				Command.Material = ViewerUVMaterial.get();
+			}
+		}
+	}
+	else if (RenderMode == ERenderMode::Normals)
+	{
+		for (FRenderCommand& Command : OutQueue.Commands)
+		{
+			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerNormalMaterial)
+			{
+				Command.Material = ViewerNormalMaterial.get();
+			}
+		}
+	}
+
+#if IS_OBJ_VIEWER
+	for (FRenderCommand& Command : OutQueue.Commands)
+	{
+		if (Command.RenderLayer != ERenderLayer::Overlay)
+		{
+			ApplyViewerNoCull(Command.Material);
+		}
+	}
+#endif
 
 	if (GridMesh && GridMaterial && IsGridVisible())
 	{
@@ -689,6 +808,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 
 	//Stat Overlay를 띄웁니다.
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
+
+#if IS_OBJ_VIEWER
+	return;
+#endif
 
 	AActor* SelectedActor = Core->GetSelectedActor();
 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())

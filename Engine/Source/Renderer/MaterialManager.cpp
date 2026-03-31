@@ -388,6 +388,7 @@ void FMaterialManager::Clear()
 {
 	PathCache.clear();
 	NameCache.clear();
+	GDefaultWhiteTexture.reset();
 }
 
 void FMaterialManager::CreateDefaultWhiteTexture(ID3D11Device* Device)

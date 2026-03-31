@@ -19,6 +19,8 @@ enum class ERenderMode
 	NoLighting,
 	Wireframe,
 	SolidWireframe,
+	UV,
+	Normals,
 };
 
 enum class EEditorViewportType : uint8_t
@@ -74,6 +76,8 @@ private:
 	AActor* GetSelectedActor() const;
 	AActor* GetGizmoTarget() const;
 	void CreateGridResource(FRenderer* Renderer);
+	void CreateViewerDebugMaterials(FRenderer* Renderer);
+	void ApplyViewerNoCull(FMaterial* Material) const;
 
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
@@ -87,6 +91,8 @@ private:
 	std::shared_ptr<FMaterial> WireFrameMaterial = nullptr;
 	std::shared_ptr<FMaterial> SolidWireFrameFillMaterial = nullptr;
 	std::shared_ptr<FMaterial> SolidWireFrameLineMaterial = nullptr;
+	std::shared_ptr<FMaterial> ViewerUVMaterial = nullptr;
+	std::shared_ptr<FMaterial> ViewerNormalMaterial = nullptr;
 
 	std::unique_ptr<FMeshData> GridMesh;
 	std::shared_ptr<FMaterial> GridMaterial;
