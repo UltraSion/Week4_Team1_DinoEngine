@@ -901,9 +901,9 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 	switch (ViewportType)
 	{
 	case EEditorViewportType::Front:
-		return FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
-	case EEditorViewportType::Right:
 		return FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));
+	case EEditorViewportType::Right:
+		return FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
 	case EEditorViewportType::Top:
 	case EEditorViewportType::Perspective:
 	default:

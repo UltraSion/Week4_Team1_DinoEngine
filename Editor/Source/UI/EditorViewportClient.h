@@ -113,7 +113,7 @@ protected:
 
 	std::unique_ptr<FMeshData> GridMesh;
 	std::shared_ptr<FMaterial> GridMaterial;
-	float GridSize = 10.0f;
+	float GridSize = 1.0f;
 	float LineThickness = 1.0f;
 	bool bShowGrid = true;
 	FVector InitialCameraPosition = FVector::ZeroVector;
