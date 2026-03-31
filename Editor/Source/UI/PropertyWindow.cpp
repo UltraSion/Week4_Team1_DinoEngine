@@ -257,6 +257,12 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 	}
 }
 
+/**
+ * UV scroll을 키고 끌 수 있는 기능을 패널에 추가합니다.
+ * 
+ * \param SMComp
+ * \param SlotIdx
+ */
 void FPropertyWindow::DrawUVScrollControls(UStaticMeshComponent* SMComp, uint32 SlotIdx)
 {
 	if (!SMComp)

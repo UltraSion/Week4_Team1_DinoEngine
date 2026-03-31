@@ -28,6 +28,7 @@ private:
 
 	void DrawBillboardSection(AActor* SelectedActor);
 
+	//Property 패널에서 머테리얼 슬롯 및 UV 스크롤을 컨트롤합니다.
 	void DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMComp, AActor* SelectedActor);
 	void DrawUVScrollControls(UStaticMeshComponent* SMComp, uint32 SlotIdx);
 

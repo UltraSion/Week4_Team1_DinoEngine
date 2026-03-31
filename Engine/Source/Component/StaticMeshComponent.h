@@ -30,10 +30,16 @@ public:
 	uint32 GetNumMaterials() const override;
 
 private:
+	struct FUVScrollState
+	{
+		bool bEnabled = false;
+		FVector2 Speed = FVector2(0.0f, 0.0f);
+	};
+
 	std::shared_ptr<FDynamicMaterial> GetOrCreateDynamicMaterialForSlot(uint32 SlotIndex);
-	std::shared_ptr<FDynamicMaterial> GetDynamicMaterialForSlot(uint32 SlotIndex) const;
-	void InitializeUVScrollParameters(const std::shared_ptr<FDynamicMaterial>& DynamicMat);
+	void InitializeUVScrollParameters(uint32 SlotIndex, const std::shared_ptr<FDynamicMaterial>& DynamicMat);
 
 	TMap<uint32, std::shared_ptr<FDynamicMaterial>> DynamicMaterialOwners;
+	TMap<uint32, FUVScrollState> UVScrollStates;
 	UStaticMesh* StaticMesh = nullptr;
 };

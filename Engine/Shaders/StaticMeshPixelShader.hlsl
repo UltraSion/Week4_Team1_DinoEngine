@@ -13,6 +13,7 @@ cbuffer MaterialData : register(b2)
 
 float4 main(VS_OUTPUT Input) : SV_TARGET
 {
+	//TotalTime을 사용해 UV을 옮깁니다.
 	float2 FinalUV = Input.UV;
 	if (UVScrollEnabled > 0.5f)
 	{
