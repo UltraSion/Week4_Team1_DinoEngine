@@ -86,6 +86,7 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 {
 	SetWorldType(InWorldType);
 	SetGridVisible(bShowGrid);
+	Focus.SetCamera(&CameraTransform);
 }
 
 void FEditorViewportClient::Attach(FCore* Core)
@@ -386,7 +387,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
-
+	Focus.MoveTowardsTarget(DeltaTime);
 #if IS_OBJ_VIEWER
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
@@ -553,6 +554,12 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 	case 'L':
 		Gizmo.ToggleCoordinateSpace();
 		UE_LOG("Gizmo Space: %s", Gizmo.GetCoordinateSpace() == EGizmoCoordinateSpace::Local ? "Local" : "World");
+		return;
+	case 'F':
+		if (AActor* TargetActor = GetGizmoTarget())
+		{
+			Focus.FocusOnActor(TargetActor);
+		}
 		return;
 	default:
 		return;

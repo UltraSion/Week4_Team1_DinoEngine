@@ -4,6 +4,7 @@
 #include "Core/Paths.h"
 #include "StaticMeshRenderData.h"
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <filesystem>
 #include <sstream>
@@ -13,6 +14,8 @@
 
 namespace
 {
+	constexpr float ImportScaleTolerance = 1.0e-4f;
+
 	int32 GetSourceAxisIndex(FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (AxisDirection)
@@ -150,7 +153,7 @@ bool FObjImporter::IsValidImportAxisMapping(const FImportAxisMapping& InMapping)
 	const int32 XAxis = GetSourceAxisIndex(InMapping.EngineX);
 	const int32 YAxis = GetSourceAxisIndex(InMapping.EngineY);
 	const int32 ZAxis = GetSourceAxisIndex(InMapping.EngineZ);
-	return XAxis != YAxis && XAxis != ZAxis && YAxis != ZAxis;
+	return XAxis != YAxis && XAxis != ZAxis && YAxis != ZAxis && InMapping.ImportScale > ImportScaleTolerance;
 }
 
 FString FObjImporter::BuildImportAxisMappingKey(const FImportAxisMapping& InMapping)
@@ -159,7 +162,9 @@ FString FObjImporter::BuildImportAxisMappingKey(const FImportAxisMapping& InMapp
 		+ "_"
 		+ GetAxisDirectionKey(InMapping.EngineY)
 		+ "_"
-		+ GetAxisDirectionKey(InMapping.EngineZ);
+		+ GetAxisDirectionKey(InMapping.EngineZ)
+		+ "_S"
+		+ std::to_string(InMapping.ImportScale);
 }
 
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
@@ -358,6 +363,8 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 		V.Color = FVector4(1, 1, 1, 1);
 #if IS_OBJ_VIEWER
 		V.Position = ApplyImportAxisMapping(V.Position, ActiveImportAxisMapping);
+		//여기서 조정된 scale 값을 곱해 저 장합니다.
+		V.Position *= ActiveImportAxisMapping.ImportScale;
 		V.Normal = ApplyImportAxisMapping(V.Normal, ActiveImportAxisMapping);
 #endif
 

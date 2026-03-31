@@ -109,6 +109,7 @@
     <ClCompile Include="Source\UI\ViewportWindow.cpp" />
     <ClCompile Include="Source\UI\SWindow.cpp" />
     <ClCompile Include="Source\UI\WindowManager.cpp" />
+    <ClCompile Include="Source\CameraFuction\FFocus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -190,6 +191,7 @@
     <ClInclude Include="Source\UI\ViewportWindow.h" />
     <ClInclude Include="Source\UI\WindowManager.h" />
     <ClInclude Include="Source\UI\SWindow.h" />
+    <ClInclude Include="Source\CameraFuction\FFocus.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">
