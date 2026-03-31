@@ -12,6 +12,14 @@
 
 namespace
 {
+	void RequestEditorLayoutSave()
+	{
+		if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+		{
+			EditorEngine->SaveEditorSettings();
+		}
+	}
+
 	bool IsMouseMessage(UINT Msg)
 	{
 		switch (Msg)
@@ -131,6 +139,10 @@ SSplitter* SWindow::Split(SWindow* InNewWindow, SplitDirection InDirection, Spli
 	{
 		Parent->ReplaceSide(this, NewSplitter);
 	}
+	else if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, NewSplitter);
+	}
 
 	if (InSplitOption == SplitOption::LT)
 	{
@@ -163,6 +175,10 @@ SSplitterC* SWindow::Split4(SWindow* InNewWindow1, SWindow* InNewWindow2, SWindo
 	if (Parent)
 	{
 		Parent->ReplaceSide(this, NewSplitter);
+	}
+	else if (FEditorEngine* EditorEngine = dynamic_cast<FEditorEngine*>(GEngine))
+	{
+		EditorEngine->GetWindowManager().ReplaceWindow(this, NewSplitter);
 	}
 
 	switch (InSplitOption)
@@ -390,6 +406,7 @@ void SSplitter::SetSplitRatio(float InSplitRatio)
 
 	SplitRatio = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitter::Tick(float DeltaTime)
@@ -897,6 +914,7 @@ void SSplitterC::SetSplitRatioVertical(float InSplitRatio)
 
 	SplitRatioVertical = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitterC::SetSplitRatioHorizontal(float InSplitRatio)
@@ -909,6 +927,7 @@ void SSplitterC::SetSplitRatioHorizontal(float InSplitRatio)
 
 	SplitRatioHorizontal = ClampedSplitRatio;
 	OnResize();
+	RequestEditorLayoutSave();
 }
 
 void SSplitterC::Tick(float DeltaTime)

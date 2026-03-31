@@ -407,73 +407,83 @@ void FEditorViewportClient::DrawUI()
 	}
 
 	char buttonName[128];
-	sprintf_s(buttonName, "H##%p", this);
-	if (ImGui::Button(buttonName))
-	{
-		ViewportWindow->Split(
-			new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-			SplitDirection::Horizontal,
-			SplitOption::LT
-		);
-	}
-
-	ImGui::SameLine();
-	sprintf_s(buttonName, "V##%p", this);
-	if (ImGui::Button(buttonName))
-	{
-		ViewportWindow->Split(
-			new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
-			SplitDirection::Vertical,
-			SplitOption::LT
-		);
-	}
-
-	ImGui::SameLine();
-	sprintf_s(buttonName, "+##%p", this);
-	if (ImGui::Button(buttonName))
-	{
-		FViewportContext* NewContext1 = GEngine->CreateContext(FRect());
-		FViewportContext* NewContext2 = GEngine->CreateContext(FRect());
-		FViewportContext* NewContext3 = GEngine->CreateContext(FRect());
-
-		if (FEditorViewportClient* NewViewportClient1 = dynamic_cast<FEditorViewportClient*>(NewContext1 ? NewContext1->GetViewportClient() : nullptr))
-		{
-			NewViewportClient1->SetViewportType(EEditorViewportType::Top);
-		}
-
-		if (FEditorViewportClient* NewViewportClient2 = dynamic_cast<FEditorViewportClient*>(NewContext2 ? NewContext2->GetViewportClient() : nullptr))
-		{
-			NewViewportClient2->SetViewportType(EEditorViewportType::Front);
-		}
-
-		if (FEditorViewportClient* NewViewportClient3 = dynamic_cast<FEditorViewportClient*>(NewContext3 ? NewContext3->GetViewportClient() : nullptr))
-		{
-			NewViewportClient3->SetViewportType(EEditorViewportType::Right);
-		}
-
-		ViewportWindow->Split4(
-			new SViewportWindow(FRect(), NewContext1),
-			new SViewportWindow(FRect(), NewContext2),
-			new SViewportWindow(FRect(), NewContext3),
-			SplitOption::RB
-		);
-	}
-
-	ImGui::SameLine();
-	sprintf_s(buttonName, "-##%p", this);
 	bool HasParent = ViewportWindow->GetParent() != nullptr;
 	if (!HasParent)
 	{
-		ImGui::BeginDisabled();
+		sprintf_s(buttonName, "H##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			if (ViewportWindow->Split(
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				SplitDirection::Horizontal,
+				SplitOption::LT
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
+		}
+
+		ImGui::SameLine();
+		sprintf_s(buttonName, "V##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			if (ViewportWindow->Split(
+				new SViewportWindow(FRect(), GEngine->CreateContext(FRect())),
+				SplitDirection::Vertical,
+				SplitOption::LT
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
+		}
+
+		ImGui::SameLine();
+		sprintf_s(buttonName, "+##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			FViewportContext* NewContext1 = GEngine->CreateContext(FRect());
+			FViewportContext* NewContext2 = GEngine->CreateContext(FRect());
+			FViewportContext* NewContext3 = GEngine->CreateContext(FRect());
+
+			if (FEditorViewportClient* NewViewportClient1 = dynamic_cast<FEditorViewportClient*>(NewContext1 ? NewContext1->GetViewportClient() : nullptr))
+			{
+				NewViewportClient1->SetViewportType(EEditorViewportType::Top);
+			}
+
+			if (FEditorViewportClient* NewViewportClient2 = dynamic_cast<FEditorViewportClient*>(NewContext2 ? NewContext2->GetViewportClient() : nullptr))
+			{
+				NewViewportClient2->SetViewportType(EEditorViewportType::Front);
+			}
+
+			if (FEditorViewportClient* NewViewportClient3 = dynamic_cast<FEditorViewportClient*>(NewContext3 ? NewContext3->GetViewportClient() : nullptr))
+			{
+				NewViewportClient3->SetViewportType(EEditorViewportType::Right);
+			}
+
+			if (ViewportWindow->Split4(
+				new SViewportWindow(FRect(), NewContext1),
+				new SViewportWindow(FRect(), NewContext2),
+				new SViewportWindow(FRect(), NewContext3),
+				SplitOption::RB
+			))
+			{
+				EditorUI.SaveEditorSettings();
+			}
+		}
 	}
-	if (ImGui::Button(buttonName))
+	else
 	{
-		ViewportWindow->GetParent()->Merge(ViewportWindow);
+		sprintf_s(buttonName, "-##%p", this);
+		if (ImGui::Button(buttonName))
+		{
+			ViewportWindow->GetParent()->Merge(ViewportWindow);
+			EditorUI.SaveEditorSettings();
+		}
 	}
-	if (!HasParent)
-	{
-		ImGui::EndDisabled();
-	}
+
+
+	ImGui::SameLine();
+
 
 	ImGui::SameLine();
 	DrawCameraOption(GetCamera());
@@ -565,8 +575,9 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
-	if (FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice()))
+	if (FSceneSerializer::Load(Level, FilePath, GRenderer->GetDevice(), EditorUI.GetPerspectiveCamera()))
 	{
+		EditorUI.SavePerspectiveCameraInitialState();
 		UE_LOG("Level loaded: %s", FilePath.c_str());
 	}
 	else

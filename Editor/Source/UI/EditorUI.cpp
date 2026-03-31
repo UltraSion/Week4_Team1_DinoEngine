@@ -126,9 +126,10 @@ namespace
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
-void FEditorUI::Initialize(FCore* InCore)
+void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 {
 	Core = InCore;
+	WindowManager = InWindowManager;
 
 	Property.OnChanged = [this](const FVector& Loc, const FVector& Rot, const FVector& Scl)
 		{
@@ -429,10 +430,27 @@ void FEditorUI::BuildDefaultLayout(uint32 DockID)
 
 void FEditorUI::LoadEditorSettings()
 {
+	if (!WindowManager || !MainWindow)
+	{
+		return;
+	}
+
+	const FRect RootRect(
+		0.0f,
+		0.0f,
+		static_cast<float>(MainWindow->GetWidth()),
+		static_cast<float>(MainWindow->GetHeight()));
+	WindowManager->LoadLayoutFromIni(GetEditorIniPathW(), RootRect);
 }
 
 void FEditorUI::SaveEditorSettings()
 {
+	if (!WindowManager)
+	{
+		return;
+	}
+
+	WindowManager->SaveLayoutToIni(GetEditorIniPathW());
 }
 
 std::wstring FEditorUI::GetEditorIniPathW() const
@@ -524,6 +542,8 @@ void FEditorUI::Render()
 							ActiveViewportClient->GetCamera()->SetRotation(0.0f, 0.0f);
 						}
 
+						SavePerspectiveCameraInitialState();
+
 						SyncSelectedActorProperty();
 						UE_LOG("New Level created");
 					}
@@ -541,8 +561,9 @@ void FEditorUI::Render()
 						Core->SetSelectedActor(nullptr);
 						ActiveLevel->ClearActors();
 
-						if (FSceneSerializer::Load(ActiveLevel, Path, GRenderer->GetDevice()))
+						if (FSceneSerializer::Load(ActiveLevel, Path, GRenderer->GetDevice(), GetPerspectiveCamera()))
 						{
+							SavePerspectiveCameraInitialState();
 							SyncSelectedActorProperty();
 							UE_LOG("Level loaded: %s", Path.c_str());
 						}
@@ -562,7 +583,7 @@ void FEditorUI::Render()
 					const FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
 					if (!Path.empty())
 					{
-						FSceneSerializer::Save(ActiveLevel, Path);
+						FSceneSerializer::Save(ActiveLevel, Path, GetPerspectiveCamera());
 					}
 				}
 			}
@@ -773,4 +794,23 @@ void FEditorUI::SyncSelectedActorProperty()
 	}
 
 	CachedSelectedActor = Selected;
+}
+
+FEditorViewportClient* FEditorUI::FindPerspectiveViewportClient() const
+{
+	return WindowManager ? WindowManager->FindPerspectiveViewportClient() : nullptr;
+}
+
+FCamera* FEditorUI::GetPerspectiveCamera() const
+{
+	FEditorViewportClient* PerspectiveViewportClient = FindPerspectiveViewportClient();
+	return PerspectiveViewportClient ? PerspectiveViewportClient->GetCamera() : nullptr;
+}
+
+void FEditorUI::SavePerspectiveCameraInitialState() const
+{
+	if (FEditorViewportClient* PerspectiveViewportClient = FindPerspectiveViewportClient())
+	{
+		PerspectiveViewportClient->SaveInitialCameraState();
+	}
 }

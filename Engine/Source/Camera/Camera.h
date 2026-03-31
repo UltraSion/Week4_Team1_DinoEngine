@@ -38,6 +38,10 @@ public:
 	float GetPitch() const;
 	float GetFOV() const;
 	void SetFOV(float InFOV);
+	float GetNearClip() const;
+	float GetFarClip() const;
+	void SetNearClip(float InNearClip);
+	void SetFarClip(float InFarClip);
 	ECameraProjectionMode GetProjectionMode() const;
 	bool IsOrthographic() const;
 	void SetProjectionMode(ECameraProjectionMode InProjectionMode);

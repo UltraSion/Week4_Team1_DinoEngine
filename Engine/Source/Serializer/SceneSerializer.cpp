@@ -20,7 +20,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
-void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
+void FSceneSerializer::Save(ULevel* Level, const FString& FilePath, const FCamera* PerspectiveCamera)
 {
 	nlohmann::json Json;
 	FCamera* Camera = Level->GetCamera();
@@ -29,6 +29,16 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 		const FVector Position = Camera->GetPosition();
 		Json["Camera"]["Position"] = { Position.X, Position.Y, Position.Z };
 		Json["Camera"]["Rotation"] = { Camera->GetYaw(), Camera->GetPitch() };
+	}
+
+	if (PerspectiveCamera && PerspectiveCamera->GetProjectionMode() == ECameraProjectionMode::Perspective)
+	{
+		const FVector Location = PerspectiveCamera->GetPosition();
+		Json["PerspectiveCamera"]["Location"] = { Location.X, Location.Y, Location.Z };
+		Json["PerspectiveCamera"]["Rotation"] = { PerspectiveCamera->GetYaw(), PerspectiveCamera->GetPitch() };
+		Json["PerspectiveCamera"]["FOV"] = PerspectiveCamera->GetFOV();
+		Json["PerspectiveCamera"]["NearClip"] = PerspectiveCamera->GetNearClip();
+		Json["PerspectiveCamera"]["FarClip"] = PerspectiveCamera->GetFarClip();
 	}
 
 	// Materials (로드된 Material 파일 경로를 프로젝트 루트 기준 상대 경로로 저장)
@@ -72,7 +82,7 @@ void FSceneSerializer::Save(ULevel* Level, const FString& FilePath)
 	}
 }
 
-bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device)
+bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device* Device, FCamera* PerspectiveCamera)
 {
 	std::ifstream File(std::filesystem::path(FilePath).wstring());
 	if (!File.is_open())
@@ -107,6 +117,38 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 		{
 			auto& R = Cam["Rotation"];
 			Camera->SetRotation(R[0].get<float>(), R[1].get<float>());
+		}
+	}
+
+	if (PerspectiveCamera && Json.contains("PerspectiveCamera"))
+	{
+		auto& PerspectiveCameraJson = Json["PerspectiveCamera"];
+		if (PerspectiveCameraJson.contains("Location"))
+		{
+			auto& Location = PerspectiveCameraJson["Location"];
+			PerspectiveCamera->SetPosition({
+				Location[0].get<float>(),
+				Location[1].get<float>(),
+				Location[2].get<float>() });
+		}
+		if (PerspectiveCameraJson.contains("Rotation"))
+		{
+			auto& Rotation = PerspectiveCameraJson["Rotation"];
+			PerspectiveCamera->SetRotation(
+				Rotation[0].get<float>(),
+				Rotation[1].get<float>());
+		}
+		if (PerspectiveCameraJson.contains("FOV"))
+		{
+			PerspectiveCamera->SetFOV(PerspectiveCameraJson["FOV"].get<float>());
+		}
+		if (PerspectiveCameraJson.contains("NearClip"))
+		{
+			PerspectiveCamera->SetNearClip(PerspectiveCameraJson["NearClip"].get<float>());
+		}
+		if (PerspectiveCameraJson.contains("FarClip"))
+		{
+			PerspectiveCamera->SetFarClip(PerspectiveCameraJson["FarClip"].get<float>());
 		}
 	}
 
