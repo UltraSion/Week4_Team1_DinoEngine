@@ -7,7 +7,7 @@ namespace
 {
 	constexpr float PerspectivePitchMin = -89.0f;
 	constexpr float PerspectivePitchMax = 89.0f;
-	constexpr float PerspectiveWheelMoveScale = 0.03f;
+	constexpr float PerspectiveWheelMoveScale = 1.0f;
 }
 
 FEditorPerspectiveViewportClient::FEditorPerspectiveViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, ELevelType InWorldType)
