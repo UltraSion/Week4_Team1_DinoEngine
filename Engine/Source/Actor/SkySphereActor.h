@@ -3,7 +3,7 @@
 #include "Actor.h"
 
 
-class USkyComponent;
+class UStaticMeshComponent;
 class ENGINE_API ASkySphereActor : public AActor
 {
 public:
@@ -12,8 +12,9 @@ public:
 
 
 	void Tick(float DeltaTime) override;
-	USkyComponent* GetSkyComponent() const { return SkyComponent; }
+	void LoadSkyMesh(ID3D11Device* Device);
+	UStaticMeshComponent* GetStaticMeshComponent() const { return StaticMeshComponent; }
 
 private:
-	USkyComponent* SkyComponent = nullptr;
+	UStaticMeshComponent* StaticMeshComponent = nullptr;
 };

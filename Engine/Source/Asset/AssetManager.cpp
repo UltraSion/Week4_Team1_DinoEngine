@@ -9,6 +9,7 @@
 #include "Primitive/PrimitiveCube.h"
 #include "Primitive/PrimitiveSphere.h"
 #include "Primitive/PrimitivePlane.h"
+#include "Primitive/PrimitiveSky.h"
 #include "ThirdParty/stb_image.h"
 #include "Core/Paths.h"
 #include <algorithm>
@@ -47,7 +48,11 @@ UStaticMesh* FAssetManager::LoadBasicShape(const FString& ShapeName)
 		CPrimitivePlane PlaneGen;
 		MeshData = CPrimitiveBase::GetCached(CPrimitivePlane::Key);
 	}
-
+	else if (ShapeName == "SkySphere")
+	{
+		CPrimitiveSky SkyGen(32, 32); // 부드러운 하늘을 위해 32x32 해상도 사용
+		MeshData = CPrimitiveBase::GetCached(CPrimitiveSky::Key);
+	}
 	if (!MeshData) return nullptr;
 	if (MeshData->Sections.empty() && !MeshData->Indices.empty())
 	{

@@ -99,9 +99,6 @@
     <ClCompile Include="Source\Component\SceneComponent.cpp">
       <Filter>Source\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Component\SkyComponent.cpp">
-      <Filter>Source\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Component\SubUVComponent.cpp">
       <Filter>Source\Component</Filter>
     </ClCompile>
@@ -207,9 +204,6 @@
     <ClCompile Include="Source\Primitive\PrimitivePlane.cpp">
       <Filter>Source\Primitive</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Primitive\PrimitiveSky.cpp">
-      <Filter>Source\Primitive</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Primitive\PrimitiveSphere.cpp">
       <Filter>Source\Primitive</Filter>
     </ClCompile>
@@ -297,6 +291,7 @@
     <ClCompile Include="Source\Asset\AssetManager.cpp" />
     <ClCompile Include="Source\Asset\AssetRegistry.cpp" />
     <ClCompile Include="Source\Asset\AssetCooker.cpp" />
+    <ClCompile Include="Source\Primitive\PrimitiveSky.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CoreMinimal.h">
@@ -336,9 +331,6 @@
       <Filter>Source\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Component\SceneComponent.h">
-      <Filter>Source\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Component\SkyComponent.h">
       <Filter>Source\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Component\SubUVComponent.h">
@@ -468,9 +460,6 @@
       <Filter>Source\Primitive</Filter>
     </ClInclude>
     <ClInclude Include="Source\Primitive\PrimitivePlane.h">
-      <Filter>Source\Primitive</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Primitive\PrimitiveSky.h">
       <Filter>Source\Primitive</Filter>
     </ClInclude>
     <ClInclude Include="Source\Primitive\PrimitiveSphere.h">
@@ -620,6 +609,7 @@
     <ClInclude Include="Source\Asset\CookedStaticMesh.h" />
     <ClInclude Include="Source\Asset\AssetCooker.h" />
     <ClInclude Include="Source\Asset\CookedAsset.h" />
+    <ClInclude Include="Source\Primitive\PrimitiveSky.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
