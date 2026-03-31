@@ -276,6 +276,48 @@ void FEditorViewportClient::ApplyViewerNoCull(FMaterial* Material) const
 	Material->SetRasterizerState(GRenderer->GetRenderStateManager()->GetOrCreateRasterizerState(UpdatedOption));
 }
 
+void FEditorViewportClient::ShowViewOptionPanel()
+{
+	if (!ImGui::CollapsingHeader("View"))
+		return;
+	FShowFlags& ShowFlags = GetShowFlags(); // -> 수정
+	auto ShowFlagCheckbox = [&ShowFlags](const char* Label, EEngineShowFlags Flag)
+		{
+			bool bValue = ShowFlags.HasFlag(Flag);
+			if (ImGui::Checkbox(Label, &bValue))
+			{
+				ShowFlags.SetFlag(Flag, bValue);
+			}
+		};
+
+	ImGui::SeparatorText(GetViewportLabel()); // -> 수정
+
+	int RenderMode = static_cast<int>(GetRenderMode()); // -> 수정
+	const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0";
+
+	if (ImGui::Combo("Render Mode", &RenderMode, RenderModes))
+	{
+		SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
+	}
+	ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
+	ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
+	ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+	ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
+	ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+
+	float GridSize = GetGridSize(); // -> 수정
+	if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
+	{
+		SetGridSize(GridSize);
+	}
+
+	float Thickness = GetLineThickness(); // -> 수정
+	if (ImGui::SliderFloat("Line Thickness", &Thickness, 0.1f, 5.0f, "%.2f"))
+	{
+		SetLineThickness(Thickness); // -> 수정
+	}
+}
+
 UWorld* FEditorViewportClient::ResolveWorld(FCore* Core) const
 {
 	return FViewportClient::ResolveWorld(Core);
@@ -482,7 +524,7 @@ AActor* FEditorViewportClient::GetGizmoTarget() const
 void FEditorViewportClient::DrawUI()
 {
 	FRect WindowRect = ViewportWindow->GetRect();
-	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X + WindowRect.Size.X * 0.5f, WindowRect.Position.Y));
+	ImGui::SetNextWindowPos(ImVec2(WindowRect.Position.X, WindowRect.Position.Y));
 
 	char windowName[128];
 	sprintf_s(windowName, "ViewportButtonFrame##%p", this);
@@ -570,7 +612,7 @@ void FEditorViewportClient::DrawUI()
 
 
 	ImGui::SameLine();
-
+	ShowViewOptionPanel();
 
 	ImGui::SameLine();
 	DrawCameraOption(GetCamera());
@@ -581,6 +623,7 @@ void FEditorViewportClient::DrawUI()
 
 void FEditorViewportClient::DrawCameraOption(FCamera* Camera)
 {
+	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("Camera"))
 	{
 		ImGui::SeparatorText("Camera");

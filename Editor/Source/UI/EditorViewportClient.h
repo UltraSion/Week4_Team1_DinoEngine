@@ -78,6 +78,7 @@ private:
 	void CreateGridResource(FRenderer* Renderer);
 	void CreateViewerDebugMaterials(FRenderer* Renderer);
 	void ApplyViewerNoCull(FMaterial* Material) const;
+	void ShowViewOptionPanel();
 
 	FEditorUI& EditorUI;
 	FWindow* MainWindow = nullptr;
