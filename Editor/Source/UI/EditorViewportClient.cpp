@@ -90,7 +90,7 @@ void FEditorViewportClient::Attach(FCore* Core)
 	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
 	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서만 쓰이는 uv, normal 머테리얼입니다.
 	CreateViewerDebugMaterials(GRenderer);
 #endif
 }
@@ -199,6 +199,11 @@ void FEditorViewportClient::CreateGridResource(FRenderer* Renderer)
 	}
 }
 
+/**
+ * 뷰어에서 사용할 UV, Normal 디버그 머테리얼을 생성하는 함수입니다..
+ * 
+ * \param Renderer
+ */
 void FEditorViewportClient::CreateViewerDebugMaterials(FRenderer* Renderer)
 {
 	ID3D11Device* Device = Renderer ? Renderer->GetDevice() : nullptr;

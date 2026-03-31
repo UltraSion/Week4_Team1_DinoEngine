@@ -637,7 +637,7 @@ void FEditorUI::Render()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 level 개념이 없고 오브젝트를 새로 load할 수만 있습니다
 			if (ImGui::MenuItem("New Obj"))
 			{
 				if (FEditorEngine* EditorEngine = static_cast<FEditorEngine*>(GEngine))
@@ -734,7 +734,7 @@ void FEditorUI::Render()
 #if IS_OBJ_VIEWER
 				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0UV\0Normals\0";
 #else
-				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0";
+				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0";
 #endif
 				if (ImGui::Combo("Render Mode", &RenderMode, RenderModes))
 				{
