@@ -5,7 +5,7 @@
 IMPLEMENT_RTTI(UStaticMesh, UObject)
 UStaticMesh::~UStaticMesh()
 {
-	if (StaticMeshAsset)
+	if (bOwnsStaticMeshAsset && StaticMeshAsset)
 	{
 		delete StaticMeshAsset;
 		StaticMeshAsset = nullptr;

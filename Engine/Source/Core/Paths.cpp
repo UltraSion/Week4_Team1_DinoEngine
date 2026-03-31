@@ -1,4 +1,5 @@
 #include "Paths.h"
+#include <cctype>
 #include <filesystem>
 #include <Windows.h>
 
@@ -59,9 +60,9 @@ std::wstring FPaths::ToWide(const FString& Path)
 //fs::path.string()을 쓰지 않고 u8string()을 거쳐 안전하게 UTF-8로 추출 및 조작
 std::string FPaths::ToRelativePath(const FString& Path)
 {
-	FString Root = ToString(ProjectRoot().wstring());
-	FString RelativePath = Path;
-	std::replace(RelativePath.begin(), RelativePath.end(), '\\', '/');
+	FString Root = NormalizePathSeparators(ToString(ProjectRoot().wstring()));
+	FString RelativePath = NormalizePathSeparators(Path);
+
 	if (RelativePath.starts_with(Root))
 	{
 		RelativePath = RelativePath.substr(Root.length());
@@ -79,13 +80,10 @@ std::string FPaths::ToAbsolutePath(const FString& Path)
 {
 	FString Root = ToString(ProjectRoot().wstring());
 
-	FString SafePath = Path;
-	std::replace(SafePath.begin(), SafePath.end(), '\\', '/');  
-
 	// 이미 절대 경로라면 그대로 반환
-	if (SafePath.starts_with(Root))
+	if (NormalizedPath.starts_with(Root))
 	{
-		return SafePath;
+		return NormalizedPath;
 	}
 
 	FString AbsolutePath = Root;
@@ -94,6 +92,8 @@ std::string FPaths::ToAbsolutePath(const FString& Path)
 		AbsolutePath += "/";
 	}
 
+	// Path 시작에 슬래시가 있으면 제거하여 중복 방지
+	FString SafePath = NormalizedPath;
 	if (!SafePath.empty() && (SafePath.front() == '/' || SafePath.front() == '\\'))
 	{
 		SafePath = SafePath.substr(1);

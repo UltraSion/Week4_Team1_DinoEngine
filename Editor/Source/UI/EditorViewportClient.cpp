@@ -190,39 +190,39 @@ void FEditorViewportClient::CreateViewerDebugMaterials(FRenderer* Renderer)
 	auto NormalPixelShader = FShaderMap::Get().GetOrCreatePixelShader(Device, (ShaderDir + L"ObjViewerNormalPixelShader.hlsl").c_str());
 
 	auto CreateDebugMaterial = [&](const char* MaterialName, const std::shared_ptr<FPixelShader>& PixelShader)
-	{
-		if (!VertexShader || !PixelShader)
 		{
-			return std::shared_ptr<FMaterial>();
-		}
+			if (!VertexShader || !PixelShader)
+			{
+				return std::shared_ptr<FMaterial>();
+			}
 
-		auto Material = std::make_shared<FMaterial>();
-		Material->SetOriginName(MaterialName);
-		Material->SetVertexShader(VertexShader);
-		Material->SetPixelShader(PixelShader);
+			auto Material = std::make_shared<FMaterial>();
+			Material->SetOriginName(MaterialName);
+			Material->SetVertexShader(VertexShader);
+			Material->SetPixelShader(PixelShader);
 
-		FRasterizerStateOption RasterizerOption;
-		RasterizerOption.FillMode = D3D11_FILL_SOLID;
-		RasterizerOption.CullMode = D3D11_CULL_NONE;
-		Material->SetRasterizerOption(RasterizerOption);
-		Material->SetRasterizerState(RenderStateManager->GetOrCreateRasterizerState(RasterizerOption));
+			FRasterizerStateOption RasterizerOption;
+			RasterizerOption.FillMode = D3D11_FILL_SOLID;
+			RasterizerOption.CullMode = D3D11_CULL_NONE;
+			Material->SetRasterizerOption(RasterizerOption);
+			Material->SetRasterizerState(RenderStateManager->GetOrCreateRasterizerState(RasterizerOption));
 
-		FDepthStencilStateOption DepthStencilOption;
-		DepthStencilOption.DepthEnable = true;
-		DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-		Material->SetDepthStencilOption(DepthStencilOption);
-		Material->SetDepthStencilState(RenderStateManager->GetOrCreateDepthStencilState(DepthStencilOption));
+			FDepthStencilStateOption DepthStencilOption;
+			DepthStencilOption.DepthEnable = true;
+			DepthStencilOption.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+			Material->SetDepthStencilOption(DepthStencilOption);
+			Material->SetDepthStencilState(RenderStateManager->GetOrCreateDepthStencilState(DepthStencilOption));
 
-		const int32 SlotIndex = Material->CreateConstantBuffer(Device, 16);
-		if (SlotIndex >= 0)
-		{
-			Material->RegisterParameter("ColorTint", SlotIndex, 0, 16);
-			const FVector4 White(1.0f, 1.0f, 1.0f, 1.0f);
-			Material->SetParameterData("ColorTint", &White, 16);
-		}
+			const int32 SlotIndex = Material->CreateConstantBuffer(Device, 16);
+			if (SlotIndex >= 0)
+			{
+				Material->RegisterParameter("ColorTint", SlotIndex, 0, 16);
+				const FVector4 White(1.0f, 1.0f, 1.0f, 1.0f);
+				Material->SetParameterData("ColorTint", &White, 16);
+			}
 
-		return Material;
-	};
+			return Material;
+		};
 
 	ViewerUVMaterial = CreateDebugMaterial("M_ObjViewer_UV", UVPixelShader);
 	ViewerNormalMaterial = CreateDebugMaterial("M_ObjViewer_Normal", NormalPixelShader);
@@ -256,13 +256,13 @@ void FEditorViewportClient::ShowViewOptionPanel()
 
 	FShowFlags& ShowFlags = GetShowFlags();
 	auto ShowFlagCheckbox = [&ShowFlags](const char* Label, EEngineShowFlags Flag)
-	{
-		bool bValue = ShowFlags.HasFlag(Flag);
-		if (ImGui::Checkbox(Label, &bValue))
 		{
-			ShowFlags.SetFlag(Flag, bValue);
-		}
-	};
+			bool bValue = ShowFlags.HasFlag(Flag);
+			if (ImGui::Checkbox(Label, &bValue))
+			{
+				ShowFlags.SetFlag(Flag, bValue);
+			}
+		};
 
 	ImGui::SeparatorText(GetViewportLabel());
 
@@ -440,9 +440,9 @@ void FEditorViewportClient::ResetCameraToInitialState()
 
 /**
  * 대상의 월드 기준 최하단 Z 값을 반환.
- * 
+ *
  * \param TargetActor
- * \return 
+ * \return
  */
 float FEditorViewportClient::GetObjViewerBottomZ(AActor* TargetActor) const
 {
@@ -995,15 +995,34 @@ FVector FEditorViewportClient::GetViewportUpVector() const
 
 FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 {
+	FVector Translation = FVector::ZeroVector;
+	FMatrix Rotation;
+	FVector Scale = FVector::OneVector;
+	int32 Interval = 10;
+	float distance = CameraTransform.GetPosition().X;
+
+	FVector CameraLocation = CameraTransform.GetPosition();
 	switch (ViewportType)
 	{
 	case EEditorViewportType::Front:
-		return FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));
+		Rotation = FMatrix::MakeRotationY(FMath::DegreesToRadians(90.0f));
+		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
+		break;
+
 	case EEditorViewportType::Right:
-		return FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
+		Rotation = FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
+		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
+		break;
 	case EEditorViewportType::Top:
 	case EEditorViewportType::Perspective:
 	default:
-		return FMatrix::Identity;
+		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
+		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Rotation = FMatrix::Identity;
+		break;
 	}
+
+	return FMatrix::MakeWorld(Translation, Rotation, Scale);
 }
