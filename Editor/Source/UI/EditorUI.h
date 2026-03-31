@@ -60,6 +60,7 @@ private:
 	bool bWindowSetup = false;
 	bool bViewportClientActive = false;
 	bool bLayoutInitialized = false;
+	bool bConsumeConsoleShortcutChar = false;
 	FRect CachedCentralDockSpaceRect;
 	FRenderer* CurrentRenderer = nullptr;
 	FEditorViewportClient* ActiveViewportClient = nullptr;

@@ -503,6 +503,22 @@ void FEditorUI::SetupWindow(FWindow* InWindow)
 			return false;
 		}
 
+		if ((Msg == WM_KEYDOWN || Msg == WM_SYSKEYDOWN) && WParam == VK_OEM_3)
+		{
+		Console.RequestInputFocus(false);
+		bConsumeConsoleShortcutChar = true;
+		return true;
+		}
+
+		if (bConsumeConsoleShortcutChar)
+		{
+			bConsumeConsoleShortcutChar = false;
+			if ((Msg == WM_CHAR || Msg == WM_SYSCHAR) && (WParam == '`' || WParam == '~'))
+			{
+				return true;
+			}
+		}
+
 		//ImGui에게 먼저 메시지를 던져보고, ImGui가 소유하면 넘겨줍니다.
 		const bool bHandledByImGui = ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam) != 0;
 
