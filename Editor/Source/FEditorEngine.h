@@ -31,9 +31,11 @@ protected:
 	FViewportClient* CreateViewportClient() override;
 
 private:
+	bool TryRunPendingObjViewerStartupPrompt();
 	void RunObjViewerStartupTest();
 
 	FEditorUI EditorUI;
 	FWindowManager WindowManager;
+	bool bPendingObjViewerStartupPrompt = false;
 
 };

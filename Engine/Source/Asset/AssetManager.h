@@ -18,6 +18,7 @@ public:
 	// 에셋 이름("sword.obj" 등)을 받아서, 메모리에 로드된 메쉬를 반환 (없으면 로드함)
 	UStaticMesh* LoadStaticMesh(ID3D11Device* Device, const FString& AssetName);
 	ID3D11ShaderResourceView* LoadTexture(ID3D11Device* Device, const FString& FilePath);
+	void InvalidateStaticMesh(const FString& AssetName);
 private:
 	FAssetManager() = default;
 	~FAssetManager() = default;

@@ -80,6 +80,7 @@ UStaticMesh* FAssetManager::LoadBasicShape(const FString& ShapeName)
 }
 UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& AssetName)
 {
+	bool bRenderDataOwnedByStaticMesh = true;
 
 	if (AssetName.starts_with("Engine/BasicShapes/"))
 	{
@@ -114,6 +115,7 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 	{
 		// 쿡 필요 또는 로드 실패 → 기존 파이프라인 (파싱 + 쿡)
 		RenderData = FObjManager::LoadObjStaticMeshAsset(AssetData.AssetPath);
+		bRenderDataOwnedByStaticMesh = false;
 
 		if (!RenderData)
 		{
@@ -126,7 +128,7 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 	RenderData->SetAssetPath(AssetData.AssetPath);
 	//오브젝트 생성 및 GC 보호 플래그 설정
 	UStaticMesh* NewMesh = FObjectFactory::ConstructObject<UStaticMesh>(nullptr, AssetData.AssetName);
-	NewMesh->SetStaticMeshAsset(RenderData);
+	NewMesh->SetStaticMeshAsset(RenderData, bRenderDataOwnedByStaticMesh);
 	NewMesh->AddFlags(EObjectFlags::Standalone); // 에셋은 GC가 마음대로 죽이지 못하게 보호
 
 	// 5. 캐시에 저장 후 반환
@@ -206,4 +208,30 @@ ID3D11ShaderResourceView* FAssetManager::LoadTexture(ID3D11Device* Device, const
 	// 캐시에서 꺼내주는 것과 동일하게 참조 카운트를 증가시켜서 반환
 	srv->AddRef();
 	return srv;
+}
+
+void FAssetManager::InvalidateStaticMesh(const FString& AssetName)
+{
+	FString CacheKey = AssetName;
+
+	if (!AssetName.starts_with("Engine/BasicShapes/"))
+	{
+		FAssetData AssetData;
+		if (FAssetRegistry::Get().GetAssetByObjectPath(AssetName, AssetData))
+		{
+			CacheKey = AssetData.AssetPath;
+		}
+	}
+
+	auto It = LoadedMeshes.find(CacheKey);
+	if (It != LoadedMeshes.end())
+	{
+		if (It->second)
+		{
+			It->second->SetStaticMeshAsset(nullptr, false);
+		}
+
+		LoadedMeshes.erase(It);
+		UE_LOG("[AssetManager] Invalidated static mesh cache: %s\n", CacheKey.c_str());
+	}
 }
