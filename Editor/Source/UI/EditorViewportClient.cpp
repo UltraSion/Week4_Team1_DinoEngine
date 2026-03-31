@@ -753,7 +753,7 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (!Core || !GRenderer || !FilePath.ends_with(".obj"))
+	if (!Core || !GRenderer || (!FilePath.ends_with(".obj") && !FilePath.ends_with(".dasset")))
 	{
 		return;
 	}

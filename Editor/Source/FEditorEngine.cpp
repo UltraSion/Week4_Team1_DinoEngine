@@ -63,10 +63,10 @@ namespace
 
 		OPENFILENAMEA Ofn = {};
 		Ofn.lStructSize = sizeof(OPENFILENAMEA);
-		Ofn.lpstrFilter = "OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
+		Ofn.lpstrFilter = "DinoAsset Files (*.dasset)\0*.dasset\0OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
 		Ofn.lpstrFile = FileName;
 		Ofn.nMaxFile = MAX_PATH;
-		Ofn.lpstrDefExt = "obj";
+		Ofn.lpstrDefExt = "dasset";
 		Ofn.lpstrInitialDir = MeshDir.c_str();
 		Ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
@@ -288,7 +288,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 
 	const std::filesystem::path AssetPath = FPaths::ToAbsolutePath(SelectedPath);
 	const std::filesystem::path Extension = AssetPath.extension();
-	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ"))
+	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ" && Extension != ".dasset"))
 	{
 		UE_LOG("[ObjViewerTest] Invalid startup mesh selection: %s", SelectedPath.c_str());
 		return;

@@ -304,7 +304,7 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 	}
 
 	//  사용자가 드래그 앤 드롭 했을 때만 AssetManager를 통해 로드
-	ProcessDragDrop({ ".obj" }, [&](const std::string& AbsPath, const std::string& RelPath) {
+	ProcessDragDrop({ ".dasset" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 		if (GRenderer)
 		{
 			UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), RelPath);
