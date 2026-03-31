@@ -102,9 +102,6 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 		FRect(0.0f, 0.0f, Width, Height),
 		CreateEditorViewportContext(FRect(0.0f, 0.0f, Width, Height), EEditorViewportType::Perspective)));
 
-#if IS_OBJ_VIEWER //뷰어를 시작할 때 기본적으로 obj파일을 로딩합니다
-	RunObjViewerStartupTest();
-#endif
 	return true;
 }
 
@@ -164,6 +161,10 @@ void FEditorEngine::PostInitialize()
 	EditorUI.Initialize(Core.get(), &WindowManager);
 	EditorUI.SetupWindow(MainWindow);
 	EditorUI.AttachToRenderer();
+
+#if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
+	RunObjViewerStartupTest();
+#endif
 
 	UE_LOG("EditorEngine initialized");
 }

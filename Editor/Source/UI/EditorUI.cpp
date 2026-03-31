@@ -14,6 +14,7 @@
 #include "Debug/EngineLog.h"
 #include "FEditorEngine.h"
 #include "Object/Object.h"
+#include "Object/StaticMesh.h"
 #include "Platform/Windows/Window.h"
 #include "Primitive/PrimitiveObj.h"
 #include "Renderer/Renderer.h"
@@ -209,9 +210,9 @@ namespace
 
 		for (AActor* Actor : Level->GetActors())
 		{
-			if (AStaticMeshActor* FoundActor = dynamic_cast<AStaticMeshActor*>(Actor))
+			if (Actor && Actor->IsA(AStaticMeshActor::StaticClass()))
 			{
-				return FoundActor;
+				return static_cast<AStaticMeshActor*>(Actor);
 			}
 		}
 
@@ -274,7 +275,13 @@ namespace
 			return false;
 		}
 
-		AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Core->GetLevel());
+		ULevel* Level = ViewportClient->ResolveLevel(Core);
+		if (!Level)
+		{
+			return false;
+		}
+
+		AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
 		if (!MeshActor)
 		{
 			return false;
@@ -1005,211 +1012,223 @@ void FEditorUI::Render()
 	}
 
 #if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
-	if (Core)
+	if (!Core)
 	{
-		ULevel* Level = Core->GetLevel();
-		if (Level)
+		return;
+	}
+	ULevel* Level = ActiveViewportClient ? ActiveViewportClient->ResolveLevel(Core) : Core->GetLevel();
+	if (!Level)
+	{
+		return;
+	}
+	AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
+	if (!MeshActor)
+	{
+		return;
+	}
+	UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	UStaticMesh* StaticMesh = MeshComp->GetStaticMesh();
+	if (!StaticMesh)
+	{
+		return;
+	}
+
+	FStaticMeshRenderData* MeshData = StaticMesh->GetStaticMeshAsset();
+	if (!MeshData)
+	{
+		return;
+	}
+	FMeshData* CPUData = MeshData->GetMeshData();
+	if (!CPUData)
+	{
+		return;
+	}
+	ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(350, 500), ImGuiCond_FirstUseEver);
+
+	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+	if (ImGui::Begin("OBJ Information", nullptr, WindowFlags))
+	{
+		// 텍스트 색상 정의
+		ImVec4 HeaderColor = ImVec4(0.4f, 0.7f, 1.0f, 1.0f);
+		ImVec4 LabelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+		ImVec4 ValueColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		static FString DraftAxisAssetPath;
+		static FObjImporter::FImportAxisMapping DraftImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
+		static FObjImporter::FImportAxisMapping LastAppliedImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
+		const FObjImporter::FImportAxisMapping AppliedImportAxisMapping = FObjImporter::GetImportAxisMapping();
+		const FString MeshAssetPath = MeshData->GetAssetPath();
+
+		const bool bAppliedAxisMappingChanged =
+			LastAppliedImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
+			LastAppliedImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
+			LastAppliedImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
+		if (DraftAxisAssetPath != MeshAssetPath || bAppliedAxisMappingChanged)
 		{
-			AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
+			DraftAxisAssetPath = MeshAssetPath;
+			DraftImportAxisMapping = AppliedImportAxisMapping;
+			LastAppliedImportAxisMapping = AppliedImportAxisMapping;
+		}
 
-			if (MeshActor)
+		// 애셋 정보 섹션
+		if (ImGui::CollapsingHeader("Asset Information", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Indent();
+			ImGui::TextColored(LabelColor, "Path:");
+			ImGui::SameLine();
+			ImGui::TextWrapped("%s", MeshData->GetAssetPath().c_str());
+			ImGui::Unindent();
+		}
+
+		// 메시 통계 섹션
+		if (ImGui::CollapsingHeader("Mesh Statistics", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Indent();
+			auto StatRow = [&](const char* Label, int Value) {
+				ImGui::TextColored(LabelColor, "%s:", Label);
+				ImGui::SameLine(120);
+				ImGui::TextColored(ValueColor, "%d", Value);
+				};
+
+			StatRow("Vertices", (int)CPUData->Vertices.size());
+			StatRow("Indices", (int)CPUData->Indices.size());
+			StatRow("Triangles", (int)CPUData->Indices.size() / 3);
+			StatRow("Sections", (int)CPUData->Sections.size());
+			ImGui::Unindent();
+		}
+
+		// 바운딩 박스 섹션
+		if (ImGui::CollapsingHeader("Bounding Box", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Indent();
+			FVector Min = CPUData->GetMinCoord();
+			FVector Max = CPUData->GetMaxCoord();
+			FVector Center = CPUData->GetCenterCoord();
+
+			auto VectorRow = [&](const char* Label, const FVector& V) {
+				ImGui::TextColored(LabelColor, "%s:", Label);
+				ImGui::SameLine(80);
+				ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", V.X, V.Y, V.Z);
+				};
+
+			VectorRow("Min", Min);
+			VectorRow("Max", Max);
+			VectorRow("Center", Center);
+
+			ImGui::TextColored(LabelColor, "Size:");
+			ImGui::SameLine(80);
+			ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
+
+			ImGui::TextColored(LabelColor, "Radius:");
+			ImGui::SameLine(80);
+			ImGui::TextColored(ValueColor, "%.2f", CPUData->GetLocalBoundRadius());
+			ImGui::Unindent();
+		}
+
+		if (ImGui::CollapsingHeader("OBJ Axis Mapping", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Indent();
+			ImGui::TextColored(HeaderColor, "Applied");
+			ImGui::TextWrapped("%s", BuildImportAxisSummary(AppliedImportAxisMapping).c_str());
+			ImGui::SeparatorText("Draft");
+			const char* RowLabels[] = { "Engine X", "Engine Y", "Engine Z" };
+			const char* AxisBaseLabels[] = { "X", "Y", "Z" };
+			for (int RowIndex = 0; RowIndex < 3; ++RowIndex)
 			{
-				UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
-				if (MeshComp)
+				FObjImporter::EAxisDirection RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
+				ImGui::PushID(RowIndex);
+				ImGui::TextColored(LabelColor, "%s:", RowLabels[RowIndex]);
+				for (int AxisBaseIndex = 0; AxisBaseIndex < 3; ++AxisBaseIndex)
 				{
-					FStaticMeshRenderData* MeshData = MeshComp->GetStaticMesh();
-					if (MeshData)
+					ImGui::SameLine(AxisBaseIndex == 0 ? 100.0f : 0.0f);
+					if (AxisBaseIndex > 0)
 					{
-						FMeshData* CPUData = MeshData->GetMeshData();
-						if (CPUData)
-						{
-							ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
-							ImGui::SetNextWindowSize(ImVec2(350, 500), ImGuiCond_FirstUseEver);
-							
-							ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
-							if (ImGui::Begin("OBJ Information", nullptr, WindowFlags))
-							{
-								// 텍스트 색상 정의
-								ImVec4 HeaderColor = ImVec4(0.4f, 0.7f, 1.0f, 1.0f);
-								ImVec4 LabelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-								ImVec4 ValueColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-								static FString DraftAxisAssetPath;
-								static FObjImporter::FImportAxisMapping DraftImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
-								static FObjImporter::FImportAxisMapping LastAppliedImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
-								const FObjImporter::FImportAxisMapping AppliedImportAxisMapping = FObjImporter::GetImportAxisMapping();
-								const FString MeshAssetPath = MeshData->GetAssetPath();
+						ImGui::SameLine();
+					}
 
-								const bool bAppliedAxisMappingChanged =
-									LastAppliedImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
-									LastAppliedImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-									LastAppliedImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
-								if (DraftAxisAssetPath != MeshAssetPath || bAppliedAxisMappingChanged)
-								{
-									DraftAxisAssetPath = MeshAssetPath;
-									DraftImportAxisMapping = AppliedImportAxisMapping;
-									LastAppliedImportAxisMapping = AppliedImportAxisMapping;
-								}
-
-								// 애셋 정보 섹션
-								if (ImGui::CollapsingHeader("Asset Information", ImGuiTreeNodeFlags_DefaultOpen))
-								{
-									ImGui::Indent();
-									ImGui::TextColored(LabelColor, "Path:");
-									ImGui::SameLine();
-									ImGui::TextWrapped("%s", MeshData->GetAssetPath().c_str());
-									ImGui::Unindent();
-								}
-
-								// 메시 통계 섹션
-								if (ImGui::CollapsingHeader("Mesh Statistics", ImGuiTreeNodeFlags_DefaultOpen))
-								{
-									ImGui::Indent();
-									auto StatRow = [&](const char* Label, int Value) {
-										ImGui::TextColored(LabelColor, "%s:", Label);
-										ImGui::SameLine(120);
-										ImGui::TextColored(ValueColor, "%d", Value);
-									};
-
-									StatRow("Vertices", (int)CPUData->Vertices.size());
-									StatRow("Indices", (int)CPUData->Indices.size());
-									StatRow("Triangles", (int)CPUData->Indices.size() / 3);
-									StatRow("Sections", (int)CPUData->Sections.size());
-									ImGui::Unindent();
-								}
-
-								// 바운딩 박스 섹션
-								if (ImGui::CollapsingHeader("Bounding Box", ImGuiTreeNodeFlags_DefaultOpen))
-								{
-									ImGui::Indent();
-									FVector Min = CPUData->GetMinCoord();
-									FVector Max = CPUData->GetMaxCoord();
-									FVector Center = CPUData->GetCenterCoord();
-									
-									auto VectorRow = [&](const char* Label, const FVector& V) {
-										ImGui::TextColored(LabelColor, "%s:", Label);
-										ImGui::SameLine(80);
-										ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", V.X, V.Y, V.Z);
-									};
-
-									VectorRow("Min", Min);
-									VectorRow("Max", Max);
-									VectorRow("Center", Center);
-									
-									ImGui::TextColored(LabelColor, "Size:");
-									ImGui::SameLine(80);
-									ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
-									
-									ImGui::TextColored(LabelColor, "Radius:");
-									ImGui::SameLine(80);
-									ImGui::TextColored(ValueColor, "%.2f", CPUData->GetLocalBoundRadius());
-									ImGui::Unindent();
-								}
-
-								if (ImGui::CollapsingHeader("OBJ Axis Mapping", ImGuiTreeNodeFlags_DefaultOpen))
-								{
-									ImGui::Indent();
-									ImGui::TextColored(HeaderColor, "Applied");
-									ImGui::TextWrapped("%s", BuildImportAxisSummary(AppliedImportAxisMapping).c_str());
-									ImGui::SeparatorText("Draft");
-									const char* RowLabels[] = { "Engine X", "Engine Y", "Engine Z" };
-									const char* AxisBaseLabels[] = { "X", "Y", "Z" };
-									for (int RowIndex = 0; RowIndex < 3; ++RowIndex)
-									{
-										FObjImporter::EAxisDirection RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
-										ImGui::PushID(RowIndex);
-										ImGui::TextColored(LabelColor, "%s:", RowLabels[RowIndex]);
-										for (int AxisBaseIndex = 0; AxisBaseIndex < 3; ++AxisBaseIndex)
-										{
-											ImGui::SameLine(AxisBaseIndex == 0 ? 100.0f : 0.0f);
-											if (AxisBaseIndex > 0)
-											{
-												ImGui::SameLine();
-											}
-
-											const bool bSelectedBase = GetAxisBaseIndex(RowDirection) == AxisBaseIndex;
-											if (bSelectedBase)
-											{
-												ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.45f, 0.85f, 1.0f));
-												ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.55f, 0.95f, 1.0f));
-												ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.40f, 0.80f, 1.0f));
-											}
-											if (ImGui::Button(AxisBaseLabels[AxisBaseIndex], ImVec2(28.0f, 0.0f)))
-											{
-												SetMappingAxisBase(DraftImportAxisMapping, RowIndex, AxisBaseIndex);
-												RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
-											}
-											if (bSelectedBase)
-											{
-												ImGui::PopStyleColor(3);
-											}
-										}
-
-										ImGui::SameLine();
-										const bool bNegative = IsAxisNegative(RowDirection);
-										if (bNegative)
-										{
-											ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.3f, 0.3f, 1.0f));
-											ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.4f, 0.4f, 1.0f));
-											ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.65f, 0.25f, 0.25f, 1.0f));
-										}
-										else
-										{
-											ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.65f, 0.35f, 1.0f));
-											ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.75f, 0.45f, 1.0f));
-											ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
-										}
-										if (ImGui::Button(bNegative ? "-" : "+", ImVec2(28.0f, 0.0f)))
-										{
-											ToggleMappingAxisSign(DraftImportAxisMapping, RowIndex);
-										}
-										ImGui::PopStyleColor(3);
-										ImGui::SameLine();
-										ImGui::TextColored(ValueColor, "%s", GetAxisDirectionLabel(GetMappingAxisDirection(DraftImportAxisMapping, RowIndex)));
-										ImGui::PopID();
-									}
-
-									const bool bHasPendingAxisChanges =
-										DraftImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
-										DraftImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-										DraftImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
-
-									if (bHasPendingAxisChanges)
-									{
-										ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Pending changes. Click Apply to reload.");
-									}
-									else
-									{
-										ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "Axis mapping is up to date.");
-									}
-
-									if (!bHasPendingAxisChanges)
-									{
-										ImGui::BeginDisabled();
-									}
-									if (ImGui::Button("Apply"))
-									{
-										if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
-										{
-											DraftAxisAssetPath = MeshAssetPath;
-											DraftImportAxisMapping = FObjImporter::GetImportAxisMapping();
-											LastAppliedImportAxisMapping = DraftImportAxisMapping;
-										}
-									}
-									if (!bHasPendingAxisChanges)
-									{
-										ImGui::EndDisabled();
-									}
-
-									ImGui::Unindent();
-								}
-
-							}
-							ImGui::End();
-						}
+					const bool bSelectedBase = GetAxisBaseIndex(RowDirection) == AxisBaseIndex;
+					if (bSelectedBase)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.45f, 0.85f, 1.0f));
+						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.55f, 0.95f, 1.0f));
+						ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.40f, 0.80f, 1.0f));
+					}
+					if (ImGui::Button(AxisBaseLabels[AxisBaseIndex], ImVec2(28.0f, 0.0f)))
+					{
+						SetMappingAxisBase(DraftImportAxisMapping, RowIndex, AxisBaseIndex);
+						RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
+					}
+					if (bSelectedBase)
+					{
+						ImGui::PopStyleColor(3);
 					}
 				}
+
+				ImGui::SameLine();
+				const bool bNegative = IsAxisNegative(RowDirection);
+				if (bNegative)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.3f, 0.3f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.4f, 0.4f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.65f, 0.25f, 0.25f, 1.0f));
+				}
+				else
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.65f, 0.35f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.75f, 0.45f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
+				}
+				if (ImGui::Button(bNegative ? "-" : "+", ImVec2(28.0f, 0.0f)))
+				{
+					ToggleMappingAxisSign(DraftImportAxisMapping, RowIndex);
+				}
+				ImGui::PopStyleColor(3);
+				ImGui::SameLine();
+				ImGui::TextColored(ValueColor, "%s", GetAxisDirectionLabel(GetMappingAxisDirection(DraftImportAxisMapping, RowIndex)));
+				ImGui::PopID();
 			}
+
+			const bool bHasPendingAxisChanges =
+				DraftImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
+				DraftImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
+				DraftImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ;
+
+			if (bHasPendingAxisChanges)
+			{
+				ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Pending changes. Click Apply to reload.");
+			}
+			else
+			{
+				ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "Axis mapping is up to date.");
+			}
+
+			if (!bHasPendingAxisChanges)
+			{
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Apply"))
+			{
+				if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
+				{
+					DraftAxisAssetPath = MeshAssetPath;
+					DraftImportAxisMapping = FObjImporter::GetImportAxisMapping();
+					LastAppliedImportAxisMapping = DraftImportAxisMapping;
+				}
+			}
+			if (!bHasPendingAxisChanges)
+			{
+				ImGui::EndDisabled();
+			}
+
+			ImGui::Unindent();
 		}
+
+		ImGui::End();
 	}
 #else
 	Property.Render(Core);
