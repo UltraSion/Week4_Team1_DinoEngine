@@ -55,11 +55,6 @@ int32 UObject::GetTotalBytes()
 	return static_cast<int32>(UObject::TotalAllocationBytes);
 }
 
-int32 UObject::GetTotalCounts()
-{
-	return static_cast<int32>(UObject::TotalAllocationCounts);
-}
-
 // ─────────────────────────────────────────────────────────────
 //  조건 4: RTTI
 // ─────────────────────────────────────────────────────────────
