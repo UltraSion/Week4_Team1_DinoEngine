@@ -6,12 +6,13 @@
 #include "Renderer/Material.h"
 #include "Renderer/MaterialManager.h"
 #include "Object/Class.h"
-#include "ThirdParty/stb_image.h"
-#include "Renderer/Material.h"
-#include "Mesh/ObjManager.h"
-#include <filesystem>
 #include <d3d11.h>
 
+namespace
+{
+	constexpr const char* UVScrollEnabledParam = "UVScrollEnabled";
+	constexpr const char* UVScrollSpeedParam = "UVScrollSpeed";
+}
 
 IMPLEMENT_RTTI(UStaticMeshComponent, UMeshComponent)
 void UStaticMeshComponent::Initialize()
@@ -39,6 +40,7 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* 
 {
 	OverrideMaterials.clear();
 	DynamicMaterialOwners.clear();
+	UVScrollStates.clear();
 
 	StaticMesh = InMesh;
 
@@ -84,6 +86,12 @@ void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* 
 			{
 				// 원본을 건드리지 않기 위해 다이내믹 인스턴스로 복제
 				std::shared_ptr<FDynamicMaterial> DynamicMat = BaseMat->CreateDynamicMaterial();
+				if (!DynamicMat)
+				{
+					continue;
+				}
+
+				InitializeUVScrollParameters(i, DynamicMat);
 
 				// 배열에서 색상(Kd) 꺼내오기
 				FVector MatColor(0.5f, 0.5f, 0.5f);
@@ -131,6 +139,12 @@ void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString
 		if (!BaseMat) return;
 
 		DynamicMat = BaseMat->CreateDynamicMaterial();
+		if (!DynamicMat)
+		{
+			return;
+		}
+
+		InitializeUVScrollParameters(SlotIndex, DynamicMat);
 		DynamicMaterialOwners[SlotIndex] = DynamicMat;
 	}
 
@@ -144,6 +158,111 @@ void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString
 
 	DynamicMat->SetMaterialTexture(MT);
 	SetMaterial(SlotIndex, DynamicMat.get());
+}
+
+std::shared_ptr<FDynamicMaterial> UStaticMeshComponent::GetOrCreateDynamicMaterialForSlot(uint32 SlotIndex)
+{
+	if (SlotIndex >= GetNumMaterials())
+	{
+		return nullptr;
+	}
+
+	auto ExistingIt = DynamicMaterialOwners.find(SlotIndex);
+	if (ExistingIt != DynamicMaterialOwners.end())
+	{
+		return ExistingIt->second;
+	}
+
+	std::shared_ptr<FMaterial> BaseMat = FMaterialManager::Get().FindByName("M_StaticMesh");
+	if (!BaseMat)
+	{
+		return nullptr;
+	}
+
+	std::shared_ptr<FDynamicMaterial> DynamicMat = BaseMat->CreateDynamicMaterial();
+	if (!DynamicMat)
+	{
+		return nullptr;
+	}
+
+	InitializeUVScrollParameters(SlotIndex, DynamicMat);
+	FMaterial* CurrentMaterial = GetMaterial(SlotIndex);
+	if (CurrentMaterial && CurrentMaterial->GetMaterialTexture())
+	{
+		DynamicMat->SetMaterialTexture(CurrentMaterial->GetMaterialTexture());
+	}
+	else
+	{
+		DynamicMat->SetMaterialTexture(GDefaultWhiteTexture);
+	}
+
+	DynamicMaterialOwners[SlotIndex] = DynamicMat;
+	SetMaterial(SlotIndex, DynamicMat.get());
+	return DynamicMat;
+}
+
+void UStaticMeshComponent::InitializeUVScrollParameters(uint32 SlotIndex, const std::shared_ptr<FDynamicMaterial>& DynamicMat)
+{
+	if (!DynamicMat)
+	{
+		return;
+	}
+
+	FUVScrollState& State = UVScrollStates[SlotIndex];
+	const float EnabledValue = State.bEnabled ? 1.0f : 0.0f;
+	DynamicMat->SetScalarParameter(UVScrollEnabledParam, EnabledValue);
+	DynamicMat->SetParameterData(UVScrollSpeedParam, &State.Speed, sizeof(FVector2));
+}
+
+bool UStaticMeshComponent::IsUVScrollSupported(uint32 SlotIndex) const
+{
+	if (SlotIndex >= GetNumMaterials())
+	{
+		return false;
+	}
+
+	return FMaterialManager::Get().FindByName("M_StaticMesh") != nullptr;
+}
+
+bool UStaticMeshComponent::IsUVScrollEnabled(uint32 SlotIndex) const
+{
+	auto It = UVScrollStates.find(SlotIndex);
+	if (It != UVScrollStates.end())
+	{
+		return It->second.bEnabled;
+	}
+
+	return false;
+}
+
+void UStaticMeshComponent::SetUVScrollEnabled(uint32 SlotIndex, bool bEnabled)
+{
+	UVScrollStates[SlotIndex].bEnabled = bEnabled;
+	if (std::shared_ptr<FDynamicMaterial> DynamicMat = GetOrCreateDynamicMaterialForSlot(SlotIndex))
+	{
+		const float EnabledValue = bEnabled ? 1.0f : 0.0f;
+		DynamicMat->SetScalarParameter(UVScrollEnabledParam, EnabledValue);
+	}
+}
+
+FVector2 UStaticMeshComponent::GetUVScrollSpeed(uint32 SlotIndex) const
+{
+	auto It = UVScrollStates.find(SlotIndex);
+	if (It != UVScrollStates.end())
+	{
+		return It->second.Speed;
+	}
+
+	return FVector2(0.0f, 0.0f);
+}
+
+void UStaticMeshComponent::SetUVScrollSpeed(uint32 SlotIndex, const FVector2& Speed)
+{
+	UVScrollStates[SlotIndex].Speed = Speed;
+	if (std::shared_ptr<FDynamicMaterial> DynamicMat = GetOrCreateDynamicMaterialForSlot(SlotIndex))
+	{
+		DynamicMat->SetParameterData(UVScrollSpeedParam, &Speed, sizeof(FVector2));
+	}
 }
 
 FMeshData* UStaticMeshComponent::GetMeshData() const

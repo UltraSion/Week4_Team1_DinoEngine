@@ -6,6 +6,8 @@ struct FFrameConstantBuffer
 {
 	FMatrix View;
 	FMatrix Projection;
+	float TotalTime = 0.0f;
+	float FramePadding[3] = {};
 };
 
 // b1: 오브젝트당 업데이트

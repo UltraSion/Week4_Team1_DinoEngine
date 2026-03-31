@@ -53,3 +53,5 @@ private:
 	bool OnInput(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 	void OnResize(int32 Width, int32 Height);
 };
+
+extern ENGINE_API FEngine* GEngine;
