@@ -122,28 +122,34 @@ auto ProcessDragDrop = [](const std::vector<std::string>& TargetExts, auto OnDro
 	{
 		return;
 	}
-
-	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+	//Accept하기 전에 현재 마우스에 매달려 있는 Payload 데이터를 확인
+	if (const ImGuiPayload* Payload = ImGui::GetDragDropPayload())
 	{
-		std::string AbsolutePath = static_cast<const char*>(Payload->Data);
-		std::string LowerPath = AbsolutePath;
-		std::transform(LowerPath.begin(), LowerPath.end(), LowerPath.begin(), ::tolower);
-
-		bool bValid = false;
-		for (const auto& Ext : TargetExts)
+		if (Payload->IsDataType("CONTENT_BROWSER_ITEM"))
 		{
-			if (LowerPath.find(Ext) != std::string::npos)
+			std::string AbsolutePath = static_cast<const char*>(Payload->Data);
+			std::string LowerPath = AbsolutePath;
+			std::transform(LowerPath.begin(), LowerPath.end(), LowerPath.begin(), ::tolower);
+
+			bool bValid = false;
+			for (const auto& Ext : TargetExts)
 			{
-				bValid = true;
-				break;
+				if (LowerPath.find(Ext) != std::string::npos)
+				{
+					bValid = true;
+					break;
+				}
 			}
-		}
 
-		if (bValid)
-		{
-			namespace fs = std::filesystem;
-			std::string RelativePath = fs::relative(fs::path(AbsolutePath), fs::path(FPaths::ProjectRoot())).generic_string();
-			OnDropValid(AbsolutePath, RelativePath);
+			// 원하는 확장자일 때만 진짜로 Accept
+			if (bValid)
+			{
+				if (ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				{
+					std::string RelativePath = FPaths::ToRelativePath(AbsolutePath);
+					OnDropValid(AbsolutePath, RelativePath);
+				}
+			}
 		}
 	}
 
@@ -193,6 +199,9 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 		ImGui::PushID(SlotIdx);
 		if (ImGui::TreeNodeEx(("Material Slot " + std::to_string(SlotIdx)).c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			// ==========================================
+				// 1. Material 파트
+				// ==========================================
 			if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), static_cast<int>(MatItems.size())) && Core && SlotMatIndices[SlotIdx] > 0)
 			{
 				FString MatName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
@@ -201,18 +210,29 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 					SMComp->SetMaterial(SlotIdx, Mat.get());
 				}
 			}
-
+			// Material 콤보박스용 드래그 앤 드롭 추가 (예: .mat 확장자)
+			ProcessDragDrop({ ".mat" }, [&](const std::string& AbsPath, const std::string& RelPath) {
+				// 파일 이름(M_Red 등)만 추출해서 MaterialManager에서 찾음
+				std::string MatName = std::filesystem::path(RelPath).stem().string();
+				if (auto Mat = FMaterialManager::Get().FindByName(MatName.c_str()))
+				{
+					SMComp->SetMaterial(SlotIdx, Mat.get());
+				}
+			});
+			// ==========================================
+				// 2. Texture 파트
+				// ==========================================
 			if (ImGui::Combo("Texture", &SlotTexIndices[SlotIdx], TexItems.data(), static_cast<int>(TexItems.size())) && Core && SlotTexIndices[SlotIdx] > 0 && GRenderer)
 			{
-				// UI에서 선택된 텍스처의 상대 경로를 바탕으로 로딩 시도
 				FString TexPath = TextureAssets[SlotTexIndices[SlotIdx] - 1].AssetPath;
 				SMComp->LoadTextureToSlot(GRenderer->GetDevice(), TexPath, SlotIdx);
 			}
 
+			// 텍스처 콤보박스용 드래그 앤 드롭
 			ProcessDragDrop({ ".png", ".jpg", ".jpeg" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 				if (GRenderer)
 				{
-					SMComp->LoadTextureToSlot(GRenderer->GetDevice(), AbsPath, SlotIdx);
+					SMComp->LoadTextureToSlot(GRenderer->GetDevice(), RelPath, SlotIdx);
 				}
 
 				std::string NormalizedRel = RelPath;
@@ -263,11 +283,10 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 	FString CurrentAsset = SMComp->GetStaticMeshAsset();
 	std::replace(CurrentAsset.begin(), CurrentAsset.end(), '\\', '/');
 
+	namespace fs = std::filesystem;
 	for (int i = 0; i < (int)MeshAssets.size(); ++i) {
 		FString AssetPath = MeshAssets[i].AssetPath;
-		std::replace(AssetPath.begin(), AssetPath.end(), '\\', '/');
-
-		if (AssetPath == CurrentAsset) {
+		if (fs::path(AssetPath).lexically_normal() == fs::path(CurrentAsset).lexically_normal()) {
 			SelectedMeshIndex = i + 1;
 			break;
 		}
