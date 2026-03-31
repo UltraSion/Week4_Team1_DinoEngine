@@ -218,9 +218,58 @@ namespace
 		return nullptr;
 	}
 
-	bool ReloadObjViewerMesh(FCore* Core, const FObjImporter::FImportAxisMapping& ImportAxisMapping)
+	/**
+	 * 액터의 바닥면이 원하는 Z 높이에 오도록 액터를 위아래로 이동.
+	 * 
+	 * \param Actor
+	 * \param ViewportClient
+	 * \param TargetBottomZ
+	 */
+	void SnapObjViewerActorBottomTo(AActor* Actor, FEditorViewportClient* ViewportClient, float TargetBottomZ)
 	{
-		if (!Core || !GRenderer || !FObjImporter::IsValidImportAxisMapping(ImportAxisMapping))
+		if (!Actor || !ViewportClient)
+		{
+			return;
+		}
+
+		USceneComponent* Root = Actor->GetRootComponent();
+		if (!Root)
+		{
+			return;
+		}
+
+		//현재 루트의 상대 트랜스폼 복사
+		FTransform Transform = Root->GetRelativeTransform();
+		FVector ActualLocation = Transform.GetLocation();
+		//현재 위치를 얻은 뒤, 액터의 바닥이 목표 Z에 오도록 Z만 보정
+		ActualLocation.Z += TargetBottomZ - ViewportClient->GetObjViewerBottomZ(Actor);
+		Transform.SetLocation(ActualLocation);
+		Root->SetRelativeTransform(Transform);
+		ViewportClient->RefreshObjViewerCameraPivot(Actor);
+	}
+
+	FVector GetObjViewerDisplayedLocation(AActor* Actor, FEditorViewportClient* ViewportClient)
+	{
+		if (!Actor || !ViewportClient)
+		{
+			return FVector::ZeroVector;
+		}
+
+		if (USceneComponent* Root = Actor->GetRootComponent())
+		{
+			FVector DisplayLocation = Root->GetRelativeTransform().GetLocation();
+#if IS_OBJ_VIEWER
+			DisplayLocation.Z = ViewportClient->GetObjViewerBottomZ(Actor);
+#endif
+			return DisplayLocation;
+		}
+
+		return FVector::ZeroVector;
+	}
+
+	bool ReloadObjViewerMesh(FCore* Core, FEditorViewportClient* ViewportClient, const FObjImporter::FImportAxisMapping& ImportAxisMapping)
+	{
+		if (!Core || !ViewportClient || !GRenderer || !FObjImporter::IsValidImportAxisMapping(ImportAxisMapping))
 		{
 			return false;
 		}
@@ -243,8 +292,13 @@ namespace
 			return false;
 		}
 
+		const float DesiredBottomZ = ViewportClient->GetObjViewerBottomZ(MeshActor);
+		MeshComponent->SetStaticMeshData(nullptr, nullptr);
 		FObjImporter::SetImportAxisMapping(ImportAxisMapping);
+		FObjManager::ClearAssetCache(AssetPath);
 		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath);
+		SnapObjViewerActorBottomTo(MeshActor, ViewportClient, DesiredBottomZ);
+		ViewportClient->FrameObjViewerCamera(MeshActor, true);
 		return true;
 	}
 
@@ -305,10 +359,21 @@ void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 			if (USceneComponent* Root = Selected->GetRootComponent())
 			{
 				FTransform Transform = Root->GetRelativeTransform();
-				Transform.SetLocation(Loc);
 				Transform.SetRotation(FRotator::MakeFromEuler(Rot));
 				Transform.SetScale3D(Scl);
+
+#if IS_OBJ_VIEWER
+				Transform.SetLocation({ Loc.X, Loc.Y, Transform.GetLocation().Z });
 				Root->SetRelativeTransform(Transform);
+
+				if (ActiveViewportClient)
+				{
+					SnapObjViewerActorBottomTo(Selected, ActiveViewportClient, Loc.Z);
+				}
+#else
+				Transform.SetLocation(Loc);
+				Root->SetRelativeTransform(Transform);
+#endif
 			}
 		};
 
@@ -817,7 +882,7 @@ void FEditorUI::Render()
 				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel()); // -> 수정
 
 				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode()); // -> 수정
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 UV, Normal 렌더링 모드를 추가로 제공합니다.
 				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0UV\0Normals\0";
 #else
 				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0";
@@ -826,14 +891,16 @@ void FEditorUI::Render()
 				{
 					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
 				}
+#if !IS_OBJ_VIEWER //Primitives, UUID, Debug Draw에 대한 설정은 뷰어에서 건드리지 못하게 막습니다.
 				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
 				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
 				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+#endif
 				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
 #if !IS_OBJ_VIEWER //뷰어에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
 				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
-#endif
 				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+#endif
 
 				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
@@ -1121,7 +1188,7 @@ void FEditorUI::Render()
 									}
 									if (ImGui::Button("Apply"))
 									{
-										if (ReloadObjViewerMesh(Core, DraftImportAxisMapping))
+										if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
 										{
 											DraftAxisAssetPath = MeshAssetPath;
 											DraftImportAxisMapping = FObjImporter::GetImportAxisMapping();
@@ -1173,8 +1240,15 @@ void FEditorUI::SyncSelectedActorProperty()
 		if (USceneComponent* Root = Selected->GetRootComponent())
 		{
 			const FTransform Transform = Root->GetRelativeTransform();
+			FVector DisplayLocation = Transform.GetLocation();
+#if IS_OBJ_VIEWER
+			if (ActiveViewportClient)
+			{
+				DisplayLocation = GetObjViewerDisplayedLocation(Selected, ActiveViewportClient);
+			}
+#endif
 			Property.SetTarget(
-				Transform.GetLocation(),
+				DisplayLocation,
 				Transform.Rotator().Euler(),
 				Transform.GetScale3D(),
 				Selected->GetName().c_str());

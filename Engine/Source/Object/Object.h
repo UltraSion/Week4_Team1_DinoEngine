@@ -66,10 +66,8 @@ public:
 
 	// 조건 2: new/delete 오버로딩으로 메모리 통계 추적
 	static int32 GetTotalBytes();
-	static int32 GetTotalCounts();
 
 	inline static uint32 TotalAllocationBytes = 0;
-	inline static uint32 TotalAllocationCounts = 0;
 	inline static uint32 LastNewSize = 0; // operator new에서 생성자로 크기 전달용
 
 	// 조건 1: 모든 UObject가 갖는 고유 식별자 (FObjectFactory가 주입)

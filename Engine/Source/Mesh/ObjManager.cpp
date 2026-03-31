@@ -7,13 +7,22 @@
 
 TMap<FString, std::shared_ptr<FStaticMeshRenderData>> FObjManager::ObjStaticMeshMap;
 
+namespace
+{
+	FString BuildObjStaticMeshCacheKey(const FString& PathFileName)
+	{
+		FString CacheKey = PathFileName;
+#if IS_OBJ_VIEWER
+		CacheKey += "|";
+		CacheKey += FObjImporter::BuildImportAxisMappingKey(FObjImporter::GetImportAxisMapping());
+#endif
+		return CacheKey;
+	}
+}
+
 FStaticMeshRenderData* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 {
-	FString CacheKey = PathFileName;
-#if IS_OBJ_VIEWER
-	CacheKey += "|";
-	CacheKey += FObjImporter::BuildImportAxisMappingKey(FObjImporter::GetImportAxisMapping());
-#endif
+	const FString CacheKey = BuildObjStaticMeshCacheKey(PathFileName);
 
 	auto It = ObjStaticMeshMap.find(CacheKey);
 	if (It != ObjStaticMeshMap.end())
@@ -31,6 +40,26 @@ FStaticMeshRenderData* FObjManager::LoadObjStaticMeshAsset(const FString& PathFi
 	return Cooked;
 }
 
+void FObjManager::ClearAssetCache(const FString& PathFileName)
+{
+	for (auto It = ObjStaticMeshMap.begin(); It != ObjStaticMeshMap.end();)
+	{
+		const FString& CacheKey = It->first;
+		const bool bMatchesExactPath = CacheKey == PathFileName;
+		const bool bMatchesViewerVariant =
+			CacheKey.size() > PathFileName.size() &&
+			CacheKey.compare(0, PathFileName.size(), PathFileName) == 0 &&
+			CacheKey[PathFileName.size()] == '|';
+
+		if (bMatchesExactPath || bMatchesViewerVariant)
+		{
+			It = ObjStaticMeshMap.erase(It);
+			continue;
+		}
+
+		++It;
+	}
+}
 
 void FObjManager::Clear()
 {

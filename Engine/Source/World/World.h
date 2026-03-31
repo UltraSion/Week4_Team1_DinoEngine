@@ -3,7 +3,7 @@
 #include "Object/Object.h"
 #include "World/LevelTypes.h"
 
-// Forward declarations ? include ÃÖ¼ÒÈ­
+// Forward declarations ? include ìµœì†Œí™”
 class ULevel;
 class AActor;
 class UCameraComponent;
@@ -22,25 +22,25 @@ public:
 	T* SpawnActor(const FString& InName);
 	void DestroyActor(AActor* InActor);
 
-	// ¦¡¦¡ Persistent Level ¦¡¦¡
+	// â”€â”€ Persistent Level â”€â”€
 	ULevel* GetPersistentLevel() const { return PersistentLevel; }
-	// ¦¡¦¡ Streaming Levels ¦¡¦¡
+	// â”€â”€ Streaming Levels â”€â”€
 	ULevel* LoadStreamingLevel(const FString& LevelName, ID3D11Device* Device = nullptr);
 	void UnloadStreamingLevel(const FString& LevelName);
 	ULevel* FindStreamingLevel(const FString& LevelName) const;
 	const TArray<ULevel*>& GetStreamingLevels() const { return StreamingLevels; }
 
-	// ¦¡¦¡ ÀüÃ¼ ¾×ÅÍ Á¶È¸ (Persistent + Streaming ÇÕ»ê) ¦¡¦¡
+	// â”€â”€ ì „ì²´ ì•¡í„° ì¡°íšŒ (Persistent + Streaming í•©ì‚°) â”€â”€
 	TArray<AActor*> GetAllActors() const;
-	const TArray<AActor*>& GetActors() const;  // PersistentLevel¸¸
+	const TArray<AActor*>& GetActors() const;  // PersistentLevelë§Œ
 
 	ULevel* GetLevel() const { return PersistentLevel; }
-	// Ä«¸Ş¶ó
+	// ì¹´ë©”ë¼
 	void SetActiveCameraComponent(UCameraComponent* InCamera);
 	UCameraComponent* GetActiveCameraComponent() const;
 	FCamera* GetCamera() const;
 
-	// ¶óÀÌÇÁ»çÀÌÅ¬
+	// ë¼ì´í”„ì‚¬ì´í´
 	void InitializeWorld(float AspectRatio, ID3D11Device* Device = nullptr);
 	void BeginPlay();
 	void Tick(float InDeltaTime);

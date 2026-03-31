@@ -37,9 +37,13 @@ void UStaticMeshComponent::LoadStaticMesh(ID3D11Device* Device, const FString& A
 }
 void UStaticMeshComponent::SetStaticMeshData(ID3D11Device* Device, UStaticMesh* InMesh)
 {
+	OverrideMaterials.clear();
+	DynamicMaterialOwners.clear();
+
 	StaticMesh = InMesh;
 
 	// 이전 메쉬가 쓰던 다이내믹 매테리얼 찌꺼기 초기화
+
 	DynamicMaterialOwners.clear();
 
 	if (!StaticMesh) return;
