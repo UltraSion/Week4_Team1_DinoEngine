@@ -53,6 +53,7 @@ private:
 	bool bWindowSetup = false;
 	bool bViewportClientActive = false;
 	bool bLayoutInitialized = false;
+	bool bConsumeConsoleShortcutChar = false;
 	FRenderer* CurrentRenderer = nullptr;
 	FEditorViewportClient* ActiveViewportClient = nullptr;
 };
