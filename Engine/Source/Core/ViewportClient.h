@@ -37,6 +37,9 @@ public:
 	virtual ULevel* ResolveLevel(FCore* Core) const;
 	virtual UWorld* ResolveWorld(FCore* Core) const;
 	virtual const char* GetViewportLabel() const { return "Viewport"; }
+	virtual FMatrix GetViewMatrix() const;
+	virtual FMatrix GetProjectionMatrix(float AspectRatio) const;
+	virtual FMatrix GetViewProjectionMatrix(float AspectRatio) const;
 	FShowFlags& GetShowFlags() { return ShowFlags; }
 	const FShowFlags& GetShowFlags() const { return ShowFlags; }
 	virtual void BuildRenderCommands(TArray<AActor*>& InActors, FRenderCommandQueue& OutQueue);

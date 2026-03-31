@@ -224,6 +224,8 @@
     <ClCompile Include="Source\UI\ContentBrowserWindow.cpp" />
     <ClCompile Include="Source\UI\ControlPanelWindow.cpp" />
     <ClCompile Include="Source\UI\EditorUI.cpp" />
+    <ClCompile Include="Source\UI\EditorOrthoViewportClient.cpp" />
+    <ClCompile Include="Source\UI\EditorPerspectiveViewportClient.cpp" />
     <ClCompile Include="Source\UI\EditorViewportClient.cpp" />
     <ClCompile Include="Source\UI\OutlinerWindow.cpp" />
     <ClCompile Include="Source\UI\PropertyWindow.cpp" />
@@ -252,6 +254,8 @@
     <ClInclude Include="Source\UI\ContentBrowserWindow.h" />
     <ClInclude Include="Source\UI\ControlPanelWindow.h" />
     <ClInclude Include="Source\UI\EditorUI.h" />
+    <ClInclude Include="Source\UI\EditorOrthoViewportClient.h" />
+    <ClInclude Include="Source\UI\EditorPerspectiveViewportClient.h" />
     <ClInclude Include="Source\UI\EditorViewportClient.h" />
     <ClInclude Include="Source\UI\OutlinerWindow.h" />
     <ClInclude Include="Source\UI\PropertyWindow.h" />
