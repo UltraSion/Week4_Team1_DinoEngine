@@ -9,6 +9,7 @@ public:
 
 protected:
 	void ConfigureDefaultView() override;
+	void DrawViewportSpecificOptions() override;
 	void DrawControllerOptions() override;
 	void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	void OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam) override;
@@ -17,6 +18,7 @@ protected:
 	void OnKeyUp(WPARAM WParam, LPARAM LParam) override;
 
 private:
+	void StartOrthoTransition(EOrthoViewType OrthoViewType);
 	void ResetMovementState();
 	void ApplyLookInput(float MouseDeltaX, float MouseDeltaY);
 	void ApplyPanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime);

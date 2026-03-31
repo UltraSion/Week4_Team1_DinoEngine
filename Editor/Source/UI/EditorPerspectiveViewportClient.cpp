@@ -1,5 +1,7 @@
 #include "EditorPerspectiveViewportClient.h"
 
+#include "Actor/Actor.h"
+#include "Component/PrimitiveComponent.h"
 #include "Math/MathUtility.h"
 #include "imgui.h"
 
@@ -23,6 +25,45 @@ void FEditorPerspectiveViewportClient::ConfigureDefaultView()
 	CameraTransform.SetProjectionMode(ECameraProjectionMode::Perspective);
 	CameraTransform.SetPosition({ -5.0f, 0.0f, 2.0f });
 	CameraTransform.SetRotation(0.0f, 0.0f);
+}
+
+void FEditorPerspectiveViewportClient::DrawViewportSpecificOptions()
+{
+	ImGui::Spacing();
+	static const char* OrthoViewLabels[] =
+	{
+		"Ortho Top",
+		"Ortho Front",
+		"Ortho Right"
+	};
+
+	if (ImGui::BeginCombo("View Mode", "Perspective / Ortho"))
+	{
+		for (int32 Index = 0; Index < IM_ARRAYSIZE(OrthoViewLabels); ++Index)
+		{
+			if (!ImGui::Selectable(OrthoViewLabels[Index], false))
+			{
+				continue;
+			}
+
+			switch (Index)
+			{
+			case 0:
+				StartOrthoTransition(EOrthoViewType::Top);
+				break;
+			case 1:
+				StartOrthoTransition(EOrthoViewType::Front);
+				break;
+			case 2:
+				StartOrthoTransition(EOrthoViewType::Right);
+				break;
+			default:
+				break;
+			}
+		}
+
+		ImGui::EndCombo();
+	}
 }
 
 void FEditorPerspectiveViewportClient::DrawControllerOptions()
@@ -61,6 +102,47 @@ void FEditorPerspectiveViewportClient::DrawControllerOptions()
 	{
 		CameraTransform.SetFOV(CameraFOV);
 	}
+}
+
+void FEditorPerspectiveViewportClient::StartOrthoTransition(EOrthoViewType OrthoViewType)
+{
+	if (!ChangeOrthoToOrthoFunction.IsFinished())
+	{
+		return;
+	}
+
+	AActor* SelectedActor = GetSelectedActor();
+	if (!SelectedActor)
+	{
+		return;
+	}
+
+	UPrimitiveComponent* PrimitiveComponent = SelectedActor->GetComponentByClass<UPrimitiveComponent>();
+	if (!PrimitiveComponent)
+	{
+		return;
+	}
+
+	const FVector FocusCenter = PrimitiveComponent->GetWorldBounds().Center;
+	FVector TargetRotation = FVector::ZeroVector; // X=Yaw, Y=Pitch, Z=Roll
+
+	switch (OrthoViewType)
+	{
+	case EOrthoViewType::Top:
+		TargetRotation = FVector(0.0f, -89.99f, 0.0f);
+		break;
+
+	case EOrthoViewType::Front:
+		TargetRotation = FVector(0.0f, 0.0f, 0.0f);
+		break;
+
+	case EOrthoViewType::Right:
+		TargetRotation = FVector(90.0f, 0.0f, 0.0f);
+		break;
+	}
+
+	ChangeOrthoToOrthoFunction.StartTransition(FocusCenter, TargetRotation, 0.35f);
+	CameraFunctionManager.AddFunction(&ChangeOrthoToOrthoFunction);
 }
 
 void FEditorPerspectiveViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)

@@ -64,7 +64,7 @@ void FFocus::FocusOnActor(const AActor* TargetActor)
 	bIsMoving = true;
 }
 
-void FFocus::MoveTowardsTarget(float DeltaTime)
+void FFocus::Tick(float DeltaTime)
 {
 	if (!Camera || !bIsMoving)
 	{

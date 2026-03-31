@@ -24,6 +24,7 @@
 #include "ViewportWindow.h"
 #include "World/Level.h"
 #include "imgui.h"
+#include "CameraFuction/FFocus.h"
 
 #include <cmath>
 #include <filesystem>
@@ -86,7 +87,10 @@ FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InM
 {
 	SetWorldType(InWorldType);
 	SetGridVisible(bShowGrid);
-	Focus.SetCamera(&CameraTransform);
+
+	FocusCameraFunction.SetCamera(&CameraTransform);
+	ChangePersToOrthFunction.SetCamera(&CameraTransform);
+	ChangeOrthoToOrthoFunction.SetCamera(&CameraTransform);
 }
 
 void FEditorViewportClient::Attach(FCore* Core)
@@ -387,7 +391,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
-	Focus.MoveTowardsTarget(DeltaTime);
+	CameraFunctionManager.Tick(DeltaTime);
 #if IS_OBJ_VIEWER
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
@@ -556,9 +560,13 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 		UE_LOG("Gizmo Space: %s", Gizmo.GetCoordinateSpace() == EGizmoCoordinateSpace::Local ? "Local" : "World");
 		return;
 	case 'F':
+		if (!FocusCameraFunction.IsFinished())
+			return;
+
 		if (AActor* TargetActor = GetGizmoTarget())
 		{
-			Focus.FocusOnActor(TargetActor);
+			FocusCameraFunction.FocusOnActor(TargetActor);
+			CameraFunctionManager.AddFunction(&FocusCameraFunction);
 		}
 		return;
 	default:
@@ -704,6 +712,9 @@ void FEditorViewportClient::DrawUI()
 
 	ImGui::SameLine();
 	ShowViewOptionPanel();
+
+	ImGui::SameLine();
+	DrawViewportSpecificOptions();
 
 	ImGui::SameLine();
 	DrawCameraOption();

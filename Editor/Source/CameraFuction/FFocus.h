@@ -1,14 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ICameraFunction.h"
 
 class FCamera;
 class AActor;
 
-class FFocus
+class FFocus : public ICameraFunction
 {
-	FCamera* Camera = nullptr;
-
 	FVector TargetPosition;
 	FVector StartPosition;
 	float TargetOrthoWidth = 0.0f;
@@ -20,9 +19,9 @@ class FFocus
 	bool bIsMoving = false;
 
 public:
-	void SetCamera(FCamera* InCamera) { Camera = InCamera; }
 	void FocusOnActor(const AActor* TargetActor);
-	void MoveTowardsTarget(float DeltaTime);
+	virtual void Tick(float DeltaTime) override;
+	virtual bool IsFinished() const override { return !bIsMoving; }
 
 private:
 	float EvaluateEaseInOut(float T) const;
