@@ -6,7 +6,7 @@
 #include "Component/PrimitiveComponent.h"
 #include "Component/UUIDBillboardComponent.h"
 #include "Component/SubUVComponent.h"
-#include "Component/SkyComponent.h"
+#include "Component/MeshComponent.h"
 #include "Object/Class.h"
 void FDebugDrawManager::DrawLine(const FVector& Start, const FVector& End, const FVector4& Color)
 {
@@ -94,8 +94,21 @@ void FDebugDrawManager::DrawAllCollisionBounds(FRenderer* Renderer, UWorld* Worl
 			// 빌보드, SubUV 제외
 			if (!PrimComp->ShouldDrawDebugBounds()) continue;
 
-			if (!PrimComp->GetPrimitive() || !PrimComp->GetPrimitive()->GetMeshData())
+			bool bHasValidMesh = false;
+
+			if (PrimComp->IsA(UMeshComponent::StaticClass()))
+			{
+				bHasValidMesh = static_cast<UMeshComponent*>(PrimComp)->GetMeshData() != nullptr;
+			}
+			else if (PrimComp->GetPrimitive() && PrimComp->GetPrimitive()->GetMeshData())
+			{
+				bHasValidMesh = true;
+			}
+
+			if (!bHasValidMesh)
+			{
 				continue;
+			}
 
 			FBoxSphereBounds Bound = PrimComp->GetWorldBounds();
 			Renderer->DrawCube(Bound.Center, Bound.BoxExtent, FVector4(1, 0, 0, 1));  // 초록색

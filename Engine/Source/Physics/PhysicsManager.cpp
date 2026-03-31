@@ -5,6 +5,7 @@
 #include "Actor/Actor.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/SubUVComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/UUIDBillboardComponent.h"
 #include "Component/TextComponent.h"
 
@@ -37,7 +38,24 @@ bool FPhysicsManager::Linetrace(const ULevel* Level, const FVector& Start, const
 				if (!PrimitiveComponent->ShouldDrawDebugBounds()) continue;
 				if (!PrimitiveComponent->GetPrimitive() || !PrimitiveComponent->GetPrimitive()->GetMeshData())
 				{
-					continue;
+					// 새로 만든 UMeshComponent 구조인지, 예전 Primitive 구조인지 둘 다 확인합니다.
+					bool bHasValidMesh = false;
+
+					// 1. 새로운 UMeshComponent (StaticMesh 등) 확인
+					if (PrimitiveComponent->IsA(UMeshComponent::StaticClass()))
+					{
+						bHasValidMesh = static_cast<UMeshComponent*>(PrimitiveComponent)->GetMeshData() != nullptr;
+					}
+					// 2. 예전 방식 호환성 유지 (필요 없다면 지워도 됨)
+					else if (PrimitiveComponent->GetPrimitive() && PrimitiveComponent->GetPrimitive()->GetMeshData())
+					{
+						bHasValidMesh = true;
+					}
+
+					if (!bHasValidMesh)
+					{
+						continue;
+					}
 				}
 
 				FBoxSphereBounds Bound = PrimitiveComponent->GetWorldBounds();

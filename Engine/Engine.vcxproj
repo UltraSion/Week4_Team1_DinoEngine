@@ -53,7 +53,6 @@
     <ClInclude Include="Source\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Component\RandomColorComponent.h" />
     <ClInclude Include="Source\Component\SceneComponent.h" />
-    <ClInclude Include="Source\Component\SkyComponent.h" />
     <ClInclude Include="Source\Component\SubUVComponent.h" />
     <ClInclude Include="Source\Component\UUIDBillboardComponent.h" />
     <ClInclude Include="Source\Core\ConsoleVariableManager.h" />
@@ -169,7 +168,6 @@
     <ClCompile Include="Source\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Component\RandomColorComponent.cpp" />
     <ClCompile Include="Source\Component\SceneComponent.cpp" />
-    <ClCompile Include="Source\Component\SkyComponent.cpp" />
     <ClCompile Include="Source\Component\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Component\SubUVComponent.cpp" />
     <ClCompile Include="Source\Component\TextComponent.cpp" />
