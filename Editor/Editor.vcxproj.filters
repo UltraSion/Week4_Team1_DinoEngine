@@ -72,6 +72,9 @@
     <ClCompile Include="Source\UI\EditorViewportClient.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Source\UI\ObjViewerPanel.cpp">
+      <Filter>Source\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Source\UI\OutlinerWindow.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
@@ -153,6 +156,9 @@
       <Filter>Source\UI</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\EditorViewportClient.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\ObjViewerPanel.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
     <ClInclude Include="Source\UI\OutlinerWindow.h">
