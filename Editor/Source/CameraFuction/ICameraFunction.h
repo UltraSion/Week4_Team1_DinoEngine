@@ -11,7 +11,7 @@ protected:
 	const float MinTransitionTime = 0.01f;
 	const float MinOrbitDistance = 0.01f;
 	const float MinOrthoWidth = .5f;
-	const float MinPerspectiveFOV = 0.8f;
+	const float MinPerspectiveFOV = 1.f;
 
 
 	FVector LerpVector(const FVector& A, const FVector& B, float Alpha);

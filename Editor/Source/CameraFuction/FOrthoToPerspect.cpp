@@ -10,12 +10,13 @@
 
 namespace
 {
-	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees)
+	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees, float AspectRatio)
 	{
 		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float SafeAspectRatio = FMath::Max(AspectRatio, 0.01f);
 		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
 		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-		return SafeHalfWidth / SafeTanHalfFov;
+		return SafeHalfWidth / (SafeTanHalfFov * SafeAspectRatio);
 	}
 }
 
@@ -39,10 +40,13 @@ void FOrthoToPerspect::StartTransition(float InTargetFov, const FVector& InPivot
 		MinOrbitDistance);
 	PivotPosition = CurrentPosition + ViewDirection * FocusDistance;
 	StartOrthoWidth = FMath::Max(Camera->GetOrthoWidth(), MinOrthoWidth);
+	ViewAspectRatio = FMath::Max(
+		Camera->GetOrthoWidth() / FMath::Max(Camera->GetOrthoHeight(), 0.01f),
+		0.01f);
 
 	const float StartHalfWidth = StartOrthoWidth * 0.5f;
-	StartPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, MinPerspectiveFOV);
-	TargetPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, TargetFov);
+	StartPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, MinPerspectiveFOV, ViewAspectRatio);
+	TargetPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, TargetFov, ViewAspectRatio);
 
 	Camera->SetPosition(StartPosition);
 	Camera->SetFOV(MinPerspectiveFOV);
@@ -67,7 +71,7 @@ void FOrthoToPerspect::Tick(float DeltaTime)
 
 	const float CurrentFov = LerpFloat(MinPerspectiveFOV, TargetFov, EasedAlpha);
 	const float CurrentHalfWidth = StartOrthoWidth * 0.5f;
-	const float CurrentDistance = ComputeDistanceForHalfWidth(CurrentHalfWidth, CurrentFov);
+	const float CurrentDistance = ComputeDistanceForHalfWidth(CurrentHalfWidth, CurrentFov, ViewAspectRatio);
 	const FVector CurrentPosition = PivotPosition - ViewDirection * CurrentDistance;
 	Camera->SetPosition(CurrentPosition);
 	Camera->SetFOV(CurrentFov);

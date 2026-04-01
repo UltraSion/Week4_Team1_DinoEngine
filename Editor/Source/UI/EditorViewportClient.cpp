@@ -63,12 +63,22 @@ namespace
 		return A + (B - A) * Alpha;
 	}
 
-	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees)
+	float ComputePerspectiveHalfWidth(float Distance, float FieldOfViewDegrees, float AspectRatio)
 	{
-		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float SafeDistance = FMath::Max(Distance, 0.01f);
+		const float SafeAspectRatio = FMath::Max(AspectRatio, 0.01f);
 		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
 		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-		return SafeHalfWidth / SafeTanHalfFov;
+		return SafeDistance * SafeTanHalfFov * SafeAspectRatio;
+	}
+
+	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees, float AspectRatio)
+	{
+		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float SafeAspectRatio = FMath::Max(AspectRatio, 0.01f);
+		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
+		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+		return SafeHalfWidth / (SafeTanHalfFov * SafeAspectRatio);
 	}
 
 	float LerpAngleDegrees(float Start, float End, float Alpha)
@@ -1133,14 +1143,17 @@ void FEditorViewportClient::StartOrthographicTransition()
 	const float FocusDistance = FMath::Max(
 		FVector::DotProduct(FocusCenter - CameraPosition, ViewDirection),
 		0.01f);
+	const float AspectRatio = FMath::Max(
+		CameraTransform.GetOrthoWidth() / FMath::Max(CameraTransform.GetOrthoHeight(), 0.01f),
+		0.01f);
 	const float TargetHalfWidth = FMath::Max(
-		FocusDistance * std::tanf(FMath::DegreesToRadians(CameraTransform.GetFOV() * 0.5f)),
+		ComputePerspectiveHalfWidth(FocusDistance, CameraTransform.GetFOV(), AspectRatio),
 		0.25f);
 
 	CameraViewType = EEditorViewportType::Orthographic;
 	OrthoCenter = FocusCenter;
 
-	OrthoViewDistance = ComputeDistanceForHalfWidth(TargetHalfWidth, 0.8f);
+	OrthoViewDistance = ComputeDistanceForHalfWidth(TargetHalfWidth, 0.8f, AspectRatio);
 	bPerspectiveRotating = false;
 	bPerspectivePanning = false;
 	bOrthoPanning = false;

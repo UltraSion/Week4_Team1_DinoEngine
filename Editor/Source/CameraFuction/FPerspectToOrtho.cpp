@@ -9,12 +9,22 @@
 
 namespace
 {
-	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees)
+	float ComputePerspectiveHalfWidth(float Distance, float FieldOfViewDegrees, float AspectRatio)
 	{
-		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float SafeDistance = FMath::Max(Distance, 0.01f);
+		const float SafeAspectRatio = FMath::Max(AspectRatio, 0.01f);
 		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
 		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-		return SafeHalfWidth / SafeTanHalfFov;
+		return SafeDistance * SafeTanHalfFov * SafeAspectRatio;
+	}
+
+	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees, float AspectRatio)
+	{
+		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float SafeAspectRatio = FMath::Max(AspectRatio, 0.01f);
+		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
+		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+		return SafeHalfWidth / (SafeTanHalfFov * SafeAspectRatio);
 	}
 }
 
@@ -37,12 +47,15 @@ void FPerspectToOrtho::StartTransition(const FVector& InPivotPosition, float InT
 		FVector::DotProduct(InPivotPosition - StartPosition, ViewDirection),
 		MinOrbitDistance);
 	PivotPosition = StartPosition + ViewDirection * FocusDistance;
+	ViewAspectRatio = FMath::Max(
+		Camera->GetOrthoWidth() / FMath::Max(Camera->GetOrthoHeight(), 0.01f),
+		0.01f);
 
 	const float StartHalfWidth = FMath::Max(
-		FocusDistance * std::tanf(FMath::DegreesToRadians(StartFOV * 0.5f)),
+		ComputePerspectiveHalfWidth(FocusDistance, StartFOV, ViewAspectRatio),
 		MinOrthoWidth * 0.5f);
 	TargetOrthoWidth = StartHalfWidth * 2.0f;
-	TargetPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, MinPerspectiveFOV);
+	TargetPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, MinPerspectiveFOV, ViewAspectRatio);
 
 	FocusTime = FMath::Max(InTransitionTime, MinTransitionTime);
 	MoveElapsedTime = 0.0f;
@@ -62,7 +75,7 @@ void FPerspectToOrtho::Tick(float DeltaTime)
 
 	const float CurrentFov = LerpFloat(StartFOV, MinPerspectiveFOV, EasedAlpha);
 	const float CurrentHalfWidth = TargetOrthoWidth * 0.5f;
-	const float CurrentDistance = ComputeDistanceForHalfWidth(CurrentHalfWidth, CurrentFov);
+	const float CurrentDistance = ComputeDistanceForHalfWidth(CurrentHalfWidth, CurrentFov, ViewAspectRatio);
 	const FVector CurrentPosition = PivotPosition - ViewDirection * CurrentDistance;
 
 	Camera->SetFOV(CurrentFov);
@@ -72,7 +85,7 @@ void FPerspectToOrtho::Tick(float DeltaTime)
 	if (MoveAlpha >= 1.0f)
 	{
 		bIsTransition = false;
-		Camera->SetPosition(PivotPosition - ViewDirection * TargetOrthoWidth);
+		Camera->SetPosition(TargetPosition);
 		Camera->SetFOV(MinPerspectiveFOV);
 		Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
 		Camera->SetOrthoWidth(TargetOrthoWidth);
