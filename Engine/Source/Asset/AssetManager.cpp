@@ -102,28 +102,36 @@ UStaticMesh* FAssetManager::LoadStaticMesh(ID3D11Device* Device, const FString& 
 		return It->second;
 	}
 
-	FString CookedPath = FAssetCooker::GetCookedPath(AssetData.AssetPath);
 
 	FStaticMeshRenderData* RenderData = nullptr;
 
 	//  쿡된 에셋이 유효하면 바이너리에서 로드 (OBJ 파싱 스킵)
-	if (!FAssetCooker::NeedsCook(AssetData.AssetPath, CookedPath))
+	if (AssetData.AssetPath.ends_with(".dasset"))
 	{
-		RenderData = FAssetCooker::LoadCookedStaticMesh(CookedPath);
-	}
-	if (!RenderData)
-	{
-		// 쿡 필요 또는 로드 실패 → 기존 파이프라인 (파싱 + 쿡)
-		RenderData = FObjManager::LoadObjStaticMeshAsset(AssetData.AssetPath);
-		bRenderDataOwnedByStaticMesh = false;
-
+		FString AbsDasset = FPaths::ToAbsolutePath(AssetData.AssetPath);
+		RenderData = FAssetCooker::LoadCookedStaticMesh(AbsDasset);
 		if (!RenderData)
 		{
+			UE_LOG("[AssetManager] Failed to load .dasset: %s\n", AssetData.AssetPath.c_str());
 			return nullptr;
 		}
+	}
+	else
+	{
+		// 기존 OBJ 파이프라인 
+		FString CookedPath = FAssetCooker::GetCookedPath(AssetData.AssetPath);
 
-		//쿡 결과를 .dasset으로 저장 (다음번에는 바이너리 로드)
-		FAssetCooker::SaveCookedStaticMesh(RenderData, AssetData.AssetPath, CookedPath);
+		if (!FAssetCooker::NeedsCook(AssetData.AssetPath, CookedPath))
+		{
+			RenderData = FAssetCooker::LoadCookedStaticMesh(CookedPath);
+		}
+		if (!RenderData)
+		{
+			RenderData = FObjManager::LoadObjStaticMeshAsset(AssetData.AssetPath);
+			bRenderDataOwnedByStaticMesh = false;
+			if (!RenderData) return nullptr;
+			FAssetCooker::SaveCookedStaticMesh(RenderData, AssetData.AssetPath, CookedPath);
+		}
 	}
 	RenderData->SetAssetPath(AssetData.AssetPath);
 	//오브젝트 생성 및 GC 보호 플래그 설정

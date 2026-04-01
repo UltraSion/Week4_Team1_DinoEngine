@@ -1,6 +1,6 @@
 #include "MeshComponent.h"
 #include "Object/Class.h"
-
+#include "Serializer/Archive.h"
 #include "PrimitiveComponent.h"
 #include "Core/Paths.h"
 #include "ThirdParty/stb_image.h"
@@ -48,4 +48,9 @@ FBoxSphereBounds UMeshComponent::GetWorldBounds() const
 	WorldBoxExtent.Z = AbsR.M[0][2] * ScaledExtent.X + AbsR.M[1][2] * ScaledExtent.Y + AbsR.M[2][2] * ScaledExtent.Z;
 
 	return { Center, WorldBoxExtent.Size(), WorldBoxExtent };
+}
+
+void UMeshComponent::Serialize(FArchive& Ar)
+{
+	UPrimitiveComponent::Serialize(Ar);
 }

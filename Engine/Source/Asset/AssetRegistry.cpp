@@ -41,7 +41,7 @@ void FAssetRegistry::SearchAllAssets(const FString& RootDir)
 			std::string Ext = SafeString(entry.path().extension());
 			std::transform(Ext.begin(), Ext.end(), Ext.begin(), ::tolower);
 
-			if (Ext == ".obj") Data.AssetClass = "StaticMesh";
+			if (Ext == ".dasset") Data.AssetClass = "StaticMesh";
 			else if (Ext == ".png" || Ext == ".jpg" || Ext == ".jpeg") Data.AssetClass = "Texture";
 			else if (Ext == ".json") Data.AssetClass = "Material";
 			else Data.AssetClass = "Unknown";

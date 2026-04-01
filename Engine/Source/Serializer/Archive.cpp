@@ -79,6 +79,24 @@ void FArchive::SerializeUIntArray(const FString& Key, TArray<uint32>& Values)
 	}
 }
 
+void FArchive::SerializeStringArray(const FString& Key, TArray<FString>& Values)
+{
+	json& Json = *static_cast<json*>(JsonData);
+	if (bSaving)
+	{
+		json Arr = json::array();
+		for (const FString& value : Values)
+			Arr.push_back(value);
+		Json[Key] = Arr;
+	}
+	else if (Json.contains(Key))
+	{
+		Values.clear();
+		for (auto& Element : Json[Key])
+			Values.push_back(Element.get<std::string>());
+	}
+}
+
 bool FArchive::Contains(const FString& Key) const
 {
 	const json& Json = *static_cast<const json*>(JsonData);

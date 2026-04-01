@@ -22,5 +22,5 @@ float4 main(VS_OUTPUT Input) : SV_TARGET
 	}
 
 	float4 TexColor = g_txColor.Sample(g_Sample, FinalUV);
-	return TexColor * Input.Color;
+	return TexColor * Input.Color * ColorTint;
 }

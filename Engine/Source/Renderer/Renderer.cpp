@@ -319,6 +319,8 @@ bool FRenderer::Initialize(HWND InHwnd, int32 Width, int32 Height)
 	return true;
 }
 
+
+
 void FRenderer::SetConstantBuffers()
 {
 	ID3D11Buffer* CBs[2] = { FrameConstantBuffer, ObjectConstantBuffer };
@@ -450,6 +452,7 @@ void FRenderer::ExecuteCommands(TArray<FRenderCommand>& InCommandList, const FMa
 	UpdateFrameConstantBuffer();
 
 	ExecuteRenderPass(InCommandList, ERenderLayer::Default);
+	ExecuteRenderPass(InCommandList, ERenderLayer::Translucent);
 	ClearDepthBuffer();
 	ExecuteRenderPass(InCommandList, ERenderLayer::Overlay);
 	
@@ -653,6 +656,8 @@ void FRenderer::RenderOutline(FMeshData* Mesh, const FMatrix& WorldMatrix, float
 	DeviceContext->OMSetRenderTargets(0, nullptr, ActiveDSV);
 	DeviceContext->OMSetDepthStencilState(StencilWriteState, 1);
 	UpdateObjectConstantBuffer(WorldMatrix);
+
+	DeviceContext->PSSetShader(nullptr, nullptr, 0);
 	DeviceContext->DrawIndexed(static_cast<UINT>(Mesh->Indices.size()), 0, 0);
 
 	DeviceContext->OMSetRenderTargets(1, &ActiveRTV, ActiveDSV);

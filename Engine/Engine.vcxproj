@@ -103,7 +103,6 @@
     <ClInclude Include="Source\Primitive\PrimitiveBase.h" />
     <ClInclude Include="Source\Primitive\PrimitiveCube.h" />
     <ClInclude Include="Source\Primitive\PrimitiveGizmo.h" />
-    <ClInclude Include="Source\Primitive\PrimitiveObj.h" />
     <ClInclude Include="Source\Primitive\PrimitivePlane.h" />
     <ClInclude Include="Source\Primitive\PrimitiveSky.h" />
     <ClInclude Include="Source\Primitive\PrimitiveSphere.h" />
@@ -208,7 +207,6 @@
     <ClCompile Include="Source\Primitive\PrimitiveBase.cpp" />
     <ClCompile Include="Source\Primitive\PrimitiveCube.cpp" />
     <ClCompile Include="Source\Primitive\PrimitiveGizmo.cpp" />
-    <ClCompile Include="Source\Primitive\PrimitiveObj.cpp" />
     <ClCompile Include="Source\Primitive\PrimitivePlane.cpp" />
     <ClCompile Include="Source\Primitive\PrimitiveSky.cpp" />
     <ClCompile Include="Source\Primitive\PrimitiveSphere.cpp" />

@@ -650,13 +650,16 @@ void FEditorViewportClient::DrawUI()
 		ImGui::End();
 		return;
 	}
+	char ItemName[128];
 
-	char ButtonName[128];
+	sprintf_s(ItemName, "H##%p", this);
+	ImGui::Text("%s Viewport", GetViewportLabel());
+
 	const bool bHasParent = ViewportWindow->GetParent() != nullptr;
 	if (!bHasParent)
 	{
-		sprintf_s(ButtonName, "H##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "H##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -668,8 +671,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "V##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "V##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			if (SViewportWindow* NewViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Perspective))
 			{
@@ -681,8 +684,8 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ButtonName, "+##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "+##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			SViewportWindow* TopViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Top);
 			SViewportWindow* FrontViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Front);
@@ -702,8 +705,8 @@ void FEditorViewportClient::DrawUI()
 	}
 	else
 	{
-		sprintf_s(ButtonName, "-##%p", this);
-		if (ImGui::Button(ButtonName))
+		sprintf_s(ItemName, "-##%p", this);
+		if (ImGui::Button(ItemName))
 		{
 			ViewportWindow->GetParent()->Merge(ViewportWindow);
 			EditorUI.SaveEditorSettings();
@@ -764,7 +767,7 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (!Core || !GRenderer || !FilePath.ends_with(".obj"))
+	if (!Core || !GRenderer || (!FilePath.ends_with(".obj") && !FilePath.ends_with(".dasset")))
 	{
 		return;
 	}
@@ -785,19 +788,17 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 		if (USceneComponent* Root = MeshActor->GetRootComponent())
 		{
 			FTransform Transform = Root->GetRelativeTransform();
-			Transform.SetLocation(SpawnLocation);
+			FVector FinalLocation = SpawnLocation;;
+#if IS_OBJ_VIEWER
+			// 뷰어 모드일 때만 높이(Z) 보정값을 추가 계산
+			FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
+#endif
+			Transform.SetLocation(FinalLocation);
 			Root->SetRelativeTransform(Transform);
 		}
+
 #if IS_OBJ_VIEWER
 		Core->SetSelectedActor(MeshActor);
-		if (USceneComponent* Root = MeshActor->GetRootComponent())
-		{
-			FTransform Transform = Root->GetRelativeTransform();
-			FVector Location = Transform.GetLocation();
-			Location.Z -= GetObjViewerBottomZ(MeshActor);
-			Transform.SetLocation(Location);
-			Root->SetRelativeTransform(Transform);
-		}
 		RefreshObjViewerCameraPivot(MeshActor);
 		FrameObjViewerCamera(MeshActor, true);
 #else
@@ -1025,7 +1026,6 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 	FMatrix Rotation;
 	FVector Scale = FVector::OneVector;
 	int32 Interval = 10;
-	float distance = CameraTransform.GetPosition().X;
 
 	FVector CameraLocation = CameraTransform.GetPosition();
 	switch (ViewportType)
@@ -1038,7 +1038,7 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 
 	case EEditorViewportType::Right:
 		Rotation = FMatrix::MakeRotationX(FMath::DegreesToRadians(90.0f));
-		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
 		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
 		break;
 	case EEditorViewportType::Top:

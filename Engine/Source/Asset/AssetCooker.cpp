@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 
 uint64 FAssetCooker::ComputeFileHash(const FString& AbsolutePath)
 {
-	std::ifstream File(fs::path(AbsolutePath).wstring(), std::ios::binary | std::ios::ate);
+	std::ifstream File(FPaths::ToWide(AbsolutePath), std::ios::binary | std::ios::ate);
 	if (!File.is_open()) return 0;
 
 	std::streamsize Size = File.tellg();
@@ -43,14 +43,14 @@ uint64 FAssetCooker::ComputeFileHash(const FString& AbsolutePath)
 uint64 FAssetCooker::GetFileTimestamp(const FString& AbsolutePath)
 {
 	std::error_code EC;
-	auto Time = fs::last_write_time(fs::path(AbsolutePath).wstring(), EC);
+	auto Time = fs::last_write_time(FPaths::ToWide(AbsolutePath), EC);
 	if (EC) return 0;
 	return static_cast<uint64>(Time.time_since_epoch().count());
 }
 
 void FAssetCooker::EnsureDirectoryExists(const FString& FilePath)
 {
-	fs::path Dir = fs::path(FilePath).parent_path();
+	fs::path Dir = fs::path(FPaths::ToWide(FilePath)).parent_path();
 	if (!Dir.empty() && !fs::exists(Dir))
 	{
 		fs::create_directories(Dir);
@@ -60,12 +60,13 @@ void FAssetCooker::EnsureDirectoryExists(const FString& FilePath)
 FString FAssetCooker::GetCookedPath(const FString& SourceRelativePath)
 {
 	// "Assets/Meshes/Cat.obj" → "Intermediate/Cooked/Assets/Meshes/Cat.dasset"
-	fs::path Src(SourceRelativePath);
-	fs::path Cooked = fs::path("Intermediate") / "Cooked" / Src;
-	Cooked.replace_extension(".dasset");
 
-	// 절대 경로로 반환
-	return FPaths::ToAbsolutePath(Cooked.generic_string());
+	FString RelPath = FPaths::ToRelativePath(SourceRelativePath);
+	FString Cooked = "Intermediate/Cooked/" + RelPath;
+	size_t DotPos = Cooked.rfind('.');
+	if (DotPos != std::string::npos)
+		Cooked = Cooked.substr(0, DotPos) + ".dasset";
+	return FPaths::ToAbsolutePath(Cooked);
 }
 
 bool FAssetCooker::SaveCookedStaticMesh(const FStaticMeshRenderData* RenderData, const FString& SourcePath, const FString& OutputPath)
@@ -77,7 +78,7 @@ bool FAssetCooker::SaveCookedStaticMesh(const FStaticMeshRenderData* RenderData,
 
 	EnsureDirectoryExists(OutputPath);
 
-	std::ofstream Out(fs::path(OutputPath).wstring(), std::ios::binary | std::ios::trunc);
+	std::ofstream Out(FPaths::ToWide(OutputPath), std::ios::binary | std::ios::trunc);
 	if (!Out.is_open()) return false;
 
 	uint32 VertexCount = static_cast<uint32>(MD->Vertices.size());
@@ -170,13 +171,13 @@ bool FAssetCooker::NeedsCook(const FString& SourcePath, const FString& CookedPat
 	FString AbsSource = FPaths::ToAbsolutePath(SourcePath);
 
 	// 1) 쿡 파일이 없으면 무조건 쿡
-	if (!fs::exists(fs::path(CookedPath).wstring()))
+	if (!fs::exists(FPaths::ToWide(CookedPath)))
 	{
 		return true;
 	}
 
 	// 2) 헤더만 읽어서 비교
-	std::ifstream File(fs::path(CookedPath).wstring(), std::ios::binary);
+	std::ifstream File(FPaths::ToWide(CookedPath), std::ios::binary);
 	if (!File.is_open()) return true;
 
 	FCookedAssetHeader Header{};
@@ -238,7 +239,7 @@ bool FAssetCooker::CookStaticMesh(const FString& ObjSourcePath, const FString& O
 
 FStaticMeshRenderData* FAssetCooker::LoadCookedStaticMesh(const FString& CookedPath)
 {
-	std::ifstream In(fs::path(CookedPath).wstring(), std::ios::binary);
+	std::ifstream In(FPaths::ToWide(CookedPath), std::ios::binary);
 	if (!In.is_open()) return nullptr;
 
 	// ── 헤더 읽기 ──

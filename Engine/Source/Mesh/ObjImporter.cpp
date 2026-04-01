@@ -3,11 +3,13 @@
 #include "ObjInfo.h"
 #include "Core/Paths.h"
 #include "StaticMeshRenderData.h"
+#include "Types/Map.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+
 #include <cfloat>
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
@@ -170,10 +172,14 @@ FString FObjImporter::BuildImportAxisMappingKey(const FImportAxisMapping& InMapp
 // ParseObj — 기존 PrimitiveObj::LoadObj에서 변환
 bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 {
-	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
+	std::ifstream File(FPaths::ToWide(FPaths::ToAbsolutePath(FilePath)));
 
 	if (!File.is_open()) return false;
-	OutInfo.ObjDirectory = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path().string();
+	OutInfo.ObjDirectory = FPaths::ToAbsolutePath(FilePath);
+	size_t LastSlash = OutInfo.ObjDirectory.rfind('/');
+	if (LastSlash != std::string::npos)
+		OutInfo.ObjDirectory = OutInfo.ObjDirectory.substr(0, LastSlash);
+
 	std::string Line;
 	while (std::getline(File, Line))
 	{
@@ -224,8 +230,10 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 			else
 			{
 				// 못 찾았다면 기존 폴백 로직
-				std::filesystem::path ObjDir = std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).parent_path();
-				MtlPath = (ObjDir / MtlFileName).string();
+				FString AbsPath = FPaths::ToAbsolutePath(FilePath);
+				size_t Slash = AbsPath.rfind('/');
+				FString ObjDir = (Slash != std::string::npos) ? AbsPath.substr(0, Slash) : AbsPath;
+				MtlPath = ObjDir + "/" + MtlFileName;
 			}
 			ParseMtl(MtlPath, OutInfo.Materials);
 		}
@@ -287,7 +295,7 @@ bool FObjImporter::ParseObj(const FString& FilePath, FObjInfo& OutInfo)
 // FObjImporter::ParseMtl
 bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& OutMaterials)
 {
-	std::ifstream File(std::filesystem::path(FPaths::ToAbsolutePath(FilePath)).wstring());
+	std::ifstream File(FPaths::ToWide(FPaths::ToAbsolutePath(FilePath)));
 	if (!File.is_open()) return false;
 
 	FObjMaterialInfo* Current = nullptr;
@@ -319,12 +327,41 @@ bool FObjImporter::ParseMtl(const FString& FilePath, TArray<FObjMaterialInfo>& O
 	}
 	return true;
 }
+struct FPrimitiveVertexHash
+{
+	size_t operator()(const FPrimitiveVertex& V) const
+	{
+		size_t Hash = 17;
+		auto Combine = [&Hash](float Val) {
+			Hash = Hash * 31 + std::hash<float>()(Val);
+		};
+		Combine(V.Position.X); Combine(V.Position.Y); Combine(V.Position.Z);
+		Combine(V.Normal.X);   Combine(V.Normal.Y);   Combine(V.Normal.Z);
+		Combine(V.UV.X);       Combine(V.UV.Y);
+		return Hash;
+	}
+};
 
+struct FPrimitiveVertexEqual
+{
+	bool operator()(const FPrimitiveVertex& A, const FPrimitiveVertex& B) const
+	{
+		const float Tolerance = 1e-5f;
+		return std::abs(A.Position.X - B.Position.X) < Tolerance &&
+			std::abs(A.Position.Y - B.Position.Y) < Tolerance &&
+			std::abs(A.Position.Z - B.Position.Z) < Tolerance &&
+			std::abs(A.Normal.X - B.Normal.X) < Tolerance &&
+			std::abs(A.Normal.Y - B.Normal.Y) < Tolerance &&
+			std::abs(A.Normal.Z - B.Normal.Z) < Tolerance &&
+			std::abs(A.UV.X - B.UV.X) < Tolerance &&
+			std::abs(A.UV.Y - B.UV.Y) < Tolerance;
+	}
+};
 FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 {
 	auto MeshData = std::make_shared<FMeshData>();
 	const FImportAxisMapping ActiveImportAxisMapping = GetImportAxisMapping();
-
+	TMap<FPrimitiveVertex, uint32, FPrimitiveVertexHash, FPrimitiveVertexEqual> UniqueVertices;
 	uint32 TriCount = (uint32)Info.PositionIndices.size();
 	for (uint32 i = 0; i < TriCount; ++i)
 	{
@@ -362,8 +399,20 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 		V.Normal = ApplyImportAxisMapping(V.Normal, ActiveImportAxisMapping);
 #endif
 
-		MeshData->Vertices.push_back(V);
-		MeshData->Indices.push_back(i);
+		auto It = UniqueVertices.find(V);
+		if (It != UniqueVertices.end())
+		{
+			// 이미 똑같은 정점이 존재하는 새로 만들지 않고 기존 인덱스만 재사용
+			MeshData->Indices.push_back(It->second);
+		}
+		else
+		{
+			// 처음 보는 정점이면 배열에 추가하고 해시맵에 인덱스를 기억
+			uint32 NewIndex = static_cast<uint32>(MeshData->Vertices.size());
+			MeshData->Vertices.push_back(V);
+			MeshData->Indices.push_back(NewIndex);
+			UniqueVertices[V] = NewIndex;
+		}
 	}
 
 	// Section 생성
@@ -398,7 +447,7 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();
 	Mesh->SetMeshData(MeshData);
 
-	std::filesystem::path Dir(Info.ObjDirectory);
+	FString Dir = Info.ObjDirectory;
 
 	for (uint32 s = 0; s < MeshData->Sections.size(); ++s)
 	{
@@ -409,29 +458,23 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 			FString MatName = Info.MaterialNames[s]; // 현재 섹션이 요구하는 머티리얼 이름
 			for (const auto& Mtl : Info.Materials)
 			{
-				// 이름이 일치하고, 텍스처(map_Kd)가 존재한다면
-				for (const auto& Mtl : Info.Materials)
+				if (Mtl.Name == MatName)
 				{
-					if (Mtl.Name == MatName)
-					{
-						// 일단 색상은 무조건
-						DiffuseColor = Mtl.DiffuseColor;
+					DiffuseColor = Mtl.DiffuseColor;
 
-						// 텍스처가 있으면 경로 파싱
-						if (!Mtl.DiffuseTexturePath.empty())
+					if (!Mtl.DiffuseTexturePath.empty())
+					{
+						FAssetData TexData;
+						if (FAssetRegistry::Get().GetAssetByObjectPath(Mtl.DiffuseTexturePath, TexData))
 						{
-							FAssetData TexData;
-							if (FAssetRegistry::Get().GetAssetByObjectPath(Mtl.DiffuseTexturePath, TexData))
-							{
-								TexPath = TexData.AssetPath;
-							}
-							else
-							{
-								TexPath = (Dir / Mtl.DiffuseTexturePath).string();
-							}
+							TexPath = TexData.AssetPath;
 						}
-						break;
+						else
+						{
+							TexPath = Dir + "/" + Mtl.DiffuseTexturePath;
+						}
 					}
+					break; // 머티리얼을 찾았으면 루프 종료
 				}
 			}
 		}
