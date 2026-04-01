@@ -213,11 +213,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EditorGlobals.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangeOrthoToOrtho.cpp" />
+    <ClCompile Include="Source\CameraFuction\FOrthoToPerspect.cpp" />
+    <ClCompile Include="Source\CameraFuction\FCameraOribit.cpp" />
+    <ClCompile Include="Source\CameraFuction\FOrthoToOrtho.cpp" />
     <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
     <ClCompile Include="Source\CameraFuction\ICameraFunction.cpp" />
-    <ClCompile Include="Source\CameraFuction\FChangePersToOrth.cpp" />
-    <ClCompile Include="Source\CameraFuction\FFocus.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPerspectToOrtho.cpp" />
+    <ClCompile Include="Source\CameraFuction\FPersToPers.cpp" />
     <ClCompile Include="Source\FEditorEngine.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Axis\AxisRenderer.cpp" />
@@ -229,9 +231,8 @@
     <ClCompile Include="Source\UI\ContentBrowserWindow.cpp" />
     <ClCompile Include="Source\UI\ControlPanelWindow.cpp" />
     <ClCompile Include="Source\UI\EditorUI.cpp" />
-    <ClCompile Include="Source\UI\EditorOrthoViewportClient.cpp" />
-    <ClCompile Include="Source\UI\EditorPerspectiveViewportClient.cpp" />
     <ClCompile Include="Source\UI\EditorViewportClient.cpp" />
+    <ClCompile Include="Source\UI\ObjViewerPanel.cpp" />
     <ClCompile Include="Source\UI\OutlinerWindow.cpp" />
     <ClCompile Include="Source\UI\PropertyWindow.cpp" />
     <ClCompile Include="Source\UI\StatWindow.cpp" />
@@ -249,11 +250,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EditorGlobals.h" />
-    <ClInclude Include="Source\CameraFuction\FChangeOrthoToOrtho.h" />
+    <ClInclude Include="Source\CameraFuction\FOrthoToPerspect.h" />
+    <ClInclude Include="Source\CameraFuction\FCameraOribit.h" />
+    <ClInclude Include="Source\CameraFuction\FOrthoToOrtho.h" />
     <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
     <ClInclude Include="Source\CameraFuction\ICameraFunction.h" />
-    <ClInclude Include="Source\CameraFuction\FChangePersToOrth.h" />
-    <ClInclude Include="Source\CameraFuction\FFocus.h" />
+    <ClInclude Include="Source\CameraFuction\FPerspectToOrtho.h" />
+    <ClInclude Include="Source\CameraFuction\FPersToPers.h" />
     <ClInclude Include="Source\FEditorEngine.h" />
     <ClInclude Include="Source\Axis\AxisRenderer.h" />
     <ClInclude Include="Source\Controller\EditorViewportController.h" />
@@ -264,9 +267,8 @@
     <ClInclude Include="Source\UI\ContentBrowserWindow.h" />
     <ClInclude Include="Source\UI\ControlPanelWindow.h" />
     <ClInclude Include="Source\UI\EditorUI.h" />
-    <ClInclude Include="Source\UI\EditorOrthoViewportClient.h" />
-    <ClInclude Include="Source\UI\EditorPerspectiveViewportClient.h" />
     <ClInclude Include="Source\UI\EditorViewportClient.h" />
+    <ClInclude Include="Source\UI\ObjViewerPanel.h" />
     <ClInclude Include="Source\UI\OutlinerWindow.h" />
     <ClInclude Include="Source\UI\PropertyWindow.h" />
     <ClInclude Include="Source\UI\StatWindow.h" />

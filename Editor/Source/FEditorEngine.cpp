@@ -1,8 +1,6 @@
 #include "FEditorEngine.h"
 
 #include "UI/EditorViewportClient.h"
-#include "UI/EditorOrthoViewportClient.h"
-#include "UI/EditorPerspectiveViewportClient.h"
 #include "UI/ViewportWindow.h"
 #include "Core/Core.h"
 #include "Core/Viewport.h"
@@ -32,7 +30,6 @@ namespace
 {
 	void SnapObjViewerActorBottomToZero(AActor* Actor, FEditorViewportClient* ViewportClient)
 	{
-#if IS_OBJ_VIEWER
 		if (!Actor || !ViewportClient)
 		{
 			return;
@@ -50,10 +47,6 @@ namespace
 		Transform.SetLocation(Location);
 		Root->SetRelativeTransform(Transform);
 		ViewportClient->RefreshObjViewerCameraPivot(Actor);
-#else
-		(void)Actor;
-		(void)ViewportClient;
-#endif
 	}
 
 	FString PromptForObjFilePath()
@@ -109,12 +102,14 @@ FEditorEngine::~FEditorEngine()
 {
 }
 
+/**
+ * 뷰어에서만 사용하는 기능입니다. 새 obj 파일을 엽니다.
+ * 
+ */
 void FEditorEngine::OpenNewObj()
 {
-#if IS_OBJ_VIEWER
 	bPendingObjViewerStartupPrompt = false;
 	RunObjViewerStartupTest();
-#endif
 }
 
 void FEditorEngine::Shutdown()
@@ -185,7 +180,7 @@ void FEditorEngine::Tick(float DeltaTime)
 {
 	Input(Core->GetTimer().GetDeltaTime());
 	WindowManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
 	TryRunPendingObjViewerStartupPrompt();
 #endif
 	WindowManager.CheckParent();
@@ -236,18 +231,7 @@ FViewportContext* FEditorEngine::CreateEditorViewportContext(const FRect& InRect
 
 FEditorViewportClient* FEditorEngine::CreateEditorViewportClient(EEditorViewportType InViewportType, ELevelType InWorldType)
 {
-	switch (InViewportType)
-	{
-	case EEditorViewportType::Top:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Top, InWorldType);
-	case EEditorViewportType::Front:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Front, InWorldType);
-	case EEditorViewportType::Right:
-		return new FEditorOrthoViewportClient(EditorUI, MainWindow, EOrthoViewType::Right, InWorldType);
-	case EEditorViewportType::Perspective:
-	default:
-		return new FEditorPerspectiveViewportClient(EditorUI, MainWindow, InWorldType);
-	}
+	return new FEditorViewportClient(EditorUI, MainWindow, InViewportType, InWorldType);
 }
 
 void FEditorEngine::RunObjViewerStartupTest()
@@ -294,7 +278,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 		return;
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 OBJ를 다시 불러오기 전에 기본 축 매핑을 강제로 넣습니다
 	FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
 #endif
 	Core->SetSelectedActor(nullptr);

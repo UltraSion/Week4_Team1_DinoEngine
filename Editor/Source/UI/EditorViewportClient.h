@@ -5,11 +5,12 @@
 #include "Picking/Picker.h"
 #include "Types/CoreTypes.h"
 #include "CameraFuction/FCameraFunctionManager.h"
-#include "CameraFuction/FFocus.h"
-#include "CameraFuction/FChangePersToOrth.h"
-#include "CameraFuction/FChangeOrthoToOrtho.h"
+#include "CameraFuction/FPersToPers.h"
+#include "CameraFuction/FPerspectToOrtho.h"
+#include "CameraFuction/FOrthoToPerspect.h"
+#include "CameraFuction/FOrthoToOrtho.h"
 
-class FFocus;
+class FPersToPers;
 class FEditorUI;
 class FWindow;
 class AActor;
@@ -33,13 +34,7 @@ enum class ERenderMode
 enum class EEditorViewportType : uint8_t
 {
 	Perspective,
-	Top,
-	Front,
-	Right
-};
-
-enum class EOrthoViewType : uint8_t
-{
+	Orthographic,
 	Top,
 	Front,
 	Right
@@ -59,7 +54,7 @@ public:
 	void SetGizmoMode(EGizmoMode InMode) { Gizmo.SetMode(InMode); }
 	ERenderMode GetRenderMode() const { return RenderMode; }
 	void SetRenderMode(ERenderMode InRenderMode) { RenderMode = InRenderMode; }
-	EEditorViewportType GetViewportType() const { return ViewportType; }
+	EEditorViewportType GetViewportType() const { return CameraViewType; }
 	bool SupportsEditingTools() const { return WorldType == ELevelType::Editor; }
 	void DrawUI() override;
 	void HandleFileDoubleClick(const FString& FilePath);
@@ -80,10 +75,10 @@ public:
 	float GetObjViewerBottomZ(AActor* TargetActor) const;
 
 protected:
-	virtual void ConfigureDefaultView() = 0;
-	virtual void DrawControllerOptions() = 0;
-	virtual void DrawViewportSpecificOptions() {}
-	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override = 0;
+	virtual void ConfigureDefaultView();
+	virtual void DrawControllerOptions();
+	virtual void DrawViewportSpecificOptions();
+	virtual void ProcessCameraInput(FCore* Core, float DeltaTime) override;
 	virtual void OnMouseButtonDown(UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual void OnMouseButtonUp(UINT Msg, WPARAM WParam, LPARAM LParam);
 	virtual void OnMouseMove(WPARAM WParam, LPARAM LParam);
@@ -102,6 +97,16 @@ protected:
 	void ApplyViewerNoCull(FMaterial* Material) const;
 	void ShowViewOptionPanel();
 	void DrawCameraOption();
+	void StartPerspectiveTransition();
+	void StartOrthoTransition(EEditorViewportType OrthoViewType);
+	void ResetPerspectiveMovementState();
+	void ApplyPerspectiveLookInput(float MouseDeltaX, float MouseDeltaY);
+	void ApplyPerspectivePanInput(float MouseDeltaX, float MouseDeltaY, float DeltaTime);
+	void UpdateOrthoCameraTransform();
+	FVector GetOrthoForwardVector() const;
+	FVector GetOrthoRightVector() const;
+	FVector GetOrthoUpVector() const;
+	static EEditorViewportType GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType);
 	FVector GetViewportUpVector() const;
 	FMatrix GetGridWorldMatrix() const;
 
@@ -111,9 +116,10 @@ protected:
 	mutable FGizmo Gizmo;
 
 	FCameraFunctionManager CameraFunctionManager;
-	FFocus FocusCameraFunction;
-	FChangePersToOrth ChangePersToOrthFunction;
-	FChangeOrthoToOrtho ChangeOrthoToOrthoFunction;
+	FPersToPers FocusCameraFunction;
+	FPerspectToOrtho ChangePersToOrthFunction;
+	FOrthoToPerspect ChangeOrthoToPersFunction;
+	FOrthoToOrtho ChangeOrthoToOrthoFunction;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";
@@ -144,5 +150,21 @@ protected:
 	float ResetAnimationElapsed = 0.0f;
 	float ResetAnimationDuration = 0.25f;
 	bool bResetCameraAnimating = false;
-	EEditorViewportType ViewportType = EEditorViewportType::Perspective;
+	EEditorViewportType CameraViewType = EEditorViewportType::Perspective;
+
+	// Perspective interaction state
+	bool bPerspectiveRotating = false;
+	bool bPerspectivePanning = false;
+	bool bMoveForward = false;
+	bool bMoveBackward = false;
+	bool bMoveRight = false;
+	bool bMoveLeft = false;
+	bool bMoveUp = false;
+	bool bMoveDown = false;
+
+	// Ortho interaction state
+	FVector OrthoCenter = FVector::ZeroVector;
+	float OrthoViewDistance = 25.0f;
+	float PendingOrthoZoomStep = 0.0f;
+	bool bOrthoPanning = false;
 };

@@ -61,7 +61,7 @@ void UCameraComponent::FootZoom(float Value)
 		Camera->SetOrthoWidth(Camera->GetOrthoWidth() * ZoomScale);
 		return;
 	}
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 발줌이 느립니다.
 	Camera->MoveForward(Value*0.1f);
 #else
 	Camera->MoveForward(Value);

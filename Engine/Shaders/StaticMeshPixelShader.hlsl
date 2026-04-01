@@ -18,6 +18,7 @@ float4 main(VS_OUTPUT Input) : SV_TARGET
 	if (UVScrollEnabled > 0.5f)
 	{
 		FinalUV += UVScrollSpeed * TotalTime;
+		//frac이 소수 부분만 남기므로, 샘플링에 쓰는 값은 늘 0~1 범위가 됩니다.
 		FinalUV = frac(FinalUV);
 	}
 

@@ -1,43 +1,11 @@
-#include "FChangeOrthoToOrtho.h"
+#include "FOrthoToOrtho.h"
 
 #include "Camera/Camera.h"
 #include "Math/MathUtility.h"
 
 #include <cmath>
 
-namespace
-{
-	constexpr float MinTransitionTime = 0.01f;
-	constexpr float MinOrbitDistance = 0.01f;
-
-	FVector LerpVector(const FVector& A, const FVector& B, float Alpha)
-	{
-		return A + (B - A) * Alpha;
-	}
-
-	float LerpFloat(float A, float B, float Alpha)
-	{
-		return A + (B - A) * Alpha;
-	}
-
-	float LerpAngleDegrees(float Start, float End, float Alpha)
-	{
-		float Delta = std::fmod(End - Start, 360.0f);
-
-		if (Delta > 180.0f)
-		{
-			Delta -= 360.0f;
-		}
-		else if (Delta < -180.0f)
-		{
-			Delta += 360.0f;
-		}
-
-		return Start + Delta * Alpha;
-	}
-}
-
-void FChangeOrthoToOrtho::StartTransition(
+void FOrthoToOrtho::StartTransition(
 	const FVector& InPivotPosition,
 	const FVector& InTargetRotation,
 	float InTransitionTime)
@@ -78,17 +46,17 @@ void FChangeOrthoToOrtho::StartTransition(
 	bIsTransitioning = true;
 }
 
-void FChangeOrthoToOrtho::Tick(float DeltaTime)
+void FOrthoToOrtho::Tick(float DeltaTime)
 {
 	UpdateTransition(DeltaTime);
 }
 
-bool FChangeOrthoToOrtho::IsFinished() const
+bool FOrthoToOrtho::IsFinished() const
 {
 	return !bIsTransitioning;
 }
 
-void FChangeOrthoToOrtho::UpdateTransition(float DeltaTime)
+void FOrthoToOrtho::UpdateTransition(float DeltaTime)
 {
 	if (!Camera || !bIsTransitioning)
 	{
@@ -148,13 +116,13 @@ void FChangeOrthoToOrtho::UpdateTransition(float DeltaTime)
 	}
 }
 
-float FChangeOrthoToOrtho::EvaluateEaseInOut(float T) const
+float FOrthoToOrtho::EvaluateEaseInOut(float T) const
 {
 	const float ClampedT = FMath::Clamp(T, 0.0f, 1.0f);
 	return ClampedT * ClampedT * (3.0f - 2.0f * ClampedT);
 }
 
-FVector FChangeOrthoToOrtho::CalculateOrbitPosition(
+FVector FOrthoToOrtho::CalculateOrbitPosition(
 	const FVector& InPivotPosition,
 	const FVector& InRotation,
 	float InDistance) const
@@ -171,7 +139,7 @@ FVector FChangeOrthoToOrtho::CalculateOrbitPosition(
 	return InPivotPosition - Forward * InDistance;
 }
 
-FVector FChangeOrthoToOrtho::InterpolateRotation(
+FVector FOrthoToOrtho::InterpolateRotation(
 	const FVector& InStartRotation,
 	const FVector& InTargetRotation,
 	float T) const
