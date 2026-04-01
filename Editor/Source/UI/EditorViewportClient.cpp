@@ -392,7 +392,7 @@ void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
 	CameraFunctionManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //더블클릭으로 카메라 위치를 초기화합니다.
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
 		return;
@@ -472,7 +472,7 @@ float FEditorViewportClient::GetObjViewerBottomZ(AActor* TargetActor) const
 
 void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 orbit rotate를 하므로 pivot을 대상의 중심으로 맞춰줍니다
 	if (!TargetActor)
 	{
 		TargetActor = GetSelectedActor();
@@ -488,7 +488,6 @@ void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 		CameraTransform.SetOrbitTarget(PrimitiveComponent->GetWorldBounds().Center);
 	}
 #else
-	(void)TargetActor;
 #endif
 }
 
@@ -569,7 +568,7 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 차단되는 기능
 	return;
 #endif
 
@@ -789,7 +788,7 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 			Root->SetRelativeTransform(Transform);
 		}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //파일에 대해 자동으로 pivot을 업데이트합니다.
 		Core->SetSelectedActor(MeshActor);
 		RefreshObjViewerCameraPivot(MeshActor);
 		FrameObjViewerCamera(MeshActor, true);
@@ -860,7 +859,7 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		}
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 강제로 Cull None을 적용합니다
 	for (FRenderCommand& Command : OutQueue.Commands)
 	{
 		if (Command.RenderLayer != ERenderLayer::Overlay)
@@ -897,7 +896,7 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 하이라이트도 띄우지 않습니다.
 	return;
 #endif
 

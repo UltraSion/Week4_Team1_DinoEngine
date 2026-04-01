@@ -12,7 +12,7 @@ namespace
 	FString BuildObjStaticMeshCacheKey(const FString& PathFileName)
 	{
 		FString CacheKey = PathFileName;
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //버그 가능성. 축 설정 후 다른 캐시로 저장할 수 있습니다.
 		CacheKey += "|";
 		CacheKey += FObjImporter::BuildImportAxisMappingKey(FObjImporter::GetImportAxisMapping());
 #endif

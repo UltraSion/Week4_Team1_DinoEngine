@@ -291,7 +291,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 		return;
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 OBJ를 다시 불러오기 전에 기본 축 매핑을 강제로 넣습니다
 	FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
 #endif
 	Core->SetSelectedActor(nullptr);

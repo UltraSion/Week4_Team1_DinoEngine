@@ -264,7 +264,7 @@ namespace
 		if (USceneComponent* Root = Actor->GetRootComponent())
 		{
 			FVector DisplayLocation = Root->GetRelativeTransform().GetLocation();
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 z를 실제 월드 위치가 아닌, 바닥면이 0이 되도록 보정한 위치로 반환합니다.
 			DisplayLocation.Z = ViewportClient->GetObjViewerBottomZ(Actor);
 #endif
 			return DisplayLocation;
@@ -414,7 +414,7 @@ void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 				Transform.SetRotation(FRotator::MakeFromEuler(Rot));
 				Transform.SetScale3D(Scl);
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 z를 실제 월드 위치가 아닌, 바닥면이 0이 되도록 보정한 위치로 설정합니다.
 				Transform.SetLocation({ Loc.X, Loc.Y, Transform.GetLocation().Z });
 				Root->SetRelativeTransform(Transform);
 
@@ -1320,7 +1320,7 @@ void FEditorUI::SyncSelectedActorProperty()
 		{
 			const FTransform Transform = Root->GetRelativeTransform();
 			FVector DisplayLocation = Transform.GetLocation();
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //프로퍼티 패널에서 액터의 위치를 나타낼 때, 바닥 기준 위치를 사용합니다.
 			if (ActiveViewportClient)
 			{
 				DisplayLocation = GetObjViewerDisplayedLocation(Selected, ActiveViewportClient);
