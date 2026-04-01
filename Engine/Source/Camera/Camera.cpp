@@ -1,11 +1,11 @@
 #include "Camera.h"
+#include "Core/LaunchOptions.h"
 #include <algorithm>
 #include <cmath>
 #include "Math/MathUtility.h"
 
 namespace
 {
-#if IS_OBJ_VIEWER //뷰어에서 쓰는 orbit rotation에 쓰일 헬퍼.
 	constexpr float MinOrbitPitchDegrees = -89.0f;
 	constexpr float MaxOrbitPitchDegrees = 89.0f;
 
@@ -21,32 +21,31 @@ namespace
 		}
 		return Angle;
 	}
-#endif
 }
 
 void FCamera::SetPosition(const FVector& InPosition)
 {
 	Position = InPosition;
 
-#if IS_OBJ_VIEWER //orbit rotate이므로 위치를 직접 바꿨을 때 orbit 거리와 yaw / pitch를 다시 계산합니다
-	OrbitDistance = (Position - OrbitTarget).Size();
-	if (OrbitDistance <= 0.0f)
+	if (FLaunchOptions::IsObjViewerMode())
 	{
 		OrbitDistance = (Position - OrbitTarget).Size();
 		if (OrbitDistance <= 0.0f)
 		{
-			OrbitDistance = Position.Size();
+			OrbitDistance = (Position - OrbitTarget).Size();
+			if (OrbitDistance <= 0.0f)
+			{
+				OrbitDistance = Position.Size();
+			}
+		}
+
+		const FVector ForwardToTarget = (OrbitTarget - Position).GetSafeNormal();
+		if (!ForwardToTarget.IsNearlyZero())
+		{
+			Yaw = FMath::RadiansToDegrees(std::atan2(ForwardToTarget.Y, ForwardToTarget.X));
+			Pitch = FMath::RadiansToDegrees(std::asin(std::clamp(ForwardToTarget.Z, -1.0f, 1.0f)));
 		}
 	}
-
-	const FVector ForwardToTarget = (OrbitTarget - Position).GetSafeNormal();
-	if (!ForwardToTarget.IsNearlyZero())
-	{
-		Yaw = FMath::RadiansToDegrees(std::atan2(ForwardToTarget.Y, ForwardToTarget.X));
-		Pitch = FMath::RadiansToDegrees(std::asin(std::clamp(ForwardToTarget.Z, -1.0f, 1.0f)));
-	}
-#else
-#endif
 }
 
 /**
@@ -75,30 +74,30 @@ void FCamera::SetRotation(float InYaw, float InPitch)
 	Yaw = InYaw;
 	Pitch = InPitch;
 
-#if IS_OBJ_VIEWER //orbit rotate이므로 회전값을 직접 바꿨을 때 orbit 거리와 yaw / pitch를 다시 계산합니다
-	Yaw = NormalizeAngleDegrees(Yaw);
-	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
-
-	if (OrbitDistance <= 0.0f)
+	if (FLaunchOptions::IsObjViewerMode())
 	{
-		OrbitDistance = (Position - OrbitTarget).Size();
+		Yaw = NormalizeAngleDegrees(Yaw);
+		Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
+
 		if (OrbitDistance <= 0.0f)
 		{
-			OrbitDistance = Position.Size();
+			OrbitDistance = (Position - OrbitTarget).Size();
+			if (OrbitDistance <= 0.0f)
+			{
+				OrbitDistance = Position.Size();
+			}
 		}
+
+		const float YawRad = FMath::DegreesToRadians(Yaw);
+		const float PitchRad = FMath::DegreesToRadians(Pitch);
+
+		FVector ForwardToTarget;
+		ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
+		ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
+		ForwardToTarget.Z = sinf(PitchRad);
+
+		Position = OrbitTarget - ForwardToTarget * OrbitDistance;
 	}
-
-	const float YawRad = FMath::DegreesToRadians(Yaw);
-	const float PitchRad = FMath::DegreesToRadians(Pitch);
-
-	FVector ForwardToTarget;
-	ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
-	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
-	ForwardToTarget.Z = sinf(PitchRad);
-
-	Position = OrbitTarget - ForwardToTarget * OrbitDistance;
-#else
-#endif
 }
 
 FVector FCamera::GetForward() const
@@ -121,26 +120,25 @@ FVector FCamera::GetRight() const
 
 void FCamera::MoveForward(float Delta)
 {
-#if IS_OBJ_VIEWER //뷰어에서는 orbit rotate이므로 foward가 아닌 orbit 거리를 조정하는 방식입니다.
-	//OrbitDistance을 업데이트해줍니다.
-	if (OrbitDistance <= 0.0f)
+	if (FLaunchOptions::IsObjViewerMode())
 	{
-		OrbitDistance = (Position - OrbitTarget).Size();
+		// OrbitDistance를 업데이트해줍니다.
 		if (OrbitDistance <= 0.0f)
 		{
-			OrbitDistance = Position.Size();
+			OrbitDistance = (Position - OrbitTarget).Size();
+			if (OrbitDistance <= 0.0f)
+			{
+				OrbitDistance = Position.Size();
+			}
 		}
+
+		OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
+		Position = OrbitTarget - GetForward() * OrbitDistance;
+		return;
 	}
 
-	//카메라가 물체에 너무 붙지 않게 제한합니다.
-	//너무 붙으면 카메라가 뒤집어질 수 있습니다.
-	OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
-	Position = OrbitTarget - GetForward() * OrbitDistance;
-	return;
-#else
 	FVector Forward = GetForward();
 	Position = Position + Forward * (Delta * Speed);
-#endif
 }
 
 void FCamera::MoveRight(float Delta)
@@ -158,9 +156,10 @@ void FCamera::OffsetPosition(const FVector& Delta)
 {
 	Position = Position + Delta;
 
-#if IS_OBJ_VIEWER //카메라를 평행이동하면	orbit target 좌표도 같이 움직여 줍니다.
-	OrbitTarget = OrbitTarget + Delta;
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		OrbitTarget = OrbitTarget + Delta;
+	}
 }
 
 void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
@@ -168,38 +167,34 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 	Yaw += DeltaYaw;
 	Pitch += DeltaPitch;
 
-#if IS_OBJ_VIEWER //뷰어에서는 orbit 카메라로 움직입니다(카메라가 아닌 물체를 중심으로 회전)
-	Yaw = NormalizeAngleDegrees(Yaw);
-	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
-
-	if (OrbitDistance <= 0.0f)
+	if (FLaunchOptions::IsObjViewerMode())
 	{
-		OrbitDistance = (Position - OrbitTarget).Size();
+		Yaw = NormalizeAngleDegrees(Yaw);
+		Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
+
 		if (OrbitDistance <= 0.0f)
 		{
-			OrbitDistance = Position.Size();
+			OrbitDistance = (Position - OrbitTarget).Size();
+			if (OrbitDistance <= 0.0f)
+			{
+				OrbitDistance = Position.Size();
+			}
 		}
-	}
 
-	const float YawRad = FMath::DegreesToRadians(Yaw);
-	const float PitchRad = FMath::DegreesToRadians(Pitch);
+		const float YawRad = FMath::DegreesToRadians(Yaw);
+		const float PitchRad = FMath::DegreesToRadians(Pitch);
 	
-	FVector ForwardToTarget;
-	ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
-	ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
-	ForwardToTarget.Z = sinf(PitchRad);
-	Position = OrbitTarget - ForwardToTarget * OrbitDistance;
-#else
-#endif
+		FVector ForwardToTarget;
+		ForwardToTarget.X = cosf(PitchRad) * cosf(YawRad);
+		ForwardToTarget.Y = cosf(PitchRad) * sinf(YawRad);
+		ForwardToTarget.Z = sinf(PitchRad);
+		Position = OrbitTarget - ForwardToTarget * OrbitDistance;
+	}
 }
 
 FMatrix FCamera::GetViewMatrix() const
 {
-#if IS_OBJ_VIEWER //orbit rotate중인 물체를 이용해 view matrix를 계산합니다.
-	FVector Target = OrbitTarget;
-#else
-	FVector Target = Position + GetForward();
-#endif
+	FVector Target = FLaunchOptions::IsObjViewerMode() ? OrbitTarget : Position + GetForward();
 	return FMatrix::MakeViewLookAtLH(Position, Target, Up);
 }
 

@@ -58,6 +58,7 @@
     <ClInclude Include="Source\Core\ConsoleVariableManager.h" />
     <ClInclude Include="Source\Core\Core.h" />
     <ClInclude Include="Source\Core\FEngine.h" />
+    <ClInclude Include="Source\Core\LaunchOptions.h" />
     <ClInclude Include="Source\Core\FTimer.h" />
     <ClInclude Include="Source\Core\Paths.h" />
     <ClInclude Include="Source\Core\ShowFlags.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="Source\Core\ConsoleVariableManager.cpp" />
     <ClCompile Include="Source\Core\Core.cpp" />
     <ClCompile Include="Source\Core\FEngine.cpp" />
+    <ClCompile Include="Source\Core\LaunchOptions.cpp" />
     <ClCompile Include="Source\Core\FTimer.cpp" />
     <ClCompile Include="Source\Core\Paths.cpp" />
     <ClCompile Include="Source\Core\ShowFlags.cpp" />
@@ -268,8 +270,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewerDebug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -301,17 +304,21 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <SharedOutputConfiguration Condition="'$(Configuration)'=='ObjViewerDebug'">Release</SharedOutputConfiguration>
+    <SharedOutputConfiguration Condition="'$(SharedOutputConfiguration)'==''">$(Configuration)</SharedOutputConfiguration>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)Bin\$(SharedOutputConfiguration)\</OutDir>
     <IntDir>Build\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewerDebug|x64'">
-    <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)Bin\$(SharedOutputConfiguration)\</OutDir>
     <IntDir>Build\$(Configuration)\</IntDir>
     <NuGetConfiguration>Debug</NuGetConfiguration>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)Bin\$(SharedOutputConfiguration)\</OutDir>
     <IntDir>Build\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -371,8 +378,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewerDebug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;_DEBUG;_CONSOLE;IS_OBJ_VIEWER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;ENGINECORE_EXPORTS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>

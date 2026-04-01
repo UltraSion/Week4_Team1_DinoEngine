@@ -11,6 +11,7 @@
 #include "Renderer/Material.h"
 #include "Component/StaticMeshComponent.h"
 #include "Camera/Camera.h"
+#include "Core/LaunchOptions.h"
 
 void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors, const FFrustum& Frustum,
 	const FShowFlags& ShowFlags, const FCamera* Camera, FRenderCommandQueue& OutQueue)
@@ -54,26 +55,26 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 						Command.RenderLayer = ERenderLayer::Overlay;
 					}
 				
-#if IS_OBJ_VIEWER //뷰어에서는 텍스트, 빌보드 렌더링을 막습니다.
-#else
-					const FVector WorldPos = TextComp->GetRenderWorldPosition();
-					const FVector Scale = TextComp->GetRenderWorldScale();
-
-					if (TextComp->IsBillboard() && Camera)
+					if (!FLaunchOptions::IsObjViewerMode())
 					{
-						const FVector CameraPos = Camera->GetPosition();
-						Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);
-					}
-					else
-					{
-						const float TextScale = TextComp->GetTextScale();
-						Command.WorldMatrix =
-							FMatrix::MakeScale(FVector(TextScale, TextScale, TextScale)) *
-							TextComp->GetWorldTransform();
-					}
+						const FVector WorldPos = TextComp->GetRenderWorldPosition();
+						const FVector Scale = TextComp->GetRenderWorldScale();
 
-					OutQueue.AddCommand(Command);
-#endif
+						if (TextComp->IsBillboard() && Camera)
+						{
+							const FVector CameraPos = Camera->GetPosition();
+							Command.WorldMatrix = FMatrix::MakeScale(Scale) * FMatrix::MakeBillboard(WorldPos, CameraPos);
+						}
+						else
+						{
+							const float TextScale = TextComp->GetTextScale();
+							Command.WorldMatrix =
+								FMatrix::MakeScale(FVector(TextScale, TextScale, TextScale)) *
+								TextComp->GetWorldTransform();
+						}
+
+						OutQueue.AddCommand(Command);
+					}
 				}
 			}
 			continue;

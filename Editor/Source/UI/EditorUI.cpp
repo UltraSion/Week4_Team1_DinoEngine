@@ -9,6 +9,7 @@
 #include "Component/SceneComponent.h"
 #include "Core/Core.h"
 #include "Core/FEngine.h"
+#include "Core/LaunchOptions.h"
 #include "Core/Paths.h"
 #include "Core/ShowFlags.h"
 #include "Debug/EngineLog.h"
@@ -118,13 +119,17 @@ void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 				Transform.SetRotation(FRotator::MakeFromEuler(Rot));
 				Transform.SetScale3D(Scl);
 
-#if IS_OBJ_VIEWER //뷰어에서는 z를 실제 월드 위치가 아닌, 바닥면이 0이 되도록 보정한 위치로 설정합니다.
-				Root->SetRelativeTransform(Transform);
-				ObjViewerPanel.ApplyDisplayedLocation(Selected, ActiveViewportClient, Loc);
-#else
-				Transform.SetLocation(Loc);
-				Root->SetRelativeTransform(Transform);
-#endif
+				if (FLaunchOptions::IsObjViewerMode())
+				{
+					// 뷰어에서는 z를 실제 월드 위치가 아닌, 바닥면 기준으로 보정합니다.
+					Root->SetRelativeTransform(Transform);
+					ObjViewerPanel.ApplyDisplayedLocation(Selected, ActiveViewportClient, Loc);
+				}
+				else
+				{
+					Transform.SetLocation(Loc);
+					Root->SetRelativeTransform(Transform);
+				}
 			}
 		};
 
@@ -536,77 +541,79 @@ void FEditorUI::Render()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-#if IS_OBJ_VIEWER //뷰어에서는 level 개념이 없고 오브젝트를 새로 load할 수만 있습니다
-			if (ImGui::MenuItem("New Obj"))
+			if (FLaunchOptions::IsObjViewerMode())
 			{
-				if (FEditorEngine* EditorEngine = static_cast<FEditorEngine*>(GEngine))
+				if (ImGui::MenuItem("New Obj"))
 				{
-					EditorEngine->OpenNewObj();
-				}
-			}
-#else
-			if (ImGui::MenuItem("New Level"))
-			{
-				if (Core)
-				{
-					ULevel* ActiveLevel = ActiveViewportClient ? ActiveViewportClient->ResolveLevel(Core) : Core->GetLevel();
-					if (ActiveLevel)
+					if (FEditorEngine* EditorEngine = static_cast<FEditorEngine*>(GEngine))
 					{
-						Core->SetSelectedActor(nullptr);
-						ActiveLevel->ClearActors();
-
-						if (ActiveViewportClient && ActiveViewportClient->GetViewportType() == EEditorViewportType::Perspective)
-						{
-							ActiveViewportClient->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
-							ActiveViewportClient->GetCamera()->SetRotation(0.0f, 0.0f);
-						}
-
-						SavePerspectiveCameraInitialState();
-
-						SyncSelectedActorProperty();
-						UE_LOG("New Level created");
+						EditorEngine->OpenNewObj();
 					}
 				}
 			}
-
-			if (ImGui::MenuItem("Open Level"))
+			else
 			{
-				ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
-				if (Core && ActiveLevel && GRenderer)
+				if (ImGui::MenuItem("New Level"))
 				{
-					const FString Path = GetFilePathUsingDialog(EFileDialogType::Open);
-					if (!Path.empty())
+					if (Core)
 					{
-						Core->SetSelectedActor(nullptr);
-						ActiveLevel->ClearActors();
-
-						if (FSceneSerializer::Load(ActiveLevel, Path, GRenderer->GetDevice(), GetPerspectiveCamera()))
+						ULevel* ActiveLevel = ActiveViewportClient ? ActiveViewportClient->ResolveLevel(Core) : Core->GetLevel();
+						if (ActiveLevel)
 						{
+							Core->SetSelectedActor(nullptr);
+							ActiveLevel->ClearActors();
+
+							if (ActiveViewportClient && ActiveViewportClient->GetViewportType() == EEditorViewportType::Perspective)
+							{
+								ActiveViewportClient->GetCamera()->SetPosition({ -5.0f, 0.0f, 2.0f });
+								ActiveViewportClient->GetCamera()->SetRotation(0.0f, 0.0f);
+							}
+
 							SavePerspectiveCameraInitialState();
 							SyncSelectedActorProperty();
-							UE_LOG("Level loaded: %s", Path.c_str());
-						}
-						else
-						{
-							MessageBoxW(nullptr, L"Level information is invalid.", L"Error", MB_OK | MB_ICONWARNING);
+							UE_LOG("New Level created");
 						}
 					}
 				}
-			}
 
-			if (ImGui::MenuItem("Save Level As..."))
-			{
-				ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
-				if (Core && ActiveLevel)
+				if (ImGui::MenuItem("Open Level"))
 				{
-					const FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
-					if (!Path.empty())
+					ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
+					if (Core && ActiveLevel && GRenderer)
 					{
-						FSceneSerializer::Save(ActiveLevel, Path, GetPerspectiveCamera());
+						const FString Path = GetFilePathUsingDialog(EFileDialogType::Open);
+						if (!Path.empty())
+						{
+							Core->SetSelectedActor(nullptr);
+							ActiveLevel->ClearActors();
+
+							if (FSceneSerializer::Load(ActiveLevel, Path, GRenderer->GetDevice(), GetPerspectiveCamera()))
+							{
+								SavePerspectiveCameraInitialState();
+								SyncSelectedActorProperty();
+								UE_LOG("Level loaded: %s", Path.c_str());
+							}
+							else
+							{
+								MessageBoxW(nullptr, L"Level information is invalid.", L"Error", MB_OK | MB_ICONWARNING);
+							}
+						}
+					}
+				}
+
+				if (ImGui::MenuItem("Save Level As..."))
+				{
+					ULevel* ActiveLevel = (Core && ActiveViewportClient) ? ActiveViewportClient->ResolveLevel(Core) : (Core ? Core->GetActiveLevel() : nullptr);
+					if (Core && ActiveLevel)
+					{
+						const FString Path = GetFilePathUsingDialog(EFileDialogType::Save);
+						if (!Path.empty())
+						{
+							FSceneSerializer::Save(ActiveLevel, Path, GetPerspectiveCamera());
+						}
 					}
 				}
 			}
-#endif
 			ImGui::EndMenu();
 		}
 
@@ -633,25 +640,25 @@ void FEditorUI::Render()
 				ImGui::SeparatorText(ActiveViewportClient->GetViewportLabel()); // -> 수정
 
 				int RenderMode = static_cast<int>(ActiveViewportClient->GetRenderMode()); // -> 수정
-#if IS_OBJ_VIEWER //뷰어에서는 UV, Normal 렌더링 모드를 추가로 제공합니다.
-				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0UV\0Normals\0";
-#else
-				const char* RenderModes = "Lighting\0No Lighting\0Wireframe\0";
-#endif
+				const char* RenderModes = FLaunchOptions::IsObjViewerMode()
+					? "Lighting\0No Lighting\0Wireframe\0Solid Wireframe\0UV\0Normals\0"
+					: "Lighting\0No Lighting\0Wireframe\0";
 				if (ImGui::Combo("Render Mode", &RenderMode, RenderModes))
 				{
 					ActiveViewportClient->SetRenderMode(static_cast<ERenderMode>(RenderMode)); // -> 수정
 				}
-#if !IS_OBJ_VIEWER //Primitives, UUID, Debug Draw에 대한 설정은 뷰어에서 건드리지 못하게 막습니다.
-				ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
-				ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
-				ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
-#endif
+				if (!FLaunchOptions::IsObjViewerMode())
+				{
+					ShowFlagCheckbox("Primitives", EEngineShowFlags::SF_Primitives);
+					ShowFlagCheckbox("UUID", EEngineShowFlags::SF_UUID);
+					ShowFlagCheckbox("Debug Draw", EEngineShowFlags::SF_DebugDraw);
+				}
 				ShowFlagCheckbox("Grid", EEngineShowFlags::SF_Grid);
-#if !IS_OBJ_VIEWER //뷰어에서는 월드축을 렌더링하지 않으며 끄고 키는 것도 숨깁니다.
-				ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
-				ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
-#endif
+				if (!FLaunchOptions::IsObjViewerMode())
+				{
+					ShowFlagCheckbox("World Axis", EEngineShowFlags::SF_WorldAxis);
+					ShowFlagCheckbox("Collision", EEngineShowFlags::SF_Collision);
+				}
 
 				float GridSize = ActiveViewportClient->GetGridSize(); // -> 수정
 				if (ImGui::SliderFloat("Grid Size", &GridSize, 1.0f, 100.0f, "%.1f"))
@@ -755,24 +762,27 @@ void FEditorUI::Render()
 		ImGui::EndPopup();
 	}
 
-#if IS_OBJ_VIEWER //뷰어에서는 뷰어 전용 패널만 띄우고 나머지 패널을 다 죽입니다
-	ObjViewerPanel.Render(Core, ActiveViewportClient, *this);
-#else
-	Property.Render(Core);
-	Console.Render();
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		ObjViewerPanel.Render(Core, ActiveViewportClient, *this);
+	}
+	else
+	{
+		Property.Render(Core);
+		Console.Render();
 
-	//Stat.Render(); //stat panel은 stat overlay에 대체됩니다.
+		//Stat.Render(); //stat panel은 stat overlay에 대체됩니다.
 
-	// Viewport draw data keeps the SRV pointer until ImGui render submission,
-	// so rendering the same legacy viewport twice in one frame can invalidate
-	// the first draw command if the offscreen target is recreated in-between.
-	//ViewportLegacy.Render(nullptr);
-	dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
+		// Viewport draw data keeps the SRV pointer until ImGui render submission,
+		// so rendering the same legacy viewport twice in one frame can invalidate
+		// the first draw command if the offscreen target is recreated in-between.
+		//ViewportLegacy.Render(nullptr);
+		dynamic_cast<FEditorEngine*>(GEngine)->GetWindowManager().DrawWindows();
 
-	Outliner.Render(Core);
-	ControlPanel.Render(Core, ActiveViewportClient);
-	ContentBrowser.Render();
-#endif
+		Outliner.Render(Core);
+		ControlPanel.Render(Core, ActiveViewportClient);
+		ContentBrowser.Render();
+	}
 }
 
 void FEditorUI::SyncSelectedActorProperty()
@@ -789,12 +799,10 @@ void FEditorUI::SyncSelectedActorProperty()
 		{
 			const FTransform Transform = Root->GetRelativeTransform();
 			FVector DisplayLocation = Transform.GetLocation();
-#if IS_OBJ_VIEWER //프로퍼티 패널에서 액터의 위치를 나타낼 때, 바닥 기준 위치를 사용합니다.
-			if (ActiveViewportClient)
+			if (FLaunchOptions::IsObjViewerMode() && ActiveViewportClient)
 			{
 				DisplayLocation = ObjViewerPanel.GetDisplayedLocation(Selected, ActiveViewportClient);
 			}
-#endif
 			Property.SetTarget(
 				DisplayLocation,
 				Transform.Rotator().Euler(),

@@ -1,6 +1,7 @@
 
 #include "ObjImporter.h"
 #include "ObjInfo.h"
+#include "Core/LaunchOptions.h"
 #include "Core/Paths.h"
 #include "StaticMeshRenderData.h"
 #include "Types/Map.h"
@@ -392,12 +393,12 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 			? Info.UVs[Info.UVIndices[i]] : FVector2(0, 0);
 
 		V.Color = FVector4(1, 1, 1, 1);
-#if IS_OBJ_VIEWER //정점 위치, 노말에 import axis mapping과 import scale을 적용
-		V.Position = ApplyImportAxisMapping(V.Position, ActiveImportAxisMapping);
-		//여기서 조정된 scale 값을 곱해 저 장합니다.
-		V.Position *= ActiveImportAxisMapping.ImportScale;
-		V.Normal = ApplyImportAxisMapping(V.Normal, ActiveImportAxisMapping);
-#endif
+		if (FLaunchOptions::IsObjViewerMode())
+		{
+			V.Position = ApplyImportAxisMapping(V.Position, ActiveImportAxisMapping);
+			V.Position *= ActiveImportAxisMapping.ImportScale;
+			V.Normal = ApplyImportAxisMapping(V.Normal, ActiveImportAxisMapping);
+		}
 
 		auto It = UniqueVertices.find(V);
 		if (It != UniqueVertices.end())
@@ -438,9 +439,10 @@ FStaticMeshRenderData* FObjImporter::Cook(const FObjInfo& Info)
 	}
 
 	MeshData->Topology = EMeshTopology::EMT_TriangleList;
-#if IS_OBJ_VIEWER // Viewer에서 오브젝트 중심을 원점으로 옮겨 orbit 회전 중심을 안정화합니다.
-	RecenterMeshToOrigin(*MeshData);
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		RecenterMeshToOrigin(*MeshData);
+	}
 	MeshData->UpdateLocalBound();
 
 	FStaticMeshRenderData* Mesh = new FStaticMeshRenderData();

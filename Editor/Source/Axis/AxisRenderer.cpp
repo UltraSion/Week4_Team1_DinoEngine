@@ -1,4 +1,5 @@
 #include "AxisRenderer.h"
+#include "Core/LaunchOptions.h"
 #include "Renderer/Renderer.h"
 
 void FAxisRenderer::RenderWorldAxis(FRenderer* Renderer, float Length)
@@ -7,12 +8,12 @@ void FAxisRenderer::RenderWorldAxis(FRenderer* Renderer, float Length)
     {
         return;
     }
-#if IS_OBJ_VIEWER //뷰어에서 월드축 렌더링x
-#else
+    if (!FLaunchOptions::IsObjViewerMode())
+    {
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { Length, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, Length, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f });
     Renderer->DrawLine({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, Length }, { 0.0f, 0.0f, 1.0f, 1.0f });
-#endif
+    }
 }
 
 //오컴의 면도날, 안 쓰는 코드 

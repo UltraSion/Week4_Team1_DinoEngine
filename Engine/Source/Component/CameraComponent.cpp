@@ -1,6 +1,7 @@
 #include "CameraComponent.h"
 #include "Object/Class.h"
 #include "Camera/Camera.h"
+#include "Core/LaunchOptions.h"
 #include "Serializer/Archive.h"
 IMPLEMENT_RTTI(UCameraComponent, USceneComponent)
 
@@ -61,11 +62,7 @@ void UCameraComponent::FootZoom(float Value)
 		Camera->SetOrthoWidth(Camera->GetOrthoWidth() * ZoomScale);
 		return;
 	}
-#if IS_OBJ_VIEWER //뷰어에서는 발줌이 느립니다.
-	Camera->MoveForward(Value*0.1f);
-#else
-	Camera->MoveForward(Value);
-#endif
+	Camera->MoveForward(FLaunchOptions::IsObjViewerMode() ? Value * 0.1f : Value);
 }
 
 void UCameraComponent::Rotate(float DeltaYaw, float DeltaPitch)

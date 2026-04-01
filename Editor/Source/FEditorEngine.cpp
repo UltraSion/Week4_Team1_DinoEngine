@@ -5,6 +5,7 @@
 #include "Core/Core.h"
 #include "Core/Viewport.h"
 #include "Core/ConsoleVariableManager.h"
+#include "Core/LaunchOptions.h"
 #include "Core/Paths.h"
 #include "World/Level.h"
 #include "World/World.h"
@@ -76,7 +77,8 @@ bool FEditorEngine::Initialize(HINSTANCE hInstance)
 {
 	ImGui_ImplWin32_EnableDpiAwareness();
 
-	if (!FEngine::Initialize(hInstance, L"Jungle Editor", 1280, 720))
+	const wchar_t* WindowTitle = FLaunchOptions::IsObjViewerMode() ? L"Jungle ObjViewer" : L"Jungle Editor";
+	if (!FEngine::Initialize(hInstance, WindowTitle, 1280, 720))
 	{
 		return false;
 	}
@@ -158,9 +160,7 @@ void FEditorEngine::PostInitialize()
 	EditorUI.SetupWindow(MainWindow);
 	EditorUI.AttachToRenderer();
 
-#if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
-	bPendingObjViewerStartupPrompt = true;
-#endif
+	bPendingObjViewerStartupPrompt = FLaunchOptions::IsObjViewerMode();
 
 	UE_LOG("EditorEngine initialized");
 }
@@ -180,9 +180,10 @@ void FEditorEngine::Tick(float DeltaTime)
 {
 	Input(Core->GetTimer().GetDeltaTime());
 	WindowManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
-	TryRunPendingObjViewerStartupPrompt();
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		TryRunPendingObjViewerStartupPrompt();
+	}
 	WindowManager.CheckParent();
 	Render();
 }
@@ -278,9 +279,11 @@ void FEditorEngine::RunObjViewerStartupTest()
 		return;
 	}
 
-#if IS_OBJ_VIEWER //뷰어에서 OBJ를 다시 불러오기 전에 기본 축 매핑을 강제로 넣습니다
-	FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		// 뷰어에서 OBJ를 다시 불러오기 전에 기본 축 매핑을 강제로 넣습니다.
+		FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
+	}
 	Core->SetSelectedActor(nullptr);
 	Level->ClearActors();
 
@@ -294,19 +297,22 @@ void FEditorEngine::RunObjViewerStartupTest()
 
 	if (FCamera* Camera = ViewportClient->GetCamera())
 	{
-#if IS_OBJ_VIEWER //뷰어에서는 mesh의 크기에 따라 다른 위치에 카메라가 놓입니다. 다시 로드할 때도 적용됩니다.
 		Camera->SetFOV(60.0f);
-		if (MeshActor)
+		if (FLaunchOptions::IsObjViewerMode())
 		{
-			SnapObjViewerActorBottomToZero(MeshActor, ViewportClient);
-			ViewportClient->FrameObjViewerCamera(MeshActor, true);
+			// 뷰어에서는 mesh의 크기에 따라 다른 위치에 카메라가 놓입니다.
+			if (MeshActor)
+			{
+				SnapObjViewerActorBottomToZero(MeshActor, ViewportClient);
+				ViewportClient->FrameObjViewerCamera(MeshActor, true);
+			}
 		}
-#else
-		Camera->SetPosition({ -6.0f, -6.0f, 5.0f });
-		Camera->SetRotation(45.0f, -30.0f);
-		Camera->SetFOV(60.0f);
-		ViewportClient->SaveInitialCameraState();
-#endif
+		else
+		{
+			Camera->SetPosition({ -6.0f, -6.0f, 5.0f });
+			Camera->SetRotation(45.0f, -30.0f);
+			ViewportClient->SaveInitialCameraState();
+		}
 	}
 
 	ViewportClient->SetRenderMode(ERenderMode::SolidWireframe);

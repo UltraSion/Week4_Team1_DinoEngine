@@ -10,6 +10,7 @@
 #include "Component/SceneComponent.h"
 #include "Core/Core.h"
 #include "Core/FEngine.h"
+#include "Core/LaunchOptions.h"
 #include "Core/Paths.h"
 #include "Debug/EngineLog.h"
 #include "Math/MathUtility.h"
@@ -205,9 +206,10 @@ void FEditorViewportClient::Attach(FCore* Core)
 	WireFrameMaterial = FMaterialManager::Get().FindByName(WireframeMaterialName);
 	SolidWireFrameMaterial = FMaterialManager::Get().FindByName(SolidWireframeMaterialName);
 	CreateGridResource(GRenderer);
-#if IS_OBJ_VIEWER //뷰어에서 보여줄 normal과 uv를 준비합니다
-	CreateViewerDebugMaterials(GRenderer);
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		CreateViewerDebugMaterials(GRenderer);
+	}
 }
 
 void FEditorViewportClient::Detach()
@@ -693,11 +695,12 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	case WM_KEYUP:
 		OnKeyUp(WParam, LParam);
 		return;
-#if IS_OBJ_VIEWER //뷰어에서만 사용하는 더블클릭입니다
 	case WM_LBUTTONDBLCLK:
-		ResetCameraToInitialState();
+		if (FLaunchOptions::IsObjViewerMode())
+		{
+			ResetCameraToInitialState();
+		}
 		return;
-#endif
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_RBUTTONDBLCLK:
@@ -737,8 +740,7 @@ void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
 	CameraFunctionManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER //더블클릭으로 카메라 위치를 초기화합니다.
-	if (!bResetCameraAnimating || !bHasInitialCameraState)
+	if (!FLaunchOptions::IsObjViewerMode() || !bResetCameraAnimating || !bHasInitialCameraState)
 	{
 		return;
 	}
@@ -765,7 +767,6 @@ void FEditorViewportClient::Tick(float DeltaTime)
 		bResetCameraAnimating = false;
 		ResetAnimationElapsed = 0.0f;
 	}
-#endif
 }
 
 void FEditorViewportClient::SaveInitialCameraState()
@@ -817,7 +818,11 @@ float FEditorViewportClient::GetObjViewerBottomZ(AActor* TargetActor) const
 
 void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 {
-#if IS_OBJ_VIEWER //뷰어에서는 orbit rotate를 하므로 pivot을 대상의 중심으로 맞춰줍니다
+	if (!FLaunchOptions::IsObjViewerMode())
+	{
+		return;
+	}
+
 	if (!TargetActor)
 	{
 		TargetActor = GetSelectedActor();
@@ -832,8 +837,6 @@ void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 	{
 		CameraTransform.SetOrbitTarget(PrimitiveComponent->GetWorldBounds().Center);
 	}
-#else
-#endif
 }
 
 void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState)
@@ -920,9 +923,10 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
-#if IS_OBJ_VIEWER //뷰어에서는 차단되는 기능
-	return;
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		return;
+	}
 
 	if (SelectedActor && Gizmo.BeginDrag(SelectedActor, &CameraTransform, Picker, ViewportMouseX, ViewportMouseY, ViewportWidth, ViewportHeight))
 	{
@@ -1412,20 +1416,20 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 		{
 			FTransform Transform = Root->GetRelativeTransform();
 			FVector FinalLocation = SpawnLocation;;
-#if IS_OBJ_VIEWER //뷰어에서만 높이(Z) 보정값을 추가 계산
-			FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
-#endif
+			if (FLaunchOptions::IsObjViewerMode())
+			{
+				FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
+			}
 			Transform.SetLocation(FinalLocation);
 			Root->SetRelativeTransform(Transform);
 		}
 
-#if IS_OBJ_VIEWER //파일에 대해 자동으로 pivot을 업데이트합니다.
 		Core->SetSelectedActor(MeshActor);
-		RefreshObjViewerCameraPivot(MeshActor);
-		FrameObjViewerCamera(MeshActor, true);
-#else
-		Core->SetSelectedActor(MeshActor);
-#endif
+		if (FLaunchOptions::IsObjViewerMode())
+		{
+			RefreshObjViewerCameraPivot(MeshActor);
+			FrameObjViewerCamera(MeshActor, true);
+		}
 	}
 
 	EditorUI.SyncSelectedActorProperty();
@@ -1502,15 +1506,16 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		}
 	}
 
-#if IS_OBJ_VIEWER //뷰어에서는 강제로 Cull None을 적용합니다
-	for (FRenderCommand& Command : OutQueue.Commands)
+	if (FLaunchOptions::IsObjViewerMode())
 	{
-		if (Command.RenderLayer != ERenderLayer::Overlay)
+		for (FRenderCommand& Command : OutQueue.Commands)
 		{
-			ApplyViewerNoCull(Command.Material);
+			if (Command.RenderLayer != ERenderLayer::Overlay)
+			{
+				ApplyViewerNoCull(Command.Material);
+			}
 		}
 	}
-#endif
 
 	if (GridMesh && GridMaterial && IsGridVisible())
 	{
@@ -1522,12 +1527,13 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		OutQueue.AddCommand(GridCommand);
 	}
 
-#if !IS_OBJ_VIEWER
-	if (AActor* GizmoTarget = GetGizmoTarget())
+	if (!FLaunchOptions::IsObjViewerMode())
 	{
-		Gizmo.BuildRenderCommands(GizmoTarget, &CameraTransform, OutQueue);
+		if (AActor* GizmoTarget = GetGizmoTarget())
+		{
+			Gizmo.BuildRenderCommands(GizmoTarget, &CameraTransform, OutQueue);
+		}
 	}
-#endif
 }
 
 void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
@@ -1539,9 +1545,10 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
 
-#if IS_OBJ_VIEWER //뷰어에서는 하이라이트도 띄우지 않습니다.
-	return;
-#endif
+	if (FLaunchOptions::IsObjViewerMode())
+	{
+		return;
+	}
 
 	AActor* SelectedActor = Core->GetSelectedActor();
 	if (!SelectedActor || SelectedActor->IsPendingDestroy() || !SelectedActor->IsVisible() || SelectedActor->IsA<ASkySphereActor>())
