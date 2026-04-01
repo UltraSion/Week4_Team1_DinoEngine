@@ -99,6 +99,8 @@ void FMeshData::UpdateLocalBound()
 	}
 	else
 	{
+		MinCoord = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
+		MaxCoord = FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 		for (const FPrimitiveVertex& Vertex : Vertices)
 		{
 			if (Vertex.Position.X < MinCoord.X) MinCoord.X = Vertex.Position.X;
@@ -107,9 +109,8 @@ void FMeshData::UpdateLocalBound()
 			if (Vertex.Position.Y > MaxCoord.Y) MaxCoord.Y = Vertex.Position.Y;
 			if (Vertex.Position.Z < MinCoord.Z) MinCoord.Z = Vertex.Position.Z;
 			if (Vertex.Position.Z > MaxCoord.Z) MaxCoord.Z = Vertex.Position.Z;
-
-			LocalBoundRadius = ((MaxCoord - MinCoord) * 0.5).Size();
 		}
+		LocalBoundRadius = ((MaxCoord - MinCoord) * 0.5).Size();
 	}
 }
 

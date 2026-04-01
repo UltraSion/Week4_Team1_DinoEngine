@@ -19,9 +19,10 @@ public:
 	UStaticMesh* LoadStaticMesh(ID3D11Device* Device, const FString& AssetName);
 	ID3D11ShaderResourceView* LoadTexture(ID3D11Device* Device, const FString& FilePath);
 	void InvalidateStaticMesh(const FString& AssetName);
+	void ClearCache();
 private:
 	FAssetManager() = default;
-	~FAssetManager() = default;
+	~FAssetManager();
 
 	FAssetManager(const FAssetManager&) = delete;
 	FAssetManager& operator=(const FAssetManager&) = delete;

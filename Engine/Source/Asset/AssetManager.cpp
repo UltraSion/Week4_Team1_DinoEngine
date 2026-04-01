@@ -243,3 +243,24 @@ void FAssetManager::InvalidateStaticMesh(const FString& AssetName)
 		UE_LOG("[AssetManager] Invalidated static mesh cache: %s\n", CacheKey.c_str());
 	}
 }
+
+void FAssetManager::ClearCache()
+{
+	for (auto& pair : LoadedTextures)
+	{
+		if (pair.second)
+		{
+			pair.second->Release();
+		}
+	}
+	LoadedTextures.clear();
+
+
+	LoadedMeshes.clear();
+
+}
+
+FAssetManager::~FAssetManager()
+{
+	ClearCache();
+}

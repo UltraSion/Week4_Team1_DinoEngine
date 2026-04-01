@@ -13,6 +13,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
+#include <Asset/AssetManager.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -881,7 +882,18 @@ void FRenderer::Release()
 	if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
 	if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
 	if (SwapChain) { SwapChain->Release(); SwapChain = nullptr; }
-	if (DeviceContext) { DeviceContext->Release(); DeviceContext = nullptr; }
+	CPrimitiveBase::ClearCache();
+	FAssetManager::Get().ClearCache();
+	if (DeviceContext)
+	{
+		DeviceContext->ClearState();
+		DeviceContext->Flush();
+
+		
+		DeviceContext->Release();
+		DeviceContext = nullptr;
+	}
+
 	if (Device) { Device->Release(); Device = nullptr; }
 }
 

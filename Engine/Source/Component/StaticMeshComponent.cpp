@@ -157,10 +157,7 @@ void UStaticMeshComponent::LoadTextureToSlot(ID3D11Device* Device, const FString
 	//머티리얼 텍스처 세팅
 	auto MT = std::make_shared<FMaterialTexture>();
 	MT->TextureSRV = srv; // MT가 소멸될 때 srv->Release()를 부르지만, AssetManager가 원본을 쥐고 있으니 안전
-	if (MT->TextureSRV)
-	{
-		MT->TextureSRV->AddRef();
-	}
+
 	MT->AssetPath = FilePath;
 	DynamicMat->SetMaterialTexture(MT);
 	SetMaterial(SlotIndex, DynamicMat.get());
