@@ -168,6 +168,13 @@ namespace
 		}
 	}
 
+	/**
+	 *
+	 * 
+	 * \param ImportAxisMapping
+	 * \param RowIndex
+	 * \param NewAxisBaseIndex
+	 */
 	void SetMappingAxisBase(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex, int NewAxisBaseIndex)
 	{
 		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
@@ -1176,6 +1183,10 @@ void FEditorUI::Render()
 			ImGui::Unindent();
 		}
 
+		/**
+		 * 엔진의 이 축에 어떤 OBJ 축을 넣을 것인가를 지정합니다.
+		 * 
+		 */
 		if (ImGui::CollapsingHeader("OBJ Axis Mapping", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Indent();

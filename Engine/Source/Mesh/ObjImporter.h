@@ -7,6 +7,9 @@ class FStaticMeshRenderData;
 class ENGINE_API FObjImporter
 {
 public:
+	/**
+	 * 엔진의 X/Y/Z 축에 OBJ의 어느 축을 대응시킬지 지정합니다.
+	 */
 	enum class EAxisDirection : uint8
 	{
 		PositiveX,
