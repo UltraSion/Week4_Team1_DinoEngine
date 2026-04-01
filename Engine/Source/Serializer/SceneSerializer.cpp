@@ -154,10 +154,10 @@ bool FSceneSerializer::Load(ULevel* Level, const FString& FilePath, ID3D11Device
 		{
 			PerspectiveCamera->SetNearClip(PerspectiveCameraJson["NearClip"].get<float>());
 		}
-		if (PerspectiveCameraJson.contains("FarClip"))
-		{
-			PerspectiveCamera->SetFarClip(PerspectiveCameraJson["FarClip"].get<float>());
-		}
+		//if (PerspectiveCameraJson.contains("FarClip"))
+		//{
+		//	PerspectiveCamera->SetFarClip(PerspectiveCameraJson["FarClip"].get<float>());
+		//} 아무도 나를 막을 수 없음
 	}
 
 	int32 ActorIndex = 0;

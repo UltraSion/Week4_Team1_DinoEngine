@@ -1018,7 +1018,7 @@ void FEditorViewportClient::DrawUI()
 		}
 
 		ImGui::SameLine();
-		sprintf_s(ItemName, "+##%p", this);
+		sprintf_s(ItemName, "4##%p", this);
 		if (ImGui::Button(ItemName))
 		{
 			SViewportWindow* TopViewportWindow = CreateEditorViewportWindow(EEditorViewportType::Top);
@@ -1036,29 +1036,6 @@ void FEditorViewportClient::DrawUI()
 				}
 			}
 		}
-
-		ImGui::SameLine();
-		sprintf_s(ItemName, "Ortho <-> Perspective ##%p", this);
-		if (ImGui::Button(ItemName))
-		{
-			if (CameraViewType != EEditorViewportType::Perspective)
-			{
-				CameraViewType = EEditorViewportType::Perspective;
-				bPerspectiveRotating = false;
-				bPerspectivePanning = false;
-				bOrthoPanning = false;
-				PendingOrthoZoomStep = 0.0f;
-				ResetPerspectiveMovementState();
-
-				ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV, OrthoCenter, ViewTransitionDuration);
-				CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
-			}
-			else
-			{
-				StartOrthographicTransition();
-			}
-
-		}
 	}
 	else
 	{
@@ -1071,12 +1048,49 @@ void FEditorViewportClient::DrawUI()
 	}
 
 	ImGui::SameLine();
+	sprintf_s(ItemName, "Ortho <-> Perspective ##%p", this);
+	if (ImGui::Button(ItemName))
+	{
+		if (CameraViewType != EEditorViewportType::Perspective)
+		{
+			CameraViewType = EEditorViewportType::Perspective;
+			bPerspectiveRotating = false;
+			bPerspectivePanning = false;
+			bOrthoPanning = false;
+			PendingOrthoZoomStep = 0.0f;
+			ResetPerspectiveMovementState();
+
+			ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV, OrthoCenter, ViewTransitionDuration);
+			CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
+		}
+		else
+		{
+			StartOrthographicTransition();
+		}
+	}
+	ImGui::SameLine();
+	sprintf_s(ItemName, "T##%p", this);
+	if (ImGui::Button(ItemName))
+	{
+		StartOrthoTransition(EEditorViewportType::Top);
+
+	}
+	ImGui::SameLine();
+	sprintf_s(ItemName, "F##%p", this);
+	if (ImGui::Button(ItemName))
+	{
+		StartOrthoTransition(EEditorViewportType::Front);
+
+	}
+	ImGui::SameLine();
+	sprintf_s(ItemName, "R##%p", this);
+	if (ImGui::Button(ItemName))
+	{
+		StartOrthoTransition(EEditorViewportType::Right);
+	}
+
 	ShowViewOptionPanel();
 
-	ImGui::SameLine();
-	DrawViewportSpecificOptions();
-
-	ImGui::SameLine();
 	DrawCameraOption();
 	ImGui::End();
 }
@@ -1740,7 +1754,7 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 {
 	AActor* Actor = GetGizmoTarget();
 
-	
+
 	FVector Translation = Actor != nullptr ? Actor->GetRootComponent() != nullptr ? Actor->GetRootComponent()->GetRelativeLocation() : FVector::ZeroVector : FVector::ZeroVector;
 	FMatrix Rotation;
 	FVector Scale = FVector::OneVector;
