@@ -49,6 +49,7 @@ public:
 	float GetOrthoWidth() const;
 	float GetOrthoHeight() const;
 	void SetOrthoWidth(float InOrthoWidth);
+	void SetOrthoHeight(float InOrthoHeight);
 	FVector GetOrbitTarget() const { return OrbitTarget; }
 
 private:

@@ -1,159 +1,66 @@
 #include "FPerspectToOrtho.h"
 
+#include "Actor/Actor.h"
 #include "Camera/Camera.h"
 #include "Math/MathUtility.h"
+#include "Component/PrimitiveComponent.h"
 
 #include <cmath>
 
-namespace
+void FPerspectToOrtho::StartTransition(AActor* InTargetActor)
 {
-	constexpr float MinTransitionTime = 0.01f;
-	constexpr float MinOrthoWidth = 0.01f;
-	constexpr float MinOrbitDistance = 0.01f;
-	constexpr float MinPerspectiveFOV = 1.0f;
-
-	float LerpFloat(float A, float B, float Alpha)
-	{
-		return A + (B - A) * Alpha;
-	}
-
-	float LerpAngleDegrees(float Start, float End, float Alpha)
-	{
-		float Delta = std::fmod(End - Start, 360.0f);
-		if (Delta > 180.0f)
-		{
-			Delta -= 360.0f;
-		}
-		else if (Delta < -180.0f)
-		{
-			Delta += 360.0f;
-		}
-
-		return Start + Delta * Alpha;
-	}
-}
-
-void FPerspectToOrtho::StartTransition(
-	const FVector& InPivotPosition,
-	const FVector& InTargetRotation,
-	float InOrthoWidth,
-	float InTransitionTime)
-{
-	if (!Camera)
+	if (!Camera || !InTargetActor)
 	{
 		return;
 	}
 
+	UPrimitiveComponent* PrimitiveComponent = InTargetActor->GetComponentByClass<UPrimitiveComponent>();
+	if (!PrimitiveComponent)
+	{
+		return;
+	}
+
+	const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
 	StartPosition = Camera->GetPosition();
-	StartRotation = FVector(Camera->GetYaw(), Camera->GetPitch(), 0.0f);
 	StartFOV = Camera->GetFOV();
+	ViewDirection = Camera->GetForward().GetSafeNormal();
+	PivotPosition = Bounds.Center;
+	if (ViewDirection.IsNearlyZero())
+	{
+		ViewDirection = FVector::ForwardVector;
+	}
 
-	PivotPosition = InPivotPosition;
-	TargetRotation = InTargetRotation;
-	TargetOrthoWidth = FMath::Max(InOrthoWidth, MinOrthoWidth);
+	TargetRadius = Bounds.Radius * 2.f;
+	StartPosition = Bounds.Center - ViewDirection * ComputeFocusDistance(TargetRadius, Camera->GetFOV());
+	TargetPosition = Bounds.Center - ViewDirection * ComputeFocusDistance(TargetRadius, MinPerspectiveFOV);
 
-	CameraDistance = FMath::Max(FVector::Dist(StartPosition, PivotPosition), MinOrbitDistance);
-	TargetPosition = CalculateOrbitPosition(PivotPosition, TargetRotation, CameraDistance);
-
-	TransitionTime = FMath::Max(InTransitionTime, MinTransitionTime);
-	ElapsedTime = 0.0f;
-	bIsTransitioning = true;
-	bSwitchedToOrtho = false;
-
-	Camera->SetProjectionMode(ECameraProjectionMode::Perspective);
-	Camera->SetFOV(StartFOV);
+	MoveElapsedTime = 0.0f;
+	bIsTransition = true;
 }
 
 void FPerspectToOrtho::Tick(float DeltaTime)
 {
-	UpdateTransition(DeltaTime);
-}
-
-bool FPerspectToOrtho::IsFinished() const
-{
-	return !bIsTransitioning;
-}
-
-void FPerspectToOrtho::UpdateTransition(float DeltaTime)
-{
-	if (!Camera || !bIsTransitioning)
+	if (!Camera || !bIsTransition)
 	{
 		return;
 	}
 
-	ElapsedTime += DeltaTime;
+	MoveElapsedTime += DeltaTime;
+	const float MoveAlpha = FocusTime > 0.0f ? FMath::Clamp(MoveElapsedTime / FocusTime, 0.0f, 1.0f) : 1.0f;
+	const float EasedAlpha = EvaluateEaseInOut(MoveAlpha);
 
-	const float Alpha = FMath::Clamp(ElapsedTime / TransitionTime, 0.0f, 1.0f);
-	const float EasedAlpha = EvaluateEaseInOut(Alpha);
+	const float CurrentFov = LerpFloat(StartFOV, MinPerspectiveFOV, EasedAlpha);
+	const FVector CurrentPosition = PivotPosition - ViewDirection * ComputeFocusDistance(TargetRadius, CurrentFov);
 
-	const FVector CurrentRotation = InterpolateRotation(StartRotation, TargetRotation, EasedAlpha);
-	const FVector CurrentPosition = CalculateOrbitPosition(PivotPosition, CurrentRotation, CameraDistance);
-
-	Camera->SetRotation(CurrentRotation.X, CurrentRotation.Y);
+	Camera->SetFOV(CurrentFov);
 	Camera->SetPosition(CurrentPosition);
 
-	if (!bSwitchedToOrtho)
-	{
-		const float PerspectivePhaseAlpha = FMath::Clamp(Alpha / 0.5f, 0.0f, 1.0f);
-		const float PerspectiveEase = EvaluateEaseInOut(PerspectivePhaseAlpha);
-		Camera->SetFOV(LerpFloat(StartFOV, MinPerspectiveFOV, PerspectiveEase));
 
-		if (Alpha >= 0.5f)
-		{
-			bSwitchedToOrtho = true;
-			Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
-			Camera->SetOrthoWidth(FMath::Max(TargetOrthoWidth * 0.05f, MinOrthoWidth));
-		}
-	}
-
-	if (bSwitchedToOrtho)
+	if (MoveAlpha >= 1.0f)
 	{
-		const float OrthoPhaseAlpha = FMath::Clamp((Alpha - 0.5f) / 0.5f, 0.0f, 1.0f);
-		const float OrthoEase = EvaluateEaseInOut(OrthoPhaseAlpha);
-		const float StartOrthoWidth = FMath::Max(TargetOrthoWidth * 0.05f, MinOrthoWidth);
-		Camera->SetOrthoWidth(LerpFloat(StartOrthoWidth, TargetOrthoWidth, OrthoEase));
-	}
-
-	if (Alpha >= 1.0f)
-	{
+		bIsTransition = false;
 		Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
-		Camera->SetRotation(TargetRotation.X, TargetRotation.Y);
-		Camera->SetPosition(TargetPosition);
-		Camera->SetOrthoWidth(TargetOrthoWidth);
-		bIsTransitioning = false;
+		Camera->SetOrthoHeight(TargetRadius * 2.f);
+		Camera->SetPosition(PivotPosition - ViewDirection * TargetRadius * 2.f);
 	}
-}
-
-float FPerspectToOrtho::EvaluateEaseInOut(float T) const
-{
-	const float ClampedT = FMath::Clamp(T, 0.0f, 1.0f);
-	return ClampedT * ClampedT * (3.0f - 2.0f * ClampedT);
-}
-
-FVector FPerspectToOrtho::CalculateOrbitPosition(
-	const FVector& InPivotPosition,
-	const FVector& InRotation,
-	float InDistance) const
-{
-	const float YawRadians = FMath::DegreesToRadians(InRotation.X);
-	const float PitchRadians = FMath::DegreesToRadians(InRotation.Y);
-
-	FVector Forward;
-	Forward.X = std::cos(PitchRadians) * std::cos(YawRadians);
-	Forward.Y = std::cos(PitchRadians) * std::sin(YawRadians);
-	Forward.Z = std::sin(PitchRadians);
-	Forward = Forward.GetSafeNormal();
-
-	return InPivotPosition - Forward * InDistance;
-}
-
-FVector FPerspectToOrtho::InterpolateRotation(
-	const FVector& InStartRotation,
-	const FVector& InTargetRotation,
-	float T) const
-{
-	return FVector(
-		LerpAngleDegrees(InStartRotation.X, InTargetRotation.X, T),
-		LerpAngleDegrees(InStartRotation.Y, InTargetRotation.Y, T),
-		LerpAngleDegrees(InStartRotation.Z, InTargetRotation.Z, T));
 }

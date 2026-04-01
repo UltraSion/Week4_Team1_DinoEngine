@@ -5,38 +5,6 @@
 
 #include <cmath>
 
-namespace
-{
-	constexpr float MinTransitionTime = 0.01f;
-	constexpr float MinOrbitDistance = 0.01f;
-
-	FVector LerpVector(const FVector& A, const FVector& B, float Alpha)
-	{
-		return A + (B - A) * Alpha;
-	}
-
-	float LerpFloat(float A, float B, float Alpha)
-	{
-		return A + (B - A) * Alpha;
-	}
-
-	float LerpAngleDegrees(float Start, float End, float Alpha)
-	{
-		float Delta = std::fmod(End - Start, 360.0f);
-
-		if (Delta > 180.0f)
-		{
-			Delta -= 360.0f;
-		}
-		else if (Delta < -180.0f)
-		{
-			Delta += 360.0f;
-		}
-
-		return Start + Delta * Alpha;
-	}
-}
-
 void FOrthoToOrtho::StartTransition(
 	const FVector& InPivotPosition,
 	const FVector& InTargetRotation,

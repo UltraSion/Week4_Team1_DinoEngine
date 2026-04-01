@@ -109,6 +109,7 @@
     <ClCompile Include="Source\CameraFuction\FCameraFunctionManager.cpp" />
     <ClCompile Include="Source\CameraFuction\FOrthoToOrtho.cpp" />
     <ClCompile Include="Source\CameraFuction\FCameraOribit.cpp" />
+    <ClCompile Include="Source\CameraFuction\FOrthoToPerspect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\FEditorEngine.h">
@@ -190,6 +191,7 @@
     <ClInclude Include="Source\CameraFuction\FCameraFunctionManager.h" />
     <ClInclude Include="Source\CameraFuction\FOrthoToOrtho.h" />
     <ClInclude Include="Source\CameraFuction\FCameraOribit.h" />
+    <ClInclude Include="Source\CameraFuction\FOrthoToPerspect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ThirdParty\imgui\imgui.natstepfilter">

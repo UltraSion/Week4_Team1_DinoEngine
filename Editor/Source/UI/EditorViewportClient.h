@@ -7,6 +7,7 @@
 #include "CameraFuction/FCameraFunctionManager.h"
 #include "CameraFuction/FPersToPers.h"
 #include "CameraFuction/FPerspectToOrtho.h"
+#include "CameraFuction/FOrthoToPerspect.h"
 #include "CameraFuction/FOrthoToOrtho.h"
 
 class FPersToPers;
@@ -33,6 +34,7 @@ enum class ERenderMode
 enum class EEditorViewportType : uint8_t
 {
 	Perspective,
+	Orthographic,
 	Top,
 	Front,
 	Right
@@ -95,6 +97,7 @@ protected:
 	void ApplyViewerNoCull(FMaterial* Material) const;
 	void ShowViewOptionPanel();
 	void DrawCameraOption();
+	void StartPerspectiveTransition();
 	void StartOrthoTransition(EEditorViewportType OrthoViewType);
 	void ResetPerspectiveMovementState();
 	void ApplyPerspectiveLookInput(float MouseDeltaX, float MouseDeltaY);
@@ -115,6 +118,7 @@ protected:
 	FCameraFunctionManager CameraFunctionManager;
 	FPersToPers FocusCameraFunction;
 	FPerspectToOrtho ChangePersToOrthFunction;
+	FOrthoToPerspect ChangeOrthoToPersFunction;
 	FOrthoToOrtho ChangeOrthoToOrthoFunction;
 
 	ERenderMode RenderMode = ERenderMode::Lighting;

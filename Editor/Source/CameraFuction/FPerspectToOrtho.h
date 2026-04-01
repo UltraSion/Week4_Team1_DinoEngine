@@ -3,126 +3,25 @@
 #include "CoreMinimal.h"
 
 
-/**
- * @brief Perspective → Orthographic 카메라 전환 클래스
- *
- * Perspective 카메라를 Orthographic 카메라로 부드럽게 전환한다.
- *
- * 단순 ProjectionMode 스위치가 아니라:
- * 1. FOV를 점진적으로 줄여 원근감을 제거하고
- * 2. 중간 시점에서 Orthographic으로 전환한 뒤
- * 3. OrthoWidth를 확장하여 자연스럽게 이어붙인다.
- *
- * 또한 특정 Pivot(관심 지점)을 기준으로 위치를 보간하여
- * 전환 중에도 프레이밍이 유지되도록 한다.
- */
+
+class AActor;
 class FPerspectToOrtho : public ICameraFunction
 {
 private:
-	// ===== 시작 상태 =====
-
-	// 전환 시작 시 카메라 위치
+	float StartFOV  = 45.f;
 	FVector StartPosition = FVector::ZeroVector;
-
-	// 전환 시작 시 카메라 회전 (X=Yaw, Y=Pitch, Z=Roll)
-	FVector StartRotation = FVector::ZeroVector;
-
-	// 전환 시작 시 Perspective FOV
-	float StartFOV = 0.0f;
-
-
-	// ===== 목표 상태 =====
-
-	// 전환 종료 시 카메라 위치 (Ortho 기준 프레이밍)
 	FVector TargetPosition = FVector::ZeroVector;
-
-	// 전환 종료 시 카메라 회전
-	FVector TargetRotation = FVector::ZeroVector;
-
-	// 전환 종료 시 Orthographic Width
-	float TargetOrthoWidth = 0.0f;
-
-
-	// ===== 기준 정보 =====
-
-	// 카메라가 바라볼 중심 지점 (Focus 대상)
+	FVector ViewDirection = FVector::ZeroVector;
 	FVector PivotPosition = FVector::ZeroVector;
-
-	// Pivot으로부터 카메라까지 거리 (전환 중 유지)
-	float CameraDistance = 0.0f;
-
-
-	// ===== 시간 제어 =====
-
-	// 전체 전환 시간
-	float TransitionTime = 1.0f;
-
-	// 현재까지 경과 시간
-	float ElapsedTime = 0.0f;
-
-	// 현재 전환 진행 여부
-	bool bIsTransitioning = false;
-
-
-	// ===== 내부 상태 =====
-
-	// ProjectionMode가 이미 Orthographic으로 전환되었는지 여부
-	// (중간 타이밍에서 1회만 변경하기 위해 사용)
-	bool bSwitchedToOrtho = false;
+	
+	bool bIsTransition = false;
+	float MoveElapsedTime = 0.0f;
+	float FocusTime = 1.f;
+	float TargetRadius;
 
 
 public:
-	/**
-	 * @brief Perspective → Orthographic 전환 시작
-	 *
-	 * @param InPivotPosition   카메라가 바라볼 중심 (Focus 대상)
-	 * @param InTargetRotation  목표 회전값 (X=Yaw, Y=Pitch, Z=Roll)
-	 * @param InOrthoWidth      목표 Orthographic Width
-	 * @param InTransitionTime  전환 시간
-	 */
-	void StartTransition(
-		const FVector& InPivotPosition,
-		const FVector& InTargetRotation,
-		float InOrthoWidth,
-		float InTransitionTime);
-
-	/**
-	 * @brief 매 프레임 호출되어 전환을 진행한다.
-	 */
+	void StartTransition(AActor* InTargetActor);
+	virtual bool IsFinished() const override { return !bIsTransition; }
 	virtual void Tick(float DeltaTime) override;
-
-	/**
-	 * @brief 전환 완료 여부 반환
-	 */
-	virtual bool IsFinished() const override;
-
-
-private:
-	/**
-	 * @brief 실제 전환 업데이트 로직
-	 */
-	void UpdateTransition(float DeltaTime);
-
-	/**
-	 * @brief EaseInOut 보간 함수 (0~1)
-	 */
-	float EvaluateEaseInOut(float T) const;
-
-	/**
-	 * @brief Pivot과 회전값으로부터 카메라 위치를 계산한다.
-	 *
-	 * Perspective/Ortho 전환 중에도 동일한 대상 프레이밍을 유지하기 위해 사용된다.
-	 */
-	FVector CalculateOrbitPosition(
-		const FVector& InPivotPosition,
-		const FVector& InRotation,
-		float InDistance) const;
-
-	/**
-	 * @brief 회전값 보간 (각도 wrapping 고려)
-	 */
-	FVector InterpolateRotation(
-		const FVector& InStartRotation,
-		const FVector& InTargetRotation,
-		float T) const;
 };

@@ -242,7 +242,7 @@ float FCamera::GetFOV() const
 
 void FCamera::SetFOV(float InFOV)
 {
-	FOV = std::clamp(InFOV, 1.0f, 179.0f);
+	FOV = std::clamp(InFOV, 5.f, 179.9f);
 }
 
 float FCamera::GetNearClip() const
@@ -297,4 +297,9 @@ float FCamera::GetOrthoHeight() const
 void FCamera::SetOrthoWidth(float InOrthoWidth)
 {
 	OrthoWidth = (std::max)(InOrthoWidth, 0.01f);
+}
+
+void FCamera::SetOrthoHeight(float InOrthoHeight)
+{
+	OrthoWidth = InOrthoHeight * ((std::max)(InOrthoHeight, 0.01f));
 }
