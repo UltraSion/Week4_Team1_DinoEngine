@@ -755,12 +755,14 @@ void FEditorUI::Render()
 		ImGui::EndPopup();
 	}
 
-#if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
+#if IS_OBJ_VIEWER //뷰어에서는 뷰어 전용 패널만 띄우고 나머지 패널을 다 죽입니다
 	ObjViewerPanel.Render(Core, ActiveViewportClient, *this);
 #else
 	Property.Render(Core);
 	Console.Render();
-	Stat.Render();
+
+	//Stat.Render(); //stat panel은 stat overlay에 대체됩니다.
+
 	// Viewport draw data keeps the SRV pointer until ImGui render submission,
 	// so rendering the same legacy viewport twice in one frame can invalidate
 	// the first draw command if the offscreen target is recreated in-between.

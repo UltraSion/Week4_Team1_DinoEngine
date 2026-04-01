@@ -28,6 +28,7 @@ namespace
 
 	/**
 	 * 축 매핑 UI에서 사용할 축 방향 라벨을 반환합니다.
+	 * 축 방향에 따라 ImGUI에서 출력할 문자열을 반환합니다.
 	 *
 	 * \param AxisDirection 현재 표시할 축 방향 enum
 	 * \return `+X`, `-X`, `+Y`, `-Y`, `+Z`, `-Z` 중 하나
@@ -53,7 +54,7 @@ namespace
 	}
 
 	/**
-	 * 축 방향 enum에서 축의 "종류"만 추출합니다.
+	 * 축 방향 enum에서 축의 종류를 추출합니다.
 	 * 이 패널은 축의 종류(X/Y/Z)와 부호(+/-)를 따로 다룹니다.
 	 *
 	 * \param AxisDirection 축 방향 enum
@@ -91,12 +92,12 @@ namespace
 		case FObjImporter::EAxisDirection::NegativeX:
 		case FObjImporter::EAxisDirection::NegativeY:
 		case FObjImporter::EAxisDirection::NegativeZ:
-			return true;
+			return true; //negative
 		case FObjImporter::EAxisDirection::PositiveX:
 		case FObjImporter::EAxisDirection::PositiveY:
 		case FObjImporter::EAxisDirection::PositiveZ:
 		default:
-			return false;
+			return false; //positive
 		}
 	}
 
@@ -124,6 +125,7 @@ namespace
 	/**
 	 * 드래프트 축 매핑의 특정 행이 현재 어떤 축 방향을 가리키는지 읽습니다.
 	 * 패널은 `Engine X / Engine Y / Engine Z` 세 행을 같은 코드로 반복 렌더링합니다.
+	 * 패널에서 3번 호출됩니다.
 	 *
 	 * \param ImportAxisMapping 현재 드래프트 매핑
 	 * \param RowIndex 0=X, 1=Y, 2=Z
@@ -203,12 +205,7 @@ namespace
 		SetMappingAxisDirection(ImportAxisMapping, RowIndex, MakeAxisDirection(NewAxisBaseIndex, bCurrentNegative));
 	}
 
-	/**
-	 * 특정 행의 부호만 반전합니다.
-	 *
-	 * \param ImportAxisMapping 수정할 드래프트 매핑
-	 * \param RowIndex 부호를 뒤집을 행
-	 */
+	/* 특정 행의 부호만 반전합니다. */
 	void ToggleMappingAxisSign(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex)
 	{
 		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
@@ -352,46 +349,19 @@ void FObjViewerPanel::ApplyDisplayedLocation(AActor* Actor, FEditorViewportClien
  */
 void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportClient, FEditorUI& EditorUI)
 {
-	if (!Core || !ActiveViewportClient || !GRenderer)
-	{
-		return;
-	}
-
+	if (!Core || !ActiveViewportClient || !GRenderer) return;
 	ULevel* Level = ActiveViewportClient->ResolveLevel(Core);
-	if (!Level)
-	{
-		return;
-	}
-
+	if (!Level) return;
 	AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
-	if (!MeshActor)
-	{
-		return;
-	}
-
+	if (!MeshActor) return;
 	UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
-	if (!MeshComp)
-	{
-		return;
-	}
-
+	if (!MeshComp) return;
 	UStaticMesh* StaticMesh = MeshComp->GetStaticMesh();
-	if (!StaticMesh)
-	{
-		return;
-	}
-
+	if (!StaticMesh) return;
 	FStaticMeshRenderData* MeshData = StaticMesh->GetStaticMeshAsset();
-	if (!MeshData)
-	{
-		return;
-	}
-
+	if (!MeshData) return;
 	FMeshData* CPUData = MeshData->GetMeshData();
-	if (!CPUData)
-	{
-		return;
-	}
+	if (!CPUData) return;
 
 	ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(350, 500), ImGuiCond_FirstUseEver);
