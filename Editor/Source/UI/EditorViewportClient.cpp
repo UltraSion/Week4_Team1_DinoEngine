@@ -103,6 +103,56 @@ namespace
 		FViewportContext* Context = CreateEditorViewportContext(ViewportType);
 		return Context ? new SViewportWindow(FRect(), Context) : nullptr;
 	}
+
+	std::shared_ptr<FMeshData> CreateSolidWireframeMesh(ID3D11Device* Device, const FMeshData* SourceMesh)
+	{
+		if (!Device || !SourceMesh || SourceMesh->Topology != EMeshTopology::EMT_TriangleList)
+		{
+			return nullptr;
+		}
+
+		const TArray<uint32>& SourceIndices = SourceMesh->Indices;
+		const TArray<FPrimitiveVertex>& SourceVertices = SourceMesh->Vertices;
+		if (SourceVertices.empty() || SourceIndices.empty() || (SourceIndices.size() % 3) != 0)
+		{
+			return nullptr;
+		}
+
+		auto ExpandedMesh = std::make_shared<FMeshData>();
+		ExpandedMesh->Topology = EMeshTopology::EMT_TriangleList;
+		ExpandedMesh->Vertices.reserve(SourceIndices.size());
+		ExpandedMesh->Indices.reserve(SourceIndices.size());
+		ExpandedMesh->Sections = SourceMesh->Sections;
+
+		static const FVector4 BarycentricColors[3] =
+		{
+			FVector4(1.0f, 0.0f, 0.0f, 1.0f),
+			FVector4(0.0f, 1.0f, 0.0f, 1.0f),
+			FVector4(0.0f, 0.0f, 1.0f, 1.0f)
+		};
+
+		for (size_t Index = 0; Index < SourceIndices.size(); ++Index)
+		{
+			const uint32 SourceVertexIndex = SourceIndices[Index];
+			if (SourceVertexIndex >= SourceVertices.size())
+			{
+				return nullptr;
+			}
+
+			FPrimitiveVertex ExpandedVertex = SourceVertices[SourceVertexIndex];
+			ExpandedVertex.Color = BarycentricColors[Index % 3];
+			ExpandedMesh->Vertices.push_back(ExpandedVertex);
+			ExpandedMesh->Indices.push_back(static_cast<uint32>(Index));
+		}
+
+		ExpandedMesh->UpdateLocalBound();
+		if (!ExpandedMesh->CreateVertexAndIndexBuffer(Device))
+		{
+			return nullptr;
+		}
+
+		return ExpandedMesh;
+	}
 }
 
 FEditorViewportClient::FEditorViewportClient(FEditorUI& InEditorUI, FWindow* InMainWindow, EEditorViewportType InViewportType, ELevelType InWorldType)
@@ -135,8 +185,7 @@ void FEditorViewportClient::Attach(FCore* Core)
 	}
 
 	WireFrameMaterial = FMaterialManager::Get().FindByName(WireframeMaterialName);
-	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
-	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
+	SolidWireFrameMaterial = FMaterialManager::Get().FindByName(SolidWireframeMaterialName);
 	CreateGridResource(GRenderer);
 #if IS_OBJ_VIEWER //뷰어에서 보여줄 normal과 uv를 준비합니다
 	CreateViewerDebugMaterials(GRenderer);
@@ -149,10 +198,10 @@ void FEditorViewportClient::Detach()
 	GridMesh.reset();
 	GridMaterial.reset();
 	WireFrameMaterial.reset();
-	SolidWireFrameFillMaterial.reset();
-	SolidWireFrameLineMaterial.reset();
+	SolidWireFrameMaterial.reset();
 	ViewerUVMaterial.reset();
 	ViewerNormalMaterial.reset();
+	SolidWireframeMeshCache.clear();
 
 	if (EditorUI.GetActiveViewportClient() == this)
 	{
@@ -1265,32 +1314,42 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 			if (Command.RenderLayer != ERenderLayer::Overlay)
 			{
 				Command.Material = WireFrameMaterial.get();
+				Command.SortKey = FRenderCommand::MakeSortKey(Command.Material, Command.MeshData);
 			}
 		}
 	}
 	else if (RenderMode == ERenderMode::SolidWireframe)
 	{
-		TArray<FRenderCommand> SolidWireframeCommands;
-		SolidWireframeCommands.reserve(OutQueue.Commands.size() * 2);
-
-		for (const FRenderCommand& Command : OutQueue.Commands)
+		ID3D11Device* Device = GRenderer ? GRenderer->GetDevice() : nullptr;
+		for (FRenderCommand& Command : OutQueue.Commands)
 		{
-			if (Command.RenderLayer == ERenderLayer::Overlay)
+			if (Command.RenderLayer == ERenderLayer::Overlay || !SolidWireFrameMaterial)
 			{
-				SolidWireframeCommands.push_back(Command);
 				continue;
 			}
 
-			FRenderCommand FillCommand = Command;
-			FillCommand.Material = SolidWireFrameFillMaterial.get();
-			SolidWireframeCommands.push_back(FillCommand);
+			Command.Material = SolidWireFrameMaterial.get();
 
-			FRenderCommand LineCommand = Command;
-			LineCommand.Material = SolidWireFrameLineMaterial.get();
-			SolidWireframeCommands.push_back(LineCommand);
+			if (!Device || !Command.MeshData || Command.MeshData->Topology != EMeshTopology::EMT_TriangleList)
+			{
+				Command.SortKey = FRenderCommand::MakeSortKey(Command.Material, Command.MeshData);
+				continue;
+			}
+
+			auto CachedIt = SolidWireframeMeshCache.find(Command.MeshData);
+			if (CachedIt == SolidWireframeMeshCache.end())
+			{
+				auto ExpandedMesh = CreateSolidWireframeMesh(Device, Command.MeshData);
+				CachedIt = SolidWireframeMeshCache.emplace(Command.MeshData, std::move(ExpandedMesh)).first;
+			}
+
+			if (CachedIt->second)
+			{
+				Command.MeshData = CachedIt->second.get();
+			}
+
+			Command.SortKey = FRenderCommand::MakeSortKey(Command.Material, Command.MeshData);
 		}
-
-		OutQueue.Commands = std::move(SolidWireframeCommands);
 	}
 	else if (RenderMode == ERenderMode::UV)
 	{
@@ -1299,6 +1358,7 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerUVMaterial)
 			{
 				Command.Material = ViewerUVMaterial.get();
+				Command.SortKey = FRenderCommand::MakeSortKey(Command.Material, Command.MeshData);
 			}
 		}
 	}
@@ -1309,6 +1369,7 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 			if (Command.RenderLayer != ERenderLayer::Overlay && ViewerNormalMaterial)
 			{
 				Command.Material = ViewerNormalMaterial.get();
+				Command.SortKey = FRenderCommand::MakeSortKey(Command.Material, Command.MeshData);
 			}
 		}
 	}
