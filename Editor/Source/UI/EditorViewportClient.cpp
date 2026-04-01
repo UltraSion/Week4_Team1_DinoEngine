@@ -109,7 +109,7 @@ void FEditorViewportClient::Attach(FCore* Core)
 	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
 	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 보여줄 normal과 uv를 준비합니다
 	CreateViewerDebugMaterials(GRenderer);
 #endif
 }
@@ -348,7 +348,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	case WM_KEYUP:
 		OnKeyUp(WParam, LParam);
 		return;
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서만 사용하는 더블클릭입니다
 	case WM_LBUTTONDBLCLK:
 		ResetCameraToInitialState();
 		return;
@@ -420,8 +420,6 @@ void FEditorViewportClient::Tick(float DeltaTime)
 		bResetCameraAnimating = false;
 		ResetAnimationElapsed = 0.0f;
 	}
-#else
-	(void)DeltaTime;
 #endif
 }
 
@@ -496,7 +494,6 @@ void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 
 void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState)
 {
-#if IS_OBJ_VIEWER
 	if (!TargetActor)
 	{
 		return;
@@ -524,10 +521,6 @@ void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSave
 	{
 		SaveInitialCameraState();
 	}
-#else
-	(void)TargetActor;
-	(void)bSaveInitialState;
-#endif
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const
@@ -789,8 +782,7 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 		{
 			FTransform Transform = Root->GetRelativeTransform();
 			FVector FinalLocation = SpawnLocation;;
-#if IS_OBJ_VIEWER
-			// 뷰어 모드일 때만 높이(Z) 보정값을 추가 계산
+#if IS_OBJ_VIEWER //뷰어에서만 높이(Z) 보정값을 추가 계산
 			FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
 #endif
 			Transform.SetLocation(FinalLocation);
