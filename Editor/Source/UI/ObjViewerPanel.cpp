@@ -26,6 +26,12 @@ namespace
 {
 	constexpr float ObjViewerImportScaleTolerance = 1.0e-4f;
 
+	/**
+	 * 축 매핑 UI에서 사용할 축 방향 라벨을 반환합니다.
+	 *
+	 * \param AxisDirection 현재 표시할 축 방향 enum
+	 * \return `+X`, `-X`, `+Y`, `-Y`, `+Z`, `-Z` 중 하나
+	 */
 	const char* GetAxisDirectionLabel(FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (AxisDirection)
@@ -46,6 +52,13 @@ namespace
 		}
 	}
 
+	/**
+	 * 축 방향 enum에서 축의 "종류"만 추출합니다.
+	 * 이 패널은 축의 종류(X/Y/Z)와 부호(+/-)를 따로 다룹니다.
+	 *
+	 * \param AxisDirection 축 방향 enum
+	 * \return X=0, Y=1, Z=2
+	 */
 	int GetAxisBaseIndex(FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (AxisDirection)
@@ -63,6 +76,14 @@ namespace
 		}
 	}
 
+	/**
+	 * 축 방향이 음수 방향인지 판별합니다.
+	 * 축 교환 버튼과 부호 토글 버튼은 서로 다른 역할을 가지므로,
+	 * 현재 방향에서 부호만 유지하거나 뒤집을 때 이 helper를 사용합니다.
+	 *
+	 * \param AxisDirection 축 방향 enum
+	 * \return 음수 축이면 true
+	 */
 	bool IsAxisNegative(FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (AxisDirection)
@@ -79,6 +100,13 @@ namespace
 		}
 	}
 
+	/**
+	 * 축 종류(X/Y/Z)와 부호(+/-)를 조합해 최종 축 방향 enum을 만듭니다.
+	 *
+	 * \param AxisBaseIndex X=0, Y=1, Z=2
+	 * \param bNegative 음수 방향 여부
+	 * \return 조합된 축 방향 enum
+	 */
 	FObjImporter::EAxisDirection MakeAxisDirection(int AxisBaseIndex, bool bNegative)
 	{
 		switch (AxisBaseIndex)
@@ -93,6 +121,14 @@ namespace
 		}
 	}
 
+	/**
+	 * 드래프트 축 매핑의 특정 행이 현재 어떤 축 방향을 가리키는지 읽습니다.
+	 * 패널은 `Engine X / Engine Y / Engine Z` 세 행을 같은 코드로 반복 렌더링합니다.
+	 *
+	 * \param ImportAxisMapping 현재 드래프트 매핑
+	 * \param RowIndex 0=X, 1=Y, 2=Z
+	 * \return 해당 행의 축 방향 enum
+	 */
 	FObjImporter::EAxisDirection GetMappingAxisDirection(const FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex)
 	{
 		switch (RowIndex)
@@ -107,6 +143,13 @@ namespace
 		}
 	}
 
+	/**
+	 * 드래프트 축 매핑의 특정 행 값을 새 축 방향으로 갱신합니다.
+	 *
+	 * \param ImportAxisMapping 수정할 드래프트 매핑
+	 * \param RowIndex 0=X, 1=Y, 2=Z
+	 * \param AxisDirection 새 축 방향 enum
+	 */
 	void SetMappingAxisDirection(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex, FObjImporter::EAxisDirection AxisDirection)
 	{
 		switch (RowIndex)
@@ -124,6 +167,17 @@ namespace
 		}
 	}
 
+	/**
+	 * 드래프트 매핑의 한 행을 다른 축 종류로 바꾸면서, 축 중복을 자동으로 해소합니다.
+	 *
+	 * 이 패널은 항상 X/Y/Z가 서로 다른 원본 축을 사용하도록 유지해야 합니다.
+	 * 그래서 어떤 행이 이미 다른 행이 쓰고 있는 축을 선택하면,
+	 * 기존 사용 행과 현재 행의 축 종류를 swap하여 유효한 상태를 유지합니다.
+	 *
+	 * \param ImportAxisMapping 수정할 드래프트 매핑
+	 * \param RowIndex 축 종류를 바꿀 행
+	 * \param NewAxisBaseIndex 새 축 종류(X=0, Y=1, Z=2)
+	 */
 	void SetMappingAxisBase(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex, int NewAxisBaseIndex)
 	{
 		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
@@ -139,6 +193,7 @@ namespace
 			const FObjImporter::EAxisDirection OtherDirection = GetMappingAxisDirection(ImportAxisMapping, OtherRowIndex);
 			if (GetAxisBaseIndex(OtherDirection) == NewAxisBaseIndex)
 			{
+				// 같은 축을 이미 쓰고 있던 행은 기존 축으로 밀어내 중복을 없앱니다.
 				const int CurrentAxisBaseIndex = GetAxisBaseIndex(CurrentDirection);
 				SetMappingAxisDirection(ImportAxisMapping, OtherRowIndex, MakeAxisDirection(CurrentAxisBaseIndex, IsAxisNegative(OtherDirection)));
 				break;
@@ -148,12 +203,26 @@ namespace
 		SetMappingAxisDirection(ImportAxisMapping, RowIndex, MakeAxisDirection(NewAxisBaseIndex, bCurrentNegative));
 	}
 
+	/**
+	 * 특정 행의 부호만 반전합니다.
+	 *
+	 * \param ImportAxisMapping 수정할 드래프트 매핑
+	 * \param RowIndex 부호를 뒤집을 행
+	 */
 	void ToggleMappingAxisSign(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex)
 	{
 		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
 		SetMappingAxisDirection(ImportAxisMapping, RowIndex, MakeAxisDirection(GetAxisBaseIndex(CurrentDirection), !IsAxisNegative(CurrentDirection)));
 	}
 
+	/**
+	 * 현재 적용된 축 매핑을 한 줄 요약 문자열로 만듭니다.
+	 * 패널 상단의 `Applied` 섹션에서 사용되며,
+	 * 사용자가 지금 실제로 메시 cook에 반영된 값이 무엇인지 즉시 확인할 수 있게 합니다.
+	 *
+	 * \param ImportAxisMapping 요약할 축 매핑
+	 * \return 사람이 읽기 쉬운 요약 문자열
+	 */
 	FString BuildImportAxisSummary(const FObjImporter::FImportAxisMapping& ImportAxisMapping)
 	{
 		return FString("X=") + GetAxisDirectionLabel(ImportAxisMapping.EngineX)
@@ -162,6 +231,7 @@ namespace
 			+ "  Scale=" + std::to_string(ImportAxisMapping.ImportScale);
 	}
 
+	/* 현재 OBJ Viewer 레벨에서 표시 중인 메인 StaticMeshActor를 찾습니다. */
 	AStaticMeshActor* FindObjViewerMeshActor(ULevel* Level)
 	{
 		if (!Level)
@@ -180,6 +250,15 @@ namespace
 		return nullptr;
 	}
 
+	/**
+	 * 액터의 바닥면이 원하는 Z 높이에 오도록 루트 위치를 보정합니다.
+	 * 현재 bounds 하단이 목표 Z에 오도록 위치를 재계산해야 합니다.
+	 * 보정 후에는 orbit 카메라 기준점도 다시 갱신해 카메라와 메시 중심이 어긋나지 않게 합니다.
+	 *
+	 * \param Actor 바닥 높이를 맞출 액터
+	 * \param ViewportClient bounds와 카메라 pivot 갱신에 사용할 뷰포트
+	 * \param TargetBottomZ 액터 바닥면이 도달해야 할 목표 Z
+	 */
 	void SnapObjViewerActorBottomTo(AActor* Actor, FEditorViewportClient* ViewportClient, float TargetBottomZ)
 	{
 		if (!Actor || !ViewportClient)
@@ -202,6 +281,14 @@ namespace
 	}
 }
 
+/**
+ * 프로퍼티 패널에 표시할 뷰어용 위치 값을 계산합니다.
+ * 뷰어는 사용자가 "바닥 기준 Z"를 조절하도록 되어 있으므로 표시 값이 다릅니다.
+ *
+ * \param Actor 표시 위치를 구할 액터
+ * \param ViewportClient 바닥 Z 계산에 사용할 뷰포트
+ * \return 프로퍼티 UI에 보여줄 위치 값
+ */
 FVector FObjViewerPanel::GetDisplayedLocation(AActor* Actor, FEditorViewportClient* ViewportClient) const
 {
 	if (!Actor || !ViewportClient)
@@ -219,6 +306,14 @@ FVector FObjViewerPanel::GetDisplayedLocation(AActor* Actor, FEditorViewportClie
 	return FVector::ZeroVector;
 }
 
+/**
+ * 프로퍼티 패널에서 수정된 "표시용 위치"를 실제 액터 트랜스폼에 반영합니다.
+ * X/Y는 일반 위치처럼 직접 반영하지만, Z는 뷰어 규칙상 바닥 높이로 해석됩니다.
+ *
+ * \param Actor 위치를 적용할 액터
+ * \param ViewportClient 바닥 보정과 pivot 갱신에 사용할 뷰포트
+ * \param DisplayLocation 프로퍼티 패널이 전달한 표시용 위치
+ */
 void FObjViewerPanel::ApplyDisplayedLocation(AActor* Actor, FEditorViewportClient* ViewportClient, const FVector& DisplayLocation) const
 {
 	if (!Actor)
@@ -239,6 +334,22 @@ void FObjViewerPanel::ApplyDisplayedLocation(AActor* Actor, FEditorViewportClien
 	}
 }
 
+/**
+ * OBJ Viewer 전용 정보 패널 전체를 렌더링합니다.
+ *
+ * 1. 현재 표시 중인 메시의 메타데이터와 통계를 보여줍니다.
+ * 2. 현재 적용 중인 축 매핑과 드래프트 축 매핑을 구분해 보여줍니다.
+ * 3. 사용자가 드래프트를 적용하면 메시를 다시 cook/load하여 결과를 즉시 확인하게 합니다.
+ *
+ * 함수 초반에서는 현재 뷰어 컨텍스트와 메시 데이터를 안전하게 확보하고,
+ * 중간에서는 ImGui 섹션을 그리며,
+ * 마지막 `Apply` 버튼에서는 축 매핑 적용, 캐시 무효화, cooked asset 제거,
+ * 메시 재로드, 위치/카메라 복원까지 한 번에 처리합니다.
+ *
+ * \param Core 현재 에디터 엔진 코어
+ * \param ActiveViewportClient 현재 활성 뷰어 뷰포트
+ * \param EditorUI 선택 액터 동기화 호출에 사용할 상위 UI 객체
+ */
 void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportClient, FEditorUI& EditorUI)
 {
 	if (!Core || !ActiveViewportClient || !GRenderer)
@@ -305,6 +416,7 @@ void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportC
 		!(std::fabs(LastAppliedImportAxisMapping.ImportScale - AppliedImportAxisMapping.ImportScale) <= ObjViewerImportScaleTolerance);
 	if (DraftAxisAssetPath != MeshAssetPath || bAppliedAxisMappingChanged)
 	{
+		// 다른 메시를 보고 있거나 외부에서 적용 값이 바뀌었으면 드래프트를 현재 상태로 재동기화합니다.
 		DraftAxisAssetPath = MeshAssetPath;
 		DraftImportAxisMapping = AppliedImportAxisMapping;
 		LastAppliedImportAxisMapping = AppliedImportAxisMapping;
@@ -459,6 +571,7 @@ void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportC
 			ImGui::BeginDisabled();
 		}
 
+		//apply 버튼.
 		if (ImGui::Button("Apply"))
 		{
 			const FString AssetPath = MeshComp->GetStaticMeshAsset();
@@ -478,6 +591,7 @@ void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportC
 			}
 			else if (FObjImporter::IsValidImportAxisMapping(DraftImportAxisMapping))
 			{
+				// 축 매핑 결과가 캐시와 cooked asset에 남아 있으므로 둘 다 무효화한 뒤 다시 로드합니다.
 				FObjImporter::SetImportAxisMapping(DraftImportAxisMapping);
 				FAssetManager::Get().InvalidateStaticMesh(AssetPath);
 				FObjManager::ClearAssetCache(AssetPath);
@@ -485,6 +599,7 @@ void FObjViewerPanel::Render(FCore* Core, FEditorViewportClient* ActiveViewportC
 
 				if (MeshComp->GetStaticMesh() && MeshComp->GetMeshData())
 				{
+					// reload 과정에서 원점/바닥 기준이 달라질 수 있으므로 이전 표시 위치를 기준으로 다시 복원합니다.
 					MeshActor->GetRootComponent()->SetRelativeTransform(PreviousTransform);
 					SnapObjViewerActorBottomTo(MeshActor, ActiveViewportClient, PreviousDisplayedLocation.Z);
 					Core->SetSelectedActor(MeshActor);
