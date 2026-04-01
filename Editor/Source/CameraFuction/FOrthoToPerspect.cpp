@@ -8,31 +8,23 @@
 
 #include <cmath>
 
-void FOrthoToPerspect::StartTransition(AActor* InTargetActor, float InTargetFov)
+void FOrthoToPerspect::StartTransition(float InTargetFov)
 {
-	if (!Camera || !InTargetActor)
+	if (!Camera)
 	{
 		return;
 	}
 
-	UPrimitiveComponent* PrimitiveComponent = InTargetActor->GetComponentByClass<UPrimitiveComponent>();
-	if (!PrimitiveComponent)
-	{
-		return;
-	}
-
-	const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
 	TargetFov = InTargetFov;
 	ViewDirection = Camera->GetForward().GetSafeNormal();
-	PivotPosition = Bounds.Center;
+	PivotPosition =	Camera->GetPosition();
 	if (ViewDirection.IsNearlyZero())
 	{
 		ViewDirection = FVector::ForwardVector;
 	}
 
-	TargetRadius = Bounds.Radius * 1.4f;
-	StartPosition = Camera->GetPosition() - ViewDirection * ComputeFocusDistance(TargetRadius, MinPerspectiveFOV);;
-	TargetPosition = Bounds.Center - ViewDirection * ComputeFocusDistance(TargetRadius, InTargetFov);
+	StartPosition = Camera->GetPosition() - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(MinPerspectiveFOV / 2), 0.01f), MinPerspectiveFOV);;
+	TargetPosition = Camera->GetPosition() - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(InTargetFov / 2), 0.01f), InTargetFov);
 	Camera->SetPosition(StartPosition);
 
 	MoveElapsedTime = 0.0f;
@@ -53,7 +45,7 @@ void FOrthoToPerspect::Tick(float DeltaTime)
 
 	const float CurrentFov = LerpFloat(MinPerspectiveFOV, TargetFov, EasedAlpha);
 
-	const FVector CurrentPosition = PivotPosition - ViewDirection * ComputeFocusDistance(TargetRadius, CurrentFov);
+	const FVector CurrentPosition = PivotPosition - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(TargetFov / 2), 0.01f), CurrentFov);
 	Camera->SetPosition(CurrentPosition);
 	Camera->SetFOV(CurrentFov);
 

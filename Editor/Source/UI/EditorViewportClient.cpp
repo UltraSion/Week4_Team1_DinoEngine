@@ -423,7 +423,7 @@ void FEditorViewportClient::DrawViewportSpecificOptions()
 				StartPerspectiveTransition();
 				break;
 			case 1:
-				ChangePersToOrthFunction.StartTransition(GetGizmoTarget());
+				ChangePersToOrthFunction.StartTransition();
 				CameraViewType = EEditorViewportType::Orthographic;
 				CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
 				break;
@@ -511,7 +511,6 @@ void FEditorViewportClient::DrawControllerOptions()
 	{
 		UpdateOrthoCameraTransform();
 	}
-
 }
 
 void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
@@ -583,7 +582,8 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 	if (PendingOrthoZoomStep != 0.0f)
 	{
 		const float ZoomScale = std::pow(OrthoZoomStepScale, PendingOrthoZoomStep);
-		OrthoZoom = FMath::Clamp(OrthoZoom / ZoomScale, OrthoMinZoom, OrthoMaxZoom);
+		const float OrthoZoom = FMath::Clamp(CameraTransform.GetOrthoWidth() / ZoomScale, OrthoMinZoom, OrthoMaxZoom);
+		CameraTransform.SetOrthoWidth(OrthoZoom);
 		PendingOrthoZoomStep = 0.0f;
 		UpdateOrthoCameraTransform();
 	}
@@ -595,10 +595,6 @@ void FEditorViewportClient::ProcessCameraInput(FCore* Core, float DeltaTime)
 
 	const float MouseDeltaX = InputManager->GetMouseDeltaX();
 	const float MouseDeltaY = InputManager->GetMouseDeltaY();
-	if (MouseDeltaX == 0.0f && MouseDeltaY == 0.0f)
-	{
-		return;
-	}
 
 	const float UnitsPerPixelX = ViewportWidth > 0 ? CameraTransform.GetOrthoWidth() / static_cast<float>(ViewportWidth) : 0.0f;
 	const float UnitsPerPixelY = ViewportHeight > 0 ? CameraTransform.GetOrthoHeight() / static_cast<float>(ViewportHeight) : 0.0f;
@@ -1050,7 +1046,7 @@ void FEditorViewportClient::StartPerspectiveTransition()
 	PendingOrthoZoomStep = 0.0f;
 	ResetPerspectiveMovementState();
 
-	ChangeOrthoToPersFunction.StartTransition(GetGizmoTarget(), InitialCameraFOV);
+	ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV);
 	CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
 }
 
@@ -1112,12 +1108,12 @@ void FEditorViewportClient::StartOrthoTransition(EEditorViewportType InOrthoView
 	PendingOrthoZoomStep = 0.0f;
 	ResetPerspectiveMovementState();
 
-	if (bFromPerspective)
-	{
-		ChangePersToOrthFunction.StartTransition(GetGizmoTarget());
-		CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
-		return;
-	}
+	//if (bFromPerspective)
+	//{
+	//	ChangePersToOrthFunction.StartTransition();
+	//	CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
+	//	return;
+	//}
 
 	ChangeOrthoToOrthoFunction.StartTransition(FocusCenter, TargetRotation, ViewTransitionDuration);
 	CameraFunctionManager.AddFunction(&ChangeOrthoToOrthoFunction);
@@ -1161,9 +1157,8 @@ void FEditorViewportClient::ApplyPerspectivePanInput(float MouseDeltaX, float Mo
 
 void FEditorViewportClient::UpdateOrthoCameraTransform()
 {
-	//CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
-	//CameraTransform.SetOrthoWidth(OrthoZoom);
-	//CameraTransform.SetPosition(OrthoCenter - GetOrthoForwardVector() * OrthoViewDistance);
+	CameraTransform.SetProjectionMode(ECameraProjectionMode::Orthographic);
+	CameraTransform.SetPosition(OrthoCenter - GetOrthoForwardVector() * OrthoViewDistance);
 }
 
 FVector FEditorViewportClient::GetOrthoForwardVector() const
@@ -1522,6 +1517,7 @@ void FEditorViewportClient::OnMouseWheel(float WheelDelta, WPARAM WParam, LPARAM
 
 	if (CameraViewType != EEditorViewportType::Perspective)
 	{
+		bOrthoPanning = true;
 		PendingOrthoZoomStep += WheelDelta;
 	}
 }

@@ -242,7 +242,7 @@ float FCamera::GetFOV() const
 
 void FCamera::SetFOV(float InFOV)
 {
-	FOV = std::clamp(InFOV, 5.f, 179.9f);
+	FOV = std::clamp(InFOV, 0.1f, 179.9f);
 }
 
 float FCamera::GetNearClip() const

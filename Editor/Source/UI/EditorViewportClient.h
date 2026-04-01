@@ -164,7 +164,6 @@ protected:
 
 	// Ortho interaction state
 	FVector OrthoCenter = FVector::ZeroVector;
-	float OrthoZoom = 24.0f;
 	float OrthoViewDistance = 25.0f;
 	float PendingOrthoZoomStep = 0.0f;
 	bool bOrthoPanning = false;

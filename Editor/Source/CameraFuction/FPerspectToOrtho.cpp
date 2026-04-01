@@ -7,32 +7,26 @@
 
 #include <cmath>
 
-void FPerspectToOrtho::StartTransition(AActor* InTargetActor)
+void FPerspectToOrtho::StartTransition()
 {
-	if (!Camera || !InTargetActor)
+	if (!Camera)
 	{
 		return;
 	}
 
-	UPrimitiveComponent* PrimitiveComponent = InTargetActor->GetComponentByClass<UPrimitiveComponent>();
-	if (!PrimitiveComponent)
-	{
-		return;
-	}
 
-	const FBoxSphereBounds Bounds = PrimitiveComponent->GetWorldBounds();
-	StartPosition = Camera->GetPosition();
 	StartFOV = Camera->GetFOV();
 	ViewDirection = Camera->GetForward().GetSafeNormal();
-	PivotPosition = Bounds.Center;
+	PivotPosition = Camera->GetPosition();
 	if (ViewDirection.IsNearlyZero())
 	{
 		ViewDirection = FVector::ForwardVector;
 	}
 
-	TargetRadius = Bounds.Radius * 2.f;
-	StartPosition = Bounds.Center - ViewDirection * ComputeFocusDistance(TargetRadius, Camera->GetFOV());
-	TargetPosition = Bounds.Center - ViewDirection * ComputeFocusDistance(TargetRadius, MinPerspectiveFOV);
+	StartPosition = Camera->GetPosition();
+	float defualtSize = 5;
+	float OrthoWidth = std::tanf(MinPerspectiveFOV / 2);
+
 
 	MoveElapsedTime = 0.0f;
 	bIsTransition = true;
@@ -50,7 +44,11 @@ void FPerspectToOrtho::Tick(float DeltaTime)
 	const float EasedAlpha = EvaluateEaseInOut(MoveAlpha);
 
 	const float CurrentFov = LerpFloat(StartFOV, MinPerspectiveFOV, EasedAlpha);
-	const FVector CurrentPosition = PivotPosition - ViewDirection * ComputeFocusDistance(TargetRadius, CurrentFov);
+
+	float defualtSize = 5;
+	float OrthoWidth = std::tanf(StartFOV / 2);
+
+	const FVector CurrentPosition = StartPosition - ViewDirection * ComputeFocusDistance(FMath::Max(OrthoWidth * defualtSize, 0.01f), CurrentFov);
 
 	Camera->SetFOV(CurrentFov);
 	Camera->SetPosition(CurrentPosition);
@@ -60,7 +58,7 @@ void FPerspectToOrtho::Tick(float DeltaTime)
 	{
 		bIsTransition = false;
 		Camera->SetProjectionMode(ECameraProjectionMode::Orthographic);
-		Camera->SetOrthoHeight(TargetRadius * 2.f);
-		Camera->SetPosition(PivotPosition - ViewDirection * TargetRadius * 2.f);
+		Camera->SetOrthoWidth(OrthoWidth * defualtSize * 2.f);
+		Camera->SetPosition(StartPosition);
 	}
 }

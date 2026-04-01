@@ -18,7 +18,7 @@ float ICameraFunction::ComputeFocusDistance(float Radius, float FieldOfViewDegre
 	const float SafeRadius = FMath::Max(Radius, 0.5f);
 	const float HalfFovRadians = FMath::DegreesToRadians(FieldOfViewDegrees * 0.5f);
 	const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
-	return FMath::Max((SafeRadius / SafeTanHalfFov) * 1.2f, SafeRadius * 2.0f);
+	return FMath::Max((SafeRadius / SafeTanHalfFov), SafeRadius * 2.0f);
 }
 
 float ICameraFunction::LerpAngleDegrees(float Start, float End, float Alpha) const

@@ -17,11 +17,9 @@ private:
 	bool bIsTransition = false;
 	float MoveElapsedTime = 0.0f;
 	float FocusTime = 1.f;
-	float TargetRadius;
-
 
 public:
-	void StartTransition(AActor* InTargetActor);
+	void StartTransition();
 	virtual bool IsFinished() const override { return !bIsTransition; }
 	virtual void Tick(float DeltaTime) override;
 };
