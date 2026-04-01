@@ -97,6 +97,7 @@ protected:
 	void ApplyViewerNoCull(FMaterial* Material) const;
 	void ShowViewOptionPanel();
 	void DrawCameraOption();
+	void StartOrthographicTransition();
 	void StartPerspectiveTransition();
 	void StartOrthoTransition(EEditorViewportType OrthoViewType);
 	void ResetPerspectiveMovementState();
@@ -107,6 +108,7 @@ protected:
 	FVector GetOrthoRightVector() const;
 	FVector GetOrthoUpVector() const;
 	static EEditorViewportType GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType);
+	FVector ResolveTransitionPivot() const;
 	FVector GetViewportUpVector() const;
 	FMatrix GetGridWorldMatrix() const;
 

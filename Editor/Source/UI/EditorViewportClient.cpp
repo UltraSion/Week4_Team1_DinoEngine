@@ -63,6 +63,14 @@ namespace
 		return A + (B - A) * Alpha;
 	}
 
+	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees)
+	{
+		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
+		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+		return SafeHalfWidth / SafeTanHalfFov;
+	}
+
 	float LerpAngleDegrees(float Start, float End, float Alpha)
 	{
 		float Delta = std::fmod(End - Start, 360.0f);
@@ -423,9 +431,7 @@ void FEditorViewportClient::DrawViewportSpecificOptions()
 				StartPerspectiveTransition();
 				break;
 			case 1:
-				ChangePersToOrthFunction.StartTransition();
-				CameraViewType = EEditorViewportType::Orthographic;
-				CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
+				StartOrthographicTransition();
 				break;
 			case 2:
 				StartOrthoTransition(EEditorViewportType::Top);
@@ -447,6 +453,19 @@ void FEditorViewportClient::DrawViewportSpecificOptions()
 
 void FEditorViewportClient::DrawControllerOptions()
 {
+	const FVector CameraPosition = CameraTransform.GetPosition();
+	float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
+	if (ImGui::DragFloat3("Position", Position, 0.1f))
+	{
+		CameraTransform.SetPosition({ Position[0], Position[1], Position[2] });
+	}
+
+	float Center[3] = { OrthoCenter.X, OrthoCenter.Y, OrthoCenter.Z };
+	if (ImGui::DragFloat3("Center", Center, 0.1f))
+	{
+		OrthoCenter = { Center[0], Center[1], Center[2] };
+		UpdateOrthoCameraTransform();
+	}
 	if (CameraViewType == EEditorViewportType::Perspective)
 	{
 		float Sensitivity = CameraTransform.GetMouseSensitivity();
@@ -461,12 +480,6 @@ void FEditorViewportClient::DrawControllerOptions()
 			CameraTransform.SetSpeed(Speed);
 		}
 
-		const FVector CameraPosition = CameraTransform.GetPosition();
-		float Position[3] = { CameraPosition.X, CameraPosition.Y, CameraPosition.Z };
-		if (ImGui::DragFloat3("Position", Position, 0.1f))
-		{
-			CameraTransform.SetPosition({ Position[0], Position[1], Position[2] });
-		}
 
 		float CameraYaw = CameraTransform.GetYaw();
 		float CameraPitch = CameraTransform.GetPitch();
@@ -488,13 +501,6 @@ void FEditorViewportClient::DrawControllerOptions()
 
 	ImGui::Text("View: %s", GetOrthoViewLabel(CameraViewType));
 
-	float Center[3] = { OrthoCenter.X, OrthoCenter.Y, OrthoCenter.Z };
-	if (ImGui::DragFloat3("Center", Center, 0.1f))
-	{
-		OrthoCenter = { Center[0], Center[1], Center[2] };
-		UpdateOrthoCameraTransform();
-	}
-
 	float CameraYaw = CameraTransform.GetYaw();
 	float CameraPitch = CameraTransform.GetPitch();
 	bool bRotationChanged = false;
@@ -506,8 +512,8 @@ void FEditorViewportClient::DrawControllerOptions()
 		UpdateOrthoCameraTransform();
 	}
 
-	float OrthoWidht = GetCamera()->GetFOV();
-	if (ImGui::DragFloat("GetFOV", &OrthoWidht, 0.5f, OrthoMinZoom, OrthoMaxZoom))
+	float OrthoWidht = GetCamera()->GetOrthoWidth();
+	if (ImGui::DragFloat("OrthoWidth", &OrthoWidht, 0.5f, OrthoMinZoom, OrthoMaxZoom))
 	{
 		UpdateOrthoCameraTransform();
 	}
@@ -995,19 +1001,12 @@ void FEditorViewportClient::DrawUI()
 				PendingOrthoZoomStep = 0.0f;
 				ResetPerspectiveMovementState();
 
-				ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV);
+				ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV, OrthoCenter, ViewTransitionDuration);
 				CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
 			}
 			else
 			{
-				CameraViewType = EEditorViewportType::Orthographic;
-				bPerspectiveRotating = false;
-				bPerspectivePanning = false;
-				bOrthoPanning = false;
-				PendingOrthoZoomStep = 0.0f;
-				ResetPerspectiveMovementState();
-				ChangePersToOrthFunction.StartTransition();
-				CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
+				StartOrthographicTransition();
 			}
 
 		}
@@ -1045,6 +1044,50 @@ void FEditorViewportClient::DrawCameraOption()
 	DrawControllerOptions();
 }
 
+void FEditorViewportClient::StartOrthographicTransition()
+{
+	if (!ChangePersToOrthFunction.IsFinished() ||
+		!ChangeOrthoToPersFunction.IsFinished() ||
+		!ChangeOrthoToOrthoFunction.IsFinished())
+	{
+		return;
+	}
+
+	if (CameraTransform.GetProjectionMode() == ECameraProjectionMode::Orthographic)
+	{
+		CameraViewType = EEditorViewportType::Orthographic;
+		return;
+	}
+
+	const FVector FocusCenter = ResolveTransitionPivot();
+	const FVector CameraPosition = CameraTransform.GetPosition();
+	FVector ViewDirection = CameraTransform.GetForward().GetSafeNormal();
+	if (ViewDirection.IsNearlyZero())
+	{
+		ViewDirection = FVector::ForwardVector;
+	}
+
+	const float FocusDistance = FMath::Max(
+		FVector::DotProduct(FocusCenter - CameraPosition, ViewDirection),
+		0.01f);
+	const float TargetHalfWidth = FMath::Max(
+		FocusDistance * std::tanf(FMath::DegreesToRadians(CameraTransform.GetFOV() * 0.5f)),
+		0.25f);
+
+	CameraViewType = EEditorViewportType::Orthographic;
+	OrthoCenter = FocusCenter;
+
+	OrthoViewDistance = ComputeDistanceForHalfWidth(TargetHalfWidth, 0.8f);
+	bPerspectiveRotating = false;
+	bPerspectivePanning = false;
+	bOrthoPanning = false;
+	PendingOrthoZoomStep = 0.0f;
+	ResetPerspectiveMovementState();
+
+	ChangePersToOrthFunction.StartTransition(FocusCenter, ViewTransitionDuration);
+	CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
+}
+
 void FEditorViewportClient::StartPerspectiveTransition()
 {
 	if (!ChangePersToOrthFunction.IsFinished() ||
@@ -1068,7 +1111,7 @@ void FEditorViewportClient::StartPerspectiveTransition()
 	PendingOrthoZoomStep = 0.0f;
 	ResetPerspectiveMovementState();
 
-	ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV);
+	ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV, OrthoCenter, ViewTransitionDuration);
 	CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
 }
 
@@ -1196,6 +1239,34 @@ FVector FEditorViewportClient::GetOrthoRightVector() const
 FVector FEditorViewportClient::GetOrthoUpVector() const
 {
 	return GetViewportUpVector();
+}
+
+FVector FEditorViewportClient::ResolveTransitionPivot() const
+{
+	const FVector CameraPosition = CameraTransform.GetPosition();
+	FVector ViewDirection = CameraTransform.GetForward().GetSafeNormal();
+	if (ViewDirection.IsNearlyZero())
+	{
+		ViewDirection = FVector::ForwardVector;
+	}
+
+	FVector RequestedFocus = CameraTransform.GetOrbitTarget();
+	if (AActor* SelectedActor = GetSelectedActor())
+	{
+		if (UPrimitiveComponent* PrimitiveComponent = SelectedActor->GetComponentByClass<UPrimitiveComponent>())
+		{
+			RequestedFocus = PrimitiveComponent->GetWorldBounds().Center;
+		}
+	}
+
+	float FocusDistance = FVector::DotProduct(RequestedFocus - CameraPosition, ViewDirection);
+	if (FocusDistance <= 0.01f)
+	{
+		const float RequestedDistance = FVector::Dist(RequestedFocus, CameraPosition);
+		FocusDistance = FMath::Max(RequestedDistance, 10.0f);
+	}
+
+	return CameraPosition + ViewDirection * FocusDistance;
 }
 
 EEditorViewportType FEditorViewportClient::GetOrthoViewTypeFromViewportType(EEditorViewportType InViewportType)
@@ -1606,7 +1677,10 @@ FVector FEditorViewportClient::GetViewportUpVector() const
 
 FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 {
-	FVector Translation = FVector::ZeroVector;
+	AActor* Actor = GetGizmoTarget();
+
+	
+	FVector Translation = Actor != nullptr ? Actor->GetRootComponent() != nullptr ? Actor->GetRootComponent()->GetRelativeLocation() : FVector::ZeroVector : FVector::ZeroVector;
 	FMatrix Rotation;
 	FVector Scale = FVector::OneVector;
 	int32 Interval = 10;
@@ -1626,11 +1700,16 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 		Translation.Z = std::floor(CameraLocation.Z / Interval) * Interval;
 		break;
 	case EEditorViewportType::Top:
-	case EEditorViewportType::Perspective:
-	default:
 		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
 		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
 		Rotation = FMatrix::Identity;
+		break;
+	case EEditorViewportType::Perspective:
+		Translation.X = std::floor(CameraLocation.X / Interval) * Interval;
+		Translation.Y = std::floor(CameraLocation.Y / Interval) * Interval;
+		Translation.Z = 0;
+		Rotation = FMatrix::Identity;
+	default:
 		break;
 	}
 

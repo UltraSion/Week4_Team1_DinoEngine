@@ -65,7 +65,7 @@ private:
 	ECameraProjectionMode ProjectionMode = ECameraProjectionMode::Perspective;
 	float OrthoWidth = 20.0f;
 	float NearPlane = 0.1f;
-	float FarPlane = 1000.0f;
+	float FarPlane = 10000.0f;
 	float OrbitDistance = 0.0f;
 	FVector OrbitTarget = FVector::ZeroVector;
 };

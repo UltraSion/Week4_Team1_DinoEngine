@@ -9,6 +9,7 @@ class FPerspectToOrtho : public ICameraFunction
 {
 private:
 	float StartFOV  = 45.f;
+	float TargetOrthoWidth = 20.f;
 	FVector StartPosition = FVector::ZeroVector;
 	FVector TargetPosition = FVector::ZeroVector;
 	FVector ViewDirection = FVector::ZeroVector;
@@ -19,7 +20,7 @@ private:
 	float FocusTime = 1.f;
 
 public:
-	void StartTransition();
+	void StartTransition(const FVector& InPivotPosition, float InTransitionTime);
 	virtual bool IsFinished() const override { return !bIsTransition; }
 	virtual void Tick(float DeltaTime) override;
 };

@@ -8,25 +8,47 @@
 
 #include <cmath>
 
-void FOrthoToPerspect::StartTransition(float InTargetFov)
+namespace
+{
+	float ComputeDistanceForHalfWidth(float HalfWidth, float FieldOfViewDegrees)
+	{
+		const float SafeHalfWidth = FMath::Max(HalfWidth, 0.01f);
+		const float HalfFovRadians = FMath::DegreesToRadians(FMath::Max(FieldOfViewDegrees, 0.1f) * 0.5f);
+		const float SafeTanHalfFov = FMath::Max(std::tanf(HalfFovRadians), 0.01f);
+		return SafeHalfWidth / SafeTanHalfFov;
+	}
+}
+
+void FOrthoToPerspect::StartTransition(float InTargetFov, const FVector& InPivotPosition, float InTransitionTime)
 {
 	if (!Camera)
 	{
 		return;
 	}
 
-	TargetFov = InTargetFov;
+	TargetFov = FMath::Max(InTargetFov, MinPerspectiveFOV);
 	ViewDirection = Camera->GetForward().GetSafeNormal();
-	PivotPosition =	Camera->GetPosition();
 	if (ViewDirection.IsNearlyZero())
 	{
 		ViewDirection = FVector::ForwardVector;
 	}
 
-	StartPosition = Camera->GetPosition() - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(MinPerspectiveFOV / 2), 0.01f), MinPerspectiveFOV);;
-	TargetPosition = Camera->GetPosition() - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(InTargetFov / 2), 0.01f), InTargetFov);
-	Camera->SetPosition(StartPosition);
+	const FVector CurrentPosition = Camera->GetPosition();
+	const float FocusDistance = FMath::Max(
+		FVector::DotProduct(InPivotPosition - CurrentPosition, ViewDirection),
+		MinOrbitDistance);
+	PivotPosition = CurrentPosition + ViewDirection * FocusDistance;
+	StartOrthoWidth = FMath::Max(Camera->GetOrthoWidth(), MinOrthoWidth);
 
+	const float StartHalfWidth = StartOrthoWidth * 0.5f;
+	StartPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, MinPerspectiveFOV);
+	TargetPosition = PivotPosition - ViewDirection * ComputeDistanceForHalfWidth(StartHalfWidth, TargetFov);
+
+	Camera->SetPosition(StartPosition);
+	Camera->SetFOV(MinPerspectiveFOV);
+	Camera->SetProjectionMode(ECameraProjectionMode::Perspective);
+
+	FocusTime = FMath::Max(InTransitionTime, MinTransitionTime);
 	MoveElapsedTime = 0.0f;
 	bIsTransition = true;
 }
@@ -44,16 +66,17 @@ void FOrthoToPerspect::Tick(float DeltaTime)
 	const float EasedAlpha = EvaluateEaseInOut(MoveAlpha);
 
 	const float CurrentFov = LerpFloat(MinPerspectiveFOV, TargetFov, EasedAlpha);
-
-	const FVector CurrentPosition = PivotPosition - ViewDirection * ComputeFocusDistance(FMath::Max(std::tanf(TargetFov / 2), 0.01f), CurrentFov);
+	const float CurrentHalfWidth = StartOrthoWidth * 0.5f;
+	const float CurrentDistance = ComputeDistanceForHalfWidth(CurrentHalfWidth, CurrentFov);
+	const FVector CurrentPosition = PivotPosition - ViewDirection * CurrentDistance;
 	Camera->SetPosition(CurrentPosition);
 	Camera->SetFOV(CurrentFov);
 
 
 	if (MoveAlpha >= 1.0f)
 	{
-
-
+		Camera->SetPosition(TargetPosition);
+		Camera->SetFOV(TargetFov);
 		bIsTransition = false;
 	}
 }
