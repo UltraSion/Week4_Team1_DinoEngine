@@ -3,6 +3,7 @@
 #include "ControlPanelWindow.h"
 #include "PropertyWindow.h"
 #include "ConsoleWindow.h"
+#include "ObjViewerPanel.h"
 #include "StatWindow.h"
 #include "Viewport.h"
 #include "Math/Rect.h"
@@ -52,6 +53,7 @@ private:
 	FControlPanelWindow ControlPanel;
 	FPropertyWindow Property;
 	FConsoleWindow Console;
+	FObjViewerPanel ObjViewerPanel;
 	FStatWindow Stat;
 	FViewportLegacy ViewportLegacy;
 	FOutlinerWindow Outliner;
