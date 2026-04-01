@@ -15,11 +15,10 @@
     "Assets/Materials/M_Hologram.json",
     "Assets/Materials/M_Gizmos.json",
     "Assets/Materials/M_GreenColor.json",
-    "Assets/Materials/M_SolidWireframeFill.json",
+    "Assets/Materials/M_SolidWireframe.json",
     "Assets/Materials/M_RedColor.json",
     "Assets/Materials/M_Sky.json",
     "Assets/Materials/M_TintYellow.json",
-    "Assets/Materials/M_SolidWireframeLine.json",
     "Assets/Materials/M_StaticMesh.json",
     "Assets/Materials/M_Wireframe.json"
   ],

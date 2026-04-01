@@ -9,6 +9,7 @@
 #include "CameraFuction/FPerspectToOrtho.h"
 #include "CameraFuction/FOrthoToPerspect.h"
 #include "CameraFuction/FOrthoToOrtho.h"
+#include <unordered_map>
 
 class FPersToPers;
 class FEditorUI;
@@ -125,13 +126,12 @@ protected:
 
 	ERenderMode RenderMode = ERenderMode::Lighting;
 	const FString WireframeMaterialName = "M_Wireframe";
-	const FString SolidWireframeFillMaterialName = "M_SolidWireframeFill";
-	const FString SolidWireframeLineMaterialName = "M_SolidWireframeLine";
+	const FString SolidWireframeMaterialName = "M_SolidWireframe";
 	std::shared_ptr<FMaterial> WireFrameMaterial = nullptr;
-	std::shared_ptr<FMaterial> SolidWireFrameFillMaterial = nullptr;
-	std::shared_ptr<FMaterial> SolidWireFrameLineMaterial = nullptr;
+	std::shared_ptr<FMaterial> SolidWireFrameMaterial = nullptr;
 	std::shared_ptr<FMaterial> ViewerUVMaterial = nullptr;
 	std::shared_ptr<FMaterial> ViewerNormalMaterial = nullptr;
+	std::unordered_map<const FMeshData*, std::shared_ptr<FMeshData>> SolidWireframeMeshCache;
 
 	std::unique_ptr<FMeshData> GridMesh;
 	std::shared_ptr<FMaterial> GridMaterial;

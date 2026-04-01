@@ -30,9 +30,32 @@
 #include "Mesh/ObjManager.h"
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
+#include <psapi.h>
+
+#pragma comment(lib, "Psapi.lib")
 
 namespace //양쪽 공백 제거, 소문자 변환, OverlayMode, BytesToKiB
 {
+	struct FProcessMemorySnapshot
+	{
+		bool bIsValid = false;
+		SIZE_T WorkingSetBytes = 0;
+		SIZE_T PeakWorkingSetBytes = 0;
+		SIZE_T CommitBytes = 0;
+		SIZE_T PeakCommitBytes = 0;
+		SIZE_T PrivateBytes = 0;
+	};
+
+	struct FSystemMemorySnapshot
+	{
+		bool bIsValid = false;
+		DWORD MemoryLoadPercent = 0;
+		uint64 TotalPhysicalBytes = 0;
+		uint64 AvailablePhysicalBytes = 0;
+		uint64 TotalVirtualBytes = 0;
+		uint64 AvailableVirtualBytes = 0;
+	};
+
 	FString TrimConsoleArg(const FString& InValue)
 	{
 		const size_t Start = InValue.find_first_not_of(" \t");
@@ -90,6 +113,54 @@ namespace //양쪽 공백 제거, 소문자 변환, OverlayMode, BytesToKiB
 	float BytesToKiB(uint32 Bytes)
 	{
 		return static_cast<float>(Bytes) / 1024.0f;
+	}
+
+	double BytesToMiB(uint64 Bytes)
+	{
+		return static_cast<double>(Bytes) / (1024.0 * 1024.0);
+	}
+
+	double BytesToGiB(uint64 Bytes)
+	{
+		return static_cast<double>(Bytes) / (1024.0 * 1024.0 * 1024.0);
+	}
+
+	FProcessMemorySnapshot CaptureProcessMemorySnapshot()
+	{
+		FProcessMemorySnapshot Snapshot;
+
+		PROCESS_MEMORY_COUNTERS_EX Counters = {};
+		Counters.cb = sizeof(Counters);
+		if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&Counters), sizeof(Counters)))
+		{
+			Snapshot.bIsValid = true;
+			Snapshot.WorkingSetBytes = Counters.WorkingSetSize;
+			Snapshot.PeakWorkingSetBytes = Counters.PeakWorkingSetSize;
+			Snapshot.CommitBytes = Counters.PagefileUsage;
+			Snapshot.PeakCommitBytes = Counters.PeakPagefileUsage;
+			Snapshot.PrivateBytes = Counters.PrivateUsage;
+		}
+
+		return Snapshot;
+	}
+
+	FSystemMemorySnapshot CaptureSystemMemorySnapshot()
+	{
+		FSystemMemorySnapshot Snapshot;
+
+		MEMORYSTATUSEX Status = {};
+		Status.dwLength = sizeof(Status);
+		if (GlobalMemoryStatusEx(&Status))
+		{
+			Snapshot.bIsValid = true;
+			Snapshot.MemoryLoadPercent = Status.dwMemoryLoad;
+			Snapshot.TotalPhysicalBytes = Status.ullTotalPhys;
+			Snapshot.AvailablePhysicalBytes = Status.ullAvailPhys;
+			Snapshot.TotalVirtualBytes = Status.ullTotalVirtual;
+			Snapshot.AvailableVirtualBytes = Status.ullAvailVirtual;
+		}
+
+		return Snapshot;
 	}
 }
 
@@ -371,9 +442,9 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 		return;
 	}
 
-	constexpr float Margin = 116.0f;
-	constexpr float Padding = 10.0f;
-	constexpr float LineSpacing = 6.0f;
+	constexpr float Margin = 90.0f;
+	constexpr float Padding = 5.0f;
+	constexpr float LineSpacing = 3.0f;
 	const FVector4 BackgroundColor(0.05f, 0.05f, 0.05f, 0.08f);
 	const FVector4 BorderColor(1.0f, 1.0f, 1.0f, 0.10f);
 	const FVector4 TitleColor(0.95f, 0.95f, 0.95f, 1.0f);
@@ -422,15 +493,28 @@ void FCore::RenderStatOverlay(FRenderer* Renderer, int32 ViewportWidth, int32 Vi
 	if (HasStatOverlayMode(StatOverlayModeFlags, EStatOverlayMode::Memory))
 	{
 		const FMallocStats& MallocStats = GetGMalloc()->MallocStats;
+		const FProcessMemorySnapshot ProcessMemory = CaptureProcessMemorySnapshot();
 		TArray<FString> Lines;
-		char Buffer[160] = {};
+		char Buffer[192] = {};
 		Lines.push_back("STAT MEMORY");
-		snprintf(Buffer, sizeof(Buffer), "UObject Bytes------: %.2f KiB", BytesToKiB(UObject::TotalAllocationBytes));
+
+		if (ProcessMemory.bIsValid)
+		{
+			snprintf(Buffer, sizeof(Buffer), "Process Working Set-: %.2f MiB", BytesToMiB(ProcessMemory.WorkingSetBytes));
+			Lines.push_back(Buffer);
+			snprintf(Buffer, sizeof(Buffer), "Process Peak WS-----: %.2f MiB", BytesToMiB(ProcessMemory.PeakWorkingSetBytes));
+			Lines.push_back(Buffer);
+			snprintf(Buffer, sizeof(Buffer), "Process Commit -----: %.2f MiB", BytesToMiB(ProcessMemory.CommitBytes));
+			Lines.push_back(Buffer);
+			snprintf(Buffer, sizeof(Buffer), "Process Peak Commit-: %.2f MiB", BytesToMiB(ProcessMemory.PeakCommitBytes));
+			Lines.push_back(Buffer);
+			snprintf(Buffer, sizeof(Buffer), "Process Private ----: %.2f MiB", BytesToMiB(ProcessMemory.PrivateBytes));
+			Lines.push_back(Buffer);
+		}
+		snprintf(Buffer, sizeof(Buffer), "Heap Usage ---------: %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Usage---------: %.2f KiB", BytesToKiB(MallocStats.CurrentAllocationBytes));
+		snprintf(Buffer, sizeof(Buffer), "Heap Allocations ---: %u", MallocStats.CurrentAllocationCount);
 		Lines.push_back(Buffer);
-		snprintf(Buffer, sizeof(Buffer), "Heap Allocations---: %u", MallocStats.CurrentAllocationCount);
-		Lines.push_back(Buffer);
-		DrawStatBox(Lines, 500.0f, Margin, LeftCursorBoxY);
+		DrawStatBox(Lines, 560.0f, Margin, LeftCursorBoxY);
 	}
 }
