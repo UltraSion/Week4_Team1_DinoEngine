@@ -981,6 +981,36 @@ void FEditorViewportClient::DrawUI()
 				}
 			}
 		}
+
+		ImGui::SameLine();
+		sprintf_s(ItemName, "Ortho <-> Perspective ##%p", this);
+		if (ImGui::Button(ItemName))
+		{
+			if (CameraViewType != EEditorViewportType::Perspective)
+			{
+				CameraViewType = EEditorViewportType::Perspective;
+				bPerspectiveRotating = false;
+				bPerspectivePanning = false;
+				bOrthoPanning = false;
+				PendingOrthoZoomStep = 0.0f;
+				ResetPerspectiveMovementState();
+
+				ChangeOrthoToPersFunction.StartTransition(InitialCameraFOV);
+				CameraFunctionManager.AddFunction(&ChangeOrthoToPersFunction);
+			}
+			else
+			{
+				CameraViewType = EEditorViewportType::Orthographic;
+				bPerspectiveRotating = false;
+				bPerspectivePanning = false;
+				bOrthoPanning = false;
+				PendingOrthoZoomStep = 0.0f;
+				ResetPerspectiveMovementState();
+				ChangePersToOrthFunction.StartTransition();
+				CameraFunctionManager.AddFunction(&ChangePersToOrthFunction);
+			}
+
+		}
 	}
 	else
 	{
