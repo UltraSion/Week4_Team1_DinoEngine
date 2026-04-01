@@ -232,6 +232,7 @@
     <ClCompile Include="Source\UI\ControlPanelWindow.cpp" />
     <ClCompile Include="Source\UI\EditorUI.cpp" />
     <ClCompile Include="Source\UI\EditorViewportClient.cpp" />
+    <ClCompile Include="Source\UI\ObjViewerPanel.cpp" />
     <ClCompile Include="Source\UI\OutlinerWindow.cpp" />
     <ClCompile Include="Source\UI\PropertyWindow.cpp" />
     <ClCompile Include="Source\UI\StatWindow.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="Source\UI\ControlPanelWindow.h" />
     <ClInclude Include="Source\UI\EditorUI.h" />
     <ClInclude Include="Source\UI\EditorViewportClient.h" />
+    <ClInclude Include="Source\UI\ObjViewerPanel.h" />
     <ClInclude Include="Source\UI\OutlinerWindow.h" />
     <ClInclude Include="Source\UI\PropertyWindow.h" />
     <ClInclude Include="Source\UI\StatWindow.h" />

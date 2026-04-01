@@ -30,7 +30,6 @@ namespace
 {
 	void SnapObjViewerActorBottomToZero(AActor* Actor, FEditorViewportClient* ViewportClient)
 	{
-#if IS_OBJ_VIEWER
 		if (!Actor || !ViewportClient)
 		{
 			return;
@@ -48,10 +47,6 @@ namespace
 		Transform.SetLocation(Location);
 		Root->SetRelativeTransform(Transform);
 		ViewportClient->RefreshObjViewerCameraPivot(Actor);
-#else
-		(void)Actor;
-		(void)ViewportClient;
-#endif
 	}
 
 	FString PromptForObjFilePath()
@@ -61,7 +56,7 @@ namespace
 
 		OPENFILENAMEA Ofn = {};
 		Ofn.lStructSize = sizeof(OPENFILENAMEA);
-		Ofn.lpstrFilter = "OBJ Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
+		Ofn.lpstrFilter = "Mesh Files (*.obj;*.dasset)\0*.obj;*.dasset\0OBJ Files (*.obj)\0*.obj\0DinoAsset Files (*.dasset)\0*.dasset\0All Files (*.*)\0*.*\0";
 		Ofn.lpstrFile = FileName;
 		Ofn.nMaxFile = MAX_PATH;
 		Ofn.lpstrDefExt = "obj";
@@ -107,12 +102,14 @@ FEditorEngine::~FEditorEngine()
 {
 }
 
+/**
+ * 뷰어에서만 사용하는 기능입니다. 새 obj 파일을 엽니다.
+ * 
+ */
 void FEditorEngine::OpenNewObj()
 {
-#if IS_OBJ_VIEWER
 	bPendingObjViewerStartupPrompt = false;
 	RunObjViewerStartupTest();
-#endif
 }
 
 void FEditorEngine::Shutdown()
@@ -183,7 +180,7 @@ void FEditorEngine::Tick(float DeltaTime)
 {
 	Input(Core->GetTimer().GetDeltaTime());
 	WindowManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어는 활성 viewport가 준비된 뒤에만 startup load가 가능합니다.
 	TryRunPendingObjViewerStartupPrompt();
 #endif
 	WindowManager.CheckParent();
@@ -275,13 +272,13 @@ void FEditorEngine::RunObjViewerStartupTest()
 
 	const std::filesystem::path AssetPath = FPaths::ToAbsolutePath(SelectedPath);
 	const std::filesystem::path Extension = AssetPath.extension();
-	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ"))
+	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ" && Extension != ".dasset"))
 	{
 		UE_LOG("[ObjViewerTest] Invalid startup mesh selection: %s", SelectedPath.c_str());
 		return;
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 OBJ를 다시 불러오기 전에 기본 축 매핑을 강제로 넣습니다
 	FObjImporter::SetImportAxisMapping(FObjImporter::MakeDefaultImportAxisMapping());
 #endif
 	Core->SetSelectedActor(nullptr);

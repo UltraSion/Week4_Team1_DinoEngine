@@ -14,6 +14,7 @@
 #include "Asset/AssetRegistry.h"
 #include "Asset/AssetManager.h"
 #include "Actor/Actor.h"
+#include "Debug/EngineLog.h"
 #include <algorithm>
 #include <filesystem>
 
@@ -176,52 +177,118 @@ void FPropertyWindow::DrawMaterialSlots(FCore* Core, UStaticMeshComponent* SMCom
 
 	const uint32 NumSlots = SMComp->GetNumMaterials();
 	static TWeakObjectPtr<AActor> LastSelectedActor;
+	static FString LastMeshAsset = "";
+	FString CurrentMeshAsset = SMComp->GetStaticMeshAsset();
 	static std::vector<int> SlotMatIndices;
 	static std::vector<int> SlotTexIndices;
 
-	if (LastSelectedActor.Get() != SelectedActor)
+	if (LastSelectedActor.Get() != SelectedActor || LastMeshAsset != CurrentMeshAsset)
 	{
 		SlotMatIndices.clear();
 		SlotTexIndices.clear();
 		LastSelectedActor = SelectedActor;
-	}
-	if (SlotMatIndices.size() < NumSlots)
-	{
-		SlotMatIndices.resize(NumSlots, 0);
-	}
-	if (SlotTexIndices.size() < NumSlots)
-	{
-		SlotTexIndices.resize(NumSlots, 0);
+		LastMeshAsset = CurrentMeshAsset;
 	}
 
+	if (SlotMatIndices.size() < NumSlots) SlotMatIndices.resize(NumSlots, 0);
+	if (SlotTexIndices.size() < NumSlots) SlotTexIndices.resize(NumSlots, 0);
 	for (uint32 SlotIdx = 0; SlotIdx < NumSlots; ++SlotIdx)
 	{
+		//  매 프레임: 컴포넌트에 현재 적용된 매테리얼(.mtl 반영)과 UI 콤보박스를 강제 동기화!
+		FMaterial* CurrentMat = SMComp->GetMaterial(SlotIdx);
+		if (CurrentMat)
+		{
+			FString MatName = CurrentMat->GetOriginName();
+			SlotMatIndices[SlotIdx] = 0; // Default로 일단 세팅
+			for (int j = 0; j < (int)MaterialAssets.size(); ++j)
+			{
+				FString AssetName = std::filesystem::path(MaterialAssets[j].AssetName).stem().string();
+				if (AssetName == MatName)
+				{
+					SlotMatIndices[SlotIdx] = j + 1; // 0은 Default이므로 +1
+					break;
+				}
+			}
+		}
+		SlotTexIndices[SlotIdx] = 0;
+		auto DynMatIt = SMComp->DynamicMaterialOwners.find(SlotIdx);
+		if (DynMatIt != SMComp->DynamicMaterialOwners.end() && DynMatIt->second)
+		{
+			if (auto MatTex = DynMatIt->second->GetMaterialTexture())
+			{
+				FString CurrentTexPath = MatTex->AssetPath; // 기억해둔 텍스처 경로 꺼내기
+				if (!CurrentTexPath.empty())
+				{
+					namespace fs = std::filesystem;
+					for (int j = 0; j < (int)TextureAssets.size(); ++j)
+					{
+						// 역슬래시, 대소문자 등 꼬이지 않게 lexically_normal()로 깔끔하게 비교
+						if (fs::path(FPaths::ToWide(TextureAssets[j].AssetPath)).lexically_normal() ==
+							fs::path(FPaths::ToWide(CurrentTexPath)).lexically_normal())
+						{
+							SlotTexIndices[SlotIdx] = j + 1;
+							break;
+						}
+					}
+				}
+			}
+		}
 		ImGui::PushID(SlotIdx);
 		if (ImGui::TreeNodeEx(("Material Slot " + std::to_string(SlotIdx)).c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			// ==========================================
-				// 1. Material 파트
-				// ==========================================
+			// 1. Material 파트
+			// ==========================================
 			if (ImGui::Combo("Material", &SlotMatIndices[SlotIdx], MatItems.data(), static_cast<int>(MatItems.size())) && Core && SlotMatIndices[SlotIdx] > 0)
 			{
-				FString MatName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
+				FString MatFileName = MaterialAssets[SlotMatIndices[SlotIdx] - 1].AssetName;
+				FString MatName = std::filesystem::path(MatFileName).stem().string();
 				if (auto Mat = FMaterialManager::Get().FindByName(MatName))
 				{
-					SMComp->SetMaterial(SlotIdx, Mat.get());
+					std::shared_ptr<FMaterialTexture> OldTex = GDefaultWhiteTexture;
+					auto OldIt = SMComp->DynamicMaterialOwners.find(SlotIdx);
+					if (OldIt != SMComp->DynamicMaterialOwners.end() && OldIt->second && OldIt->second->GetMaterialTexture())
+					{
+						OldTex = OldIt->second->GetMaterialTexture();
+					}
+
+					//shared_ptr로 안전하게 복사/전달
+					std::shared_ptr<FDynamicMaterial> DynMat = Mat->CreateDynamicMaterial();
+					if (DynMat)
+					{
+						DynMat->SetMaterialTexture(OldTex);
+						SMComp->DynamicMaterialOwners[SlotIdx] = DynMat; // 소유권 저장
+						SMComp->SetMaterial(SlotIdx, DynMat.get());      // 포인터 연결
+					}
 				}
 			}
-			// Material 콤보박스용 드래그 앤 드롭 추가 (예: .mat 확장자)
-			ProcessDragDrop({ ".mat" }, [&](const std::string& AbsPath, const std::string& RelPath) {
-				// 파일 이름(M_Red 등)만 추출해서 MaterialManager에서 찾음
+
+			// Material 콤보박스용 드래그 앤 드롭
+			ProcessDragDrop({ ".mat", ".json" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 				std::string MatName = std::filesystem::path(RelPath).stem().string();
 				if (auto Mat = FMaterialManager::Get().FindByName(MatName.c_str()))
 				{
-					SMComp->SetMaterial(SlotIdx, Mat.get());
+					std::shared_ptr<FMaterialTexture> OldTex = GDefaultWhiteTexture;
+					auto OldIt = SMComp->DynamicMaterialOwners.find(SlotIdx);
+					if (OldIt != SMComp->DynamicMaterialOwners.end() && OldIt->second && OldIt->second->GetMaterialTexture())
+					{
+						OldTex = OldIt->second->GetMaterialTexture();
+					}
+
+					// 드래그 앤 드롭에도 텍스처 보존 로직 동일하게 적용
+					std::shared_ptr<FDynamicMaterial> DynMat = Mat->CreateDynamicMaterial();
+					if (DynMat)
+					{
+						DynMat->SetMaterialTexture(OldTex);
+						SMComp->DynamicMaterialOwners[SlotIdx] = DynMat;
+						SMComp->SetMaterial(SlotIdx, DynMat.get());
+					}
 				}
 			});
+
 			// ==========================================
-				// 2. Texture 파트
-				// ==========================================
+			// 2. Texture 파트
+			// ==========================================
 			if (ImGui::Combo("Texture", &SlotTexIndices[SlotIdx], TexItems.data(), static_cast<int>(TexItems.size())) && Core && SlotTexIndices[SlotIdx] > 0 && GRenderer)
 			{
 				FString TexPath = TextureAssets[SlotTexIndices[SlotIdx] - 1].AssetPath;
@@ -322,7 +389,7 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 	namespace fs = std::filesystem;
 	for (int i = 0; i < (int)MeshAssets.size(); ++i) {
 		FString AssetPath = MeshAssets[i].AssetPath;
-		if (fs::path(AssetPath).lexically_normal() == fs::path(CurrentAsset).lexically_normal()) {
+		if (fs::path(FPaths::ToWide(AssetPath)).lexically_normal() == fs::path(FPaths::ToWide(CurrentAsset)).lexically_normal()) {
 			SelectedMeshIndex = i + 1;
 			break;
 		}
@@ -340,7 +407,7 @@ void FPropertyWindow::DrawStaticMeshSection(FCore* Core, AStaticMeshActor* SMAct
 	}
 
 	//  사용자가 드래그 앤 드롭 했을 때만 AssetManager를 통해 로드
-	ProcessDragDrop({ ".obj" }, [&](const std::string& AbsPath, const std::string& RelPath) {
+	ProcessDragDrop({ ".dasset" }, [&](const std::string& AbsPath, const std::string& RelPath) {
 		if (GRenderer)
 		{
 			UStaticMesh* LoadedMesh = FAssetManager::Get().LoadStaticMesh(GRenderer->GetDevice(), RelPath);

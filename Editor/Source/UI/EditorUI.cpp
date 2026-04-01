@@ -12,22 +12,14 @@
 #include "Core/Paths.h"
 #include "Core/ShowFlags.h"
 #include "Debug/EngineLog.h"
-#include "Asset/AssetCooker.h"
-#include "Asset/AssetManager.h"
 #include "FEditorEngine.h"
 #include "Object/Object.h"
-#include "Object/StaticMesh.h"
 #include "Platform/Windows/Window.h"
 #include "Primitive/PrimitiveObj.h"
 #include "Renderer/Renderer.h"
 #include "Serializer/SceneSerializer.h"
 #include "UI/EditorViewportClient.h"
 #include "World/Level.h"
-#include "Actor/StaticMeshActor.h"
-#include "Component/StaticMeshComponent.h"
-#include "Mesh/ObjImporter.h"
-#include "Mesh/ObjManager.h"
-#include "Mesh/StaticMeshRenderData.h"
 #include "Primitive/PrimitiveBase.h"
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
@@ -35,8 +27,6 @@
 #include "imgui_internal.h"
 
 #include <commdlg.h>
-#include <cmath>
-#include <filesystem>
 #include <windows.h>
 #include <windowsx.h>
 
@@ -48,8 +38,6 @@ enum class EFileDialogType
 
 namespace
 {
-	constexpr float ObjViewerImportScaleTolerance = 1.0e-4f;
-
 	ImGuiDockNode* FindCentralDockNode(ImGuiDockNode* Node)
 	{
 		if (Node == nullptr)
@@ -68,290 +56,6 @@ namespace
 		}
 
 		return FindCentralDockNode(Node->ChildNodes[1]);
-	}
-
-	const char* GetAxisDirectionLabel(FObjImporter::EAxisDirection AxisDirection)
-	{
-		switch (AxisDirection)
-		{
-		case FObjImporter::EAxisDirection::PositiveX:
-			return "+X";
-		case FObjImporter::EAxisDirection::NegativeX:
-			return "-X";
-		case FObjImporter::EAxisDirection::PositiveY:
-			return "+Y";
-		case FObjImporter::EAxisDirection::NegativeY:
-			return "-Y";
-		case FObjImporter::EAxisDirection::PositiveZ:
-			return "+Z";
-		case FObjImporter::EAxisDirection::NegativeZ:
-		default:
-			return "-Z";
-		}
-	}
-
-	int GetAxisBaseIndex(FObjImporter::EAxisDirection AxisDirection)
-	{
-		switch (AxisDirection)
-		{
-		case FObjImporter::EAxisDirection::PositiveX:
-		case FObjImporter::EAxisDirection::NegativeX:
-			return 0;
-		case FObjImporter::EAxisDirection::PositiveY:
-		case FObjImporter::EAxisDirection::NegativeY:
-			return 1;
-		case FObjImporter::EAxisDirection::PositiveZ:
-		case FObjImporter::EAxisDirection::NegativeZ:
-		default:
-			return 2;
-		}
-	}
-
-	bool IsAxisNegative(FObjImporter::EAxisDirection AxisDirection)
-	{
-		switch (AxisDirection)
-		{
-		case FObjImporter::EAxisDirection::NegativeX:
-		case FObjImporter::EAxisDirection::NegativeY:
-		case FObjImporter::EAxisDirection::NegativeZ:
-			return true;
-		case FObjImporter::EAxisDirection::PositiveX:
-		case FObjImporter::EAxisDirection::PositiveY:
-		case FObjImporter::EAxisDirection::PositiveZ:
-		default:
-			return false;
-		}
-	}
-
-	FObjImporter::EAxisDirection MakeAxisDirection(int AxisBaseIndex, bool bNegative)
-	{
-		switch (AxisBaseIndex)
-		{
-		case 0:
-			return bNegative ? FObjImporter::EAxisDirection::NegativeX : FObjImporter::EAxisDirection::PositiveX;
-		case 1:
-			return bNegative ? FObjImporter::EAxisDirection::NegativeY : FObjImporter::EAxisDirection::PositiveY;
-		case 2:
-		default:
-			return bNegative ? FObjImporter::EAxisDirection::NegativeZ : FObjImporter::EAxisDirection::PositiveZ;
-		}
-	}
-
-	FObjImporter::EAxisDirection GetMappingAxisDirection(const FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex)
-	{
-		switch (RowIndex)
-		{
-		case 0:
-			return ImportAxisMapping.EngineX;
-		case 1:
-			return ImportAxisMapping.EngineY;
-		case 2:
-		default:
-			return ImportAxisMapping.EngineZ;
-		}
-	}
-
-	void SetMappingAxisDirection(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex, FObjImporter::EAxisDirection AxisDirection)
-	{
-		switch (RowIndex)
-		{
-		case 0:
-			ImportAxisMapping.EngineX = AxisDirection;
-			break;
-		case 1:
-			ImportAxisMapping.EngineY = AxisDirection;
-			break;
-		case 2:
-		default:
-			ImportAxisMapping.EngineZ = AxisDirection;
-			break;
-		}
-	}
-
-	void SetMappingAxisBase(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex, int NewAxisBaseIndex)
-	{
-		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
-		const bool bCurrentNegative = IsAxisNegative(CurrentDirection);
-
-		for (int OtherRowIndex = 0; OtherRowIndex < 3; ++OtherRowIndex)
-		{
-			if (OtherRowIndex == RowIndex)
-			{
-				continue;
-			}
-
-			const FObjImporter::EAxisDirection OtherDirection = GetMappingAxisDirection(ImportAxisMapping, OtherRowIndex);
-			if (GetAxisBaseIndex(OtherDirection) == NewAxisBaseIndex)
-			{
-				const int CurrentAxisBaseIndex = GetAxisBaseIndex(CurrentDirection);
-				SetMappingAxisDirection(ImportAxisMapping, OtherRowIndex, MakeAxisDirection(CurrentAxisBaseIndex, IsAxisNegative(OtherDirection)));
-				break;
-			}
-		}
-
-		SetMappingAxisDirection(ImportAxisMapping, RowIndex, MakeAxisDirection(NewAxisBaseIndex, bCurrentNegative));
-	}
-
-	void ToggleMappingAxisSign(FObjImporter::FImportAxisMapping& ImportAxisMapping, int RowIndex)
-	{
-		const FObjImporter::EAxisDirection CurrentDirection = GetMappingAxisDirection(ImportAxisMapping, RowIndex);
-		SetMappingAxisDirection(ImportAxisMapping, RowIndex, MakeAxisDirection(GetAxisBaseIndex(CurrentDirection), !IsAxisNegative(CurrentDirection)));
-	}
-
-	FString BuildImportAxisSummary(const FObjImporter::FImportAxisMapping& ImportAxisMapping)
-	{
-		return FString("X=") + GetAxisDirectionLabel(ImportAxisMapping.EngineX)
-			+ "  Y=" + GetAxisDirectionLabel(ImportAxisMapping.EngineY)
-			+ "  Z=" + GetAxisDirectionLabel(ImportAxisMapping.EngineZ)
-			+ "  Scale=" + std::to_string(ImportAxisMapping.ImportScale);
-	}
-
-	AStaticMeshActor* FindObjViewerMeshActor(ULevel* Level)
-	{
-		if (!Level)
-		{
-			return nullptr;
-		}
-
-		for (AActor* Actor : Level->GetActors())
-		{
-			if (Actor && Actor->IsA(AStaticMeshActor::StaticClass()))
-			{
-				return static_cast<AStaticMeshActor*>(Actor);
-			}
-		}
-
-		return nullptr;
-	}
-
-	/**
-	 * 액터의 바닥면이 원하는 Z 높이에 오도록 액터를 위아래로 이동.
-	 * 
-	 * \param Actor
-	 * \param ViewportClient
-	 * \param TargetBottomZ
-	 */
-	void SnapObjViewerActorBottomTo(AActor* Actor, FEditorViewportClient* ViewportClient, float TargetBottomZ)
-	{
-		if (!Actor || !ViewportClient)
-		{
-			return;
-		}
-
-		USceneComponent* Root = Actor->GetRootComponent();
-		if (!Root)
-		{
-			return;
-		}
-
-		//현재 루트의 상대 트랜스폼 복사
-		FTransform Transform = Root->GetRelativeTransform();
-		FVector ActualLocation = Transform.GetLocation();
-		//현재 위치를 얻은 뒤, 액터의 바닥이 목표 Z에 오도록 Z만 보정
-		ActualLocation.Z += TargetBottomZ - ViewportClient->GetObjViewerBottomZ(Actor);
-		Transform.SetLocation(ActualLocation);
-		Root->SetRelativeTransform(Transform);
-		ViewportClient->RefreshObjViewerCameraPivot(Actor);
-	}
-
-	FVector GetObjViewerDisplayedLocation(AActor* Actor, FEditorViewportClient* ViewportClient)
-	{
-		if (!Actor || !ViewportClient)
-		{
-			return FVector::ZeroVector;
-		}
-
-		if (USceneComponent* Root = Actor->GetRootComponent())
-		{
-			FVector DisplayLocation = Root->GetRelativeTransform().GetLocation();
-#if IS_OBJ_VIEWER
-			DisplayLocation.Z = ViewportClient->GetObjViewerBottomZ(Actor);
-#endif
-			return DisplayLocation;
-		}
-
-		return FVector::ZeroVector;
-	}
-
-	bool ReloadObjViewerMesh(FCore* Core, FEditorViewportClient* ViewportClient, const FObjImporter::FImportAxisMapping& ImportAxisMapping)
-	{
-		if (!Core || !ViewportClient || !GRenderer || !FObjImporter::IsValidImportAxisMapping(ImportAxisMapping))
-		{
-			UE_LOG("[ObjViewer] Reload failed: invalid reload context");
-			return false;
-		}
-
-		ULevel* Level = ViewportClient->ResolveLevel(Core);
-		if (!Level)
-		{
-			UE_LOG("[ObjViewer] Reload failed: level not available");
-			return false;
-		}
-
-		AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
-		if (!MeshActor)
-		{
-			UE_LOG("[ObjViewer] Reload failed: mesh actor not found");
-			return false;
-		}
-
-		UStaticMeshComponent* MeshComponent = MeshActor->GetStaticMeshComponent();
-		if (!MeshComponent)
-		{
-			UE_LOG("[ObjViewer] Reload failed: mesh component not found");
-			return false;
-		}
-
-		const FString AssetPath = MeshComponent->GetStaticMeshAsset();
-		if (AssetPath.empty())
-		{
-			UE_LOG("[ObjViewer] Reload failed: mesh asset path is empty");
-			return false;
-		}
-
-		USceneComponent* Root = MeshActor->GetRootComponent();
-		if (!Root)
-		{
-			UE_LOG("[ObjViewer] Reload failed: root component not found");
-			return false;
-		}
-
-		//아래 코드에서 cooked 경로를 구하고 기존 dasset를 삭제합니다.
-		//그 다음 FAssetCooker::SaveCookedStaticMesh(RenderData, AssetData.AssetPath, CookedPath);
-		const FString CookedPath = FAssetCooker::GetCookedPath(AssetPath);
-		const bool bCookedExists = std::filesystem::exists(std::filesystem::path(FPaths::ToWide(CookedPath)));
-		std::error_code Ec;
-		if (bCookedExists)
-		{
-			std::filesystem::remove(std::filesystem::path(FPaths::ToWide(CookedPath)), Ec);
-			if (Ec)
-			{
-				UE_LOG("[ObjViewer] Reload failed: could not delete cooked asset '%s' (%s)", CookedPath.c_str(), Ec.message().c_str());
-				return false;
-			}
-		}
-
-		const FTransform PreviousTransform = Root->GetRelativeTransform();
-		const FVector PreviousDisplayedLocation = GetObjViewerDisplayedLocation(MeshActor, ViewportClient);
-
-		FObjImporter::SetImportAxisMapping(ImportAxisMapping);
-		FAssetManager::Get().InvalidateStaticMesh(AssetPath);
-		FObjManager::ClearAssetCache(AssetPath);
-
-		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath);
-		if (!MeshComponent->GetStaticMesh() || !MeshComponent->GetMeshData())
-		{
-			UE_LOG("[ObjViewer] Reload failed: mesh load failed for '%s'", AssetPath.c_str());
-			return false;
-		}
-
-		Root->SetRelativeTransform(PreviousTransform);
-		SnapObjViewerActorBottomTo(MeshActor, ViewportClient, PreviousDisplayedLocation.Z);
-		Core->SetSelectedActor(MeshActor);
-		//SyncSelectedActorProperty();
-		ViewportClient->FrameObjViewerCamera(MeshActor, true);
-		UE_LOG("[ObjViewer] Reloaded mesh and rebuilt cooked asset: %s", AssetPath.c_str());
-		return true;
 	}
 
 	std::string GetFilePathUsingDialog(EFileDialogType Type)
@@ -414,14 +118,9 @@ void FEditorUI::Initialize(FCore* InCore, FWindowManager* InWindowManager)
 				Transform.SetRotation(FRotator::MakeFromEuler(Rot));
 				Transform.SetScale3D(Scl);
 
-#if IS_OBJ_VIEWER
-				Transform.SetLocation({ Loc.X, Loc.Y, Transform.GetLocation().Z });
+#if IS_OBJ_VIEWER //뷰어에서는 z를 실제 월드 위치가 아닌, 바닥면이 0이 되도록 보정한 위치로 설정합니다.
 				Root->SetRelativeTransform(Transform);
-
-				if (ActiveViewportClient)
-				{
-					SnapObjViewerActorBottomTo(Selected, ActiveViewportClient, Loc.Z);
-				}
+				ObjViewerPanel.ApplyDisplayedLocation(Selected, ActiveViewportClient, Loc);
 #else
 				Transform.SetLocation(Loc);
 				Root->SetRelativeTransform(Transform);
@@ -1057,239 +756,7 @@ void FEditorUI::Render()
 	}
 
 #if IS_OBJ_VIEWER //뷰어에서는 패널들 다 죽입니다
-	if (!Core)
-	{
-		return;
-	}
-	ULevel* Level = ActiveViewportClient ? ActiveViewportClient->ResolveLevel(Core) : Core->GetLevel();
-	if (!Level)
-	{
-		return;
-	}
-	AStaticMeshActor* MeshActor = FindObjViewerMeshActor(Level);
-	if (!MeshActor)
-	{
-		return;
-	}
-	UStaticMeshComponent* MeshComp = MeshActor->GetStaticMeshComponent();
-	if (!MeshComp)
-	{
-		return;
-	}
-
-	UStaticMesh* StaticMesh = MeshComp->GetStaticMesh();
-	if (!StaticMesh)
-	{
-		return;
-	}
-
-	FStaticMeshRenderData* MeshData = StaticMesh->GetStaticMeshAsset();
-	if (!MeshData)
-	{
-		return;
-	}
-	FMeshData* CPUData = MeshData->GetMeshData();
-	if (!CPUData)
-	{
-		return;
-	}
-	ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(350, 500), ImGuiCond_FirstUseEver);
-
-	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
-	if (ImGui::Begin("OBJ Information", nullptr, WindowFlags))
-	{
-		// 텍스트 색상 정의
-		ImVec4 HeaderColor = ImVec4(0.4f, 0.7f, 1.0f, 1.0f);
-		ImVec4 LabelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-		ImVec4 ValueColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-		static FString DraftAxisAssetPath;
-		static FObjImporter::FImportAxisMapping DraftImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
-		static FObjImporter::FImportAxisMapping LastAppliedImportAxisMapping = FObjImporter::MakeDefaultImportAxisMapping();
-		const FObjImporter::FImportAxisMapping AppliedImportAxisMapping = FObjImporter::GetImportAxisMapping();
-		const FString MeshAssetPath = MeshData->GetAssetPath();
-
-		const bool bAppliedAxisMappingChanged =
-			LastAppliedImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
-			LastAppliedImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-			LastAppliedImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ ||
-			!(std::fabs(LastAppliedImportAxisMapping.ImportScale - AppliedImportAxisMapping.ImportScale) <= ObjViewerImportScaleTolerance);
-		if (DraftAxisAssetPath != MeshAssetPath || bAppliedAxisMappingChanged)
-		{
-			DraftAxisAssetPath = MeshAssetPath;
-			DraftImportAxisMapping = AppliedImportAxisMapping;
-			LastAppliedImportAxisMapping = AppliedImportAxisMapping;
-		}
-
-		// 애셋 정보 섹션
-		if (ImGui::CollapsingHeader("Asset Information", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Indent();
-			ImGui::TextColored(LabelColor, "Path:");
-			ImGui::SameLine();
-			ImGui::TextWrapped("%s", MeshData->GetAssetPath().c_str());
-			ImGui::Unindent();
-		}
-
-		// 메시 통계 섹션
-		if (ImGui::CollapsingHeader("Mesh Statistics", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Indent();
-			auto StatRow = [&](const char* Label, int Value) {
-				ImGui::TextColored(LabelColor, "%s:", Label);
-				ImGui::SameLine(120);
-				ImGui::TextColored(ValueColor, "%d", Value);
-				};
-
-			StatRow("Vertices", (int)CPUData->Vertices.size());
-			StatRow("Indices", (int)CPUData->Indices.size());
-			StatRow("Triangles", (int)CPUData->Indices.size() / 3);
-			StatRow("Sections", (int)CPUData->Sections.size());
-			ImGui::Unindent();
-		}
-
-		// 바운딩 박스 섹션
-		if (ImGui::CollapsingHeader("Bounding Box", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Indent();
-			FVector Min = CPUData->GetMinCoord();
-			FVector Max = CPUData->GetMaxCoord();
-			FVector Center = CPUData->GetCenterCoord();
-
-			auto VectorRow = [&](const char* Label, const FVector& V) {
-				ImGui::TextColored(LabelColor, "%s:", Label);
-				ImGui::SameLine(80);
-				ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", V.X, V.Y, V.Z);
-				};
-
-			VectorRow("Min", Min);
-			VectorRow("Max", Max);
-			VectorRow("Center", Center);
-
-			ImGui::TextColored(LabelColor, "Size:");
-			ImGui::SameLine(80);
-			ImGui::TextColored(ValueColor, "(%.2f, %.2f, %.2f)", Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
-
-			ImGui::TextColored(LabelColor, "Radius:");
-			ImGui::SameLine(80);
-			ImGui::TextColored(ValueColor, "%.2f", CPUData->GetLocalBoundRadius());
-			ImGui::Unindent();
-		}
-
-		if (ImGui::CollapsingHeader("OBJ Axis Mapping", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Indent();
-			ImGui::TextColored(HeaderColor, "Applied");
-			ImGui::TextWrapped("%s", BuildImportAxisSummary(AppliedImportAxisMapping).c_str());
-			ImGui::SeparatorText("Draft");
-			const char* RowLabels[] = { "Engine X", "Engine Y", "Engine Z" };
-			const char* AxisBaseLabels[] = { "X", "Y", "Z" };
-			for (int RowIndex = 0; RowIndex < 3; ++RowIndex)
-			{
-				FObjImporter::EAxisDirection RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
-				ImGui::PushID(RowIndex);
-				ImGui::TextColored(LabelColor, "%s:", RowLabels[RowIndex]);
-				for (int AxisBaseIndex = 0; AxisBaseIndex < 3; ++AxisBaseIndex)
-				{
-					ImGui::SameLine(AxisBaseIndex == 0 ? 100.0f : 0.0f);
-					if (AxisBaseIndex > 0)
-					{
-						ImGui::SameLine();
-					}
-
-					const bool bSelectedBase = GetAxisBaseIndex(RowDirection) == AxisBaseIndex;
-					if (bSelectedBase)
-					{
-						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.45f, 0.85f, 1.0f));
-						ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.55f, 0.95f, 1.0f));
-						ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.40f, 0.80f, 1.0f));
-					}
-					if (ImGui::Button(AxisBaseLabels[AxisBaseIndex], ImVec2(28.0f, 0.0f)))
-					{
-						SetMappingAxisBase(DraftImportAxisMapping, RowIndex, AxisBaseIndex);
-						RowDirection = GetMappingAxisDirection(DraftImportAxisMapping, RowIndex);
-					}
-					if (bSelectedBase)
-					{
-						ImGui::PopStyleColor(3);
-					}
-				}
-
-				ImGui::SameLine();
-				const bool bNegative = IsAxisNegative(RowDirection);
-				//mesh의 축 방향이 음수인지 양수인지에 따라 버튼 색상을 다르게 칠해줍니다.
-				if (bNegative)
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.3f, 0.3f, 1.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.4f, 0.4f, 1.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.65f, 0.25f, 0.25f, 1.0f));
-				}
-				else
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.65f, 0.35f, 1.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.75f, 0.45f, 1.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
-				}
-				if (ImGui::Button(bNegative ? "-" : "+", ImVec2(28.0f, 0.0f)))
-				{
-					ToggleMappingAxisSign(DraftImportAxisMapping, RowIndex);
-				}
-				ImGui::PopStyleColor(3);
-				ImGui::SameLine();
-				ImGui::TextColored(ValueColor, "%s", GetAxisDirectionLabel(GetMappingAxisDirection(DraftImportAxisMapping, RowIndex)));
-				ImGui::PopID();
-			}
-
-				ImGui::TextColored(LabelColor, "Import Scale:");
-				ImGui::SameLine(100.0f);
-				ImGui::SetNextItemWidth(120.0f);
-				ImGui::DragFloat("##ImportScale", &DraftImportAxisMapping.ImportScale, 0.1f, 0.1f, 10.0f);
-
-				const bool bHasValidDraftScale = DraftImportAxisMapping.ImportScale > ObjViewerImportScaleTolerance;
-
-				const bool bHasPendingAxisChanges =
-					DraftImportAxisMapping.EngineX != AppliedImportAxisMapping.EngineX ||
-					DraftImportAxisMapping.EngineY != AppliedImportAxisMapping.EngineY ||
-					DraftImportAxisMapping.EngineZ != AppliedImportAxisMapping.EngineZ ||
-					!((std::fabs(DraftImportAxisMapping.ImportScale - AppliedImportAxisMapping.ImportScale) <= ObjViewerImportScaleTolerance));
-				
-				if (!bHasValidDraftScale)
-				{
-					ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.35f, 1.0f), "Import scale must be greater than 0.");
-				}
-				else if (bHasPendingAxisChanges)
-				{
-					ImGui::TextColored(ImVec4(0.95f, 0.8f, 0.35f, 1.0f), "Pending changes. Click Apply to reload.");
-				}
-				else
-			{
-				ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "Axis mapping is up to date.");
-			}
-
-				if (!bHasPendingAxisChanges || !bHasValidDraftScale)
-				{
-					ImGui::BeginDisabled();
-				}
-			if (ImGui::Button("Apply"))
-			{
-				if (ReloadObjViewerMesh(Core, ActiveViewportClient, DraftImportAxisMapping))
-				{
-					SyncSelectedActorProperty();
-					DraftAxisAssetPath = MeshAssetPath;
-					DraftImportAxisMapping = FObjImporter::GetImportAxisMapping();
-					LastAppliedImportAxisMapping = DraftImportAxisMapping;
-				}
-			}
-				if (!bHasPendingAxisChanges || !bHasValidDraftScale)
-				{
-					ImGui::EndDisabled();
-				}
-
-			ImGui::Unindent();
-		}
-
-		ImGui::End();
-	}
+	ObjViewerPanel.Render(Core, ActiveViewportClient, *this);
 #else
 	Property.Render(Core);
 	Console.Render();
@@ -1320,10 +787,10 @@ void FEditorUI::SyncSelectedActorProperty()
 		{
 			const FTransform Transform = Root->GetRelativeTransform();
 			FVector DisplayLocation = Transform.GetLocation();
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //프로퍼티 패널에서 액터의 위치를 나타낼 때, 바닥 기준 위치를 사용합니다.
 			if (ActiveViewportClient)
 			{
-				DisplayLocation = GetObjViewerDisplayedLocation(Selected, ActiveViewportClient);
+				DisplayLocation = ObjViewerPanel.GetDisplayedLocation(Selected, ActiveViewportClient);
 			}
 #endif
 			Property.SetTarget(

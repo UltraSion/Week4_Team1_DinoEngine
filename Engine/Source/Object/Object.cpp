@@ -1,6 +1,6 @@
 #include "Object/Object.h"
 #include "Object/Class.h"
-
+#include "Serializer/Archive.h"
 // 조건 1: 전역 오브젝트 배열 정의
 TArray<UObject*> GUObjectArray;
 
@@ -143,4 +143,19 @@ void UObject::MarkPendingKill()
 bool UObject::IsPendingKill() const
 {
 	return HasAnyFlags(EObjectFlags::PendingKill);
+}
+
+void UObject::Serialize(FArchive& Ar)
+{
+	if (Ar.IsSaving())
+	{
+		Ar.Serialize("Name", Name);
+	}
+	else // IsLoading
+	{
+		if (Ar.Contains("Name"))
+		{
+			Ar.Serialize("Name", Name);
+		}
+	}
 }

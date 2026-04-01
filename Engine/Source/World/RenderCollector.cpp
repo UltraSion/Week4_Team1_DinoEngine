@@ -54,7 +54,7 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 						Command.RenderLayer = ERenderLayer::Overlay;
 					}
 				
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 텍스트, 빌보드 렌더링을 막습니다.
 #else
 					const FVector WorldPos = TextComp->GetRenderWorldPosition();
 					const FVector Scale = TextComp->GetRenderWorldScale();
@@ -130,6 +130,8 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 				Command.IndexCount = Section.IndexCount;
 				Command.Material = MeshComp->GetMaterial(Section.MaterialIndex);
 				Command.WorldMatrix = MeshComp->GetWorldTransform();
+				if (Command.Material && Command.Material->GetBlendOption().BlendEnable)
+					Command.RenderLayer = ERenderLayer::Translucent;
 				OutQueue.AddCommand(Command);
 			}
 			continue;
@@ -144,6 +146,8 @@ void FLevelRenderCollector::CollectRenderCommands(const TArray<AActor*>& Actors,
 		Command.MeshData = PrimitiveComponent->GetPrimitive()->GetMeshData();
 		Command.WorldMatrix = PrimitiveComponent->GetWorldTransform();
 		Command.Material = PrimitiveComponent->GetMaterial();
+		if (Command.Material && Command.Material->GetBlendOption().BlendEnable)
+			Command.RenderLayer = ERenderLayer::Translucent;
 		OutQueue.AddCommand(Command);
 	}
 }

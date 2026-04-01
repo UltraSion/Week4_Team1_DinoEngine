@@ -7,6 +7,7 @@ class FMaterial;
 
 enum class ERenderLayer {
 	Default,
+	Translucent,
 	Overlay,
 	UI,
 };

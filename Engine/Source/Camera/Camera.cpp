@@ -5,7 +5,7 @@
 
 namespace
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 쓰는 orbit rotation에 쓰일 헬퍼.
 	constexpr float MinOrbitPitchDegrees = -89.0f;
 	constexpr float MaxOrbitPitchDegrees = 89.0f;
 
@@ -28,7 +28,7 @@ void FCamera::SetPosition(const FVector& InPosition)
 {
 	Position = InPosition;
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //orbit rotate이므로 위치를 직접 바꿨을 때 orbit 거리와 yaw / pitch를 다시 계산합니다
 	OrbitDistance = (Position - OrbitTarget).Size();
 	if (OrbitDistance <= 0.0f)
 	{
@@ -75,7 +75,7 @@ void FCamera::SetRotation(float InYaw, float InPitch)
 	Yaw = InYaw;
 	Pitch = InPitch;
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //orbit rotate이므로 회전값을 직접 바꿨을 때 orbit 거리와 yaw / pitch를 다시 계산합니다
 	Yaw = NormalizeAngleDegrees(Yaw);
 	Pitch = std::clamp(Pitch, MinOrbitPitchDegrees, MaxOrbitPitchDegrees);
 
@@ -121,7 +121,7 @@ FVector FCamera::GetRight() const
 
 void FCamera::MoveForward(float Delta)
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 orbit rotate이므로 foward가 아닌 orbit 거리를 조정하는 방식입니다.
 	//OrbitDistance을 업데이트해줍니다.
 	if (OrbitDistance <= 0.0f)
 	{
@@ -133,6 +133,7 @@ void FCamera::MoveForward(float Delta)
 	}
 
 	//카메라가 물체에 너무 붙지 않게 제한합니다.
+	//너무 붙으면 카메라가 뒤집어질 수 있습니다.
 	OrbitDistance = (std::max)(0.01f, OrbitDistance - (Delta * Speed));
 	Position = OrbitTarget - GetForward() * OrbitDistance;
 	return;
@@ -157,9 +158,8 @@ void FCamera::OffsetPosition(const FVector& Delta)
 {
 	Position = Position + Delta;
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //카메라를 평행이동하면	orbit target 좌표도 같이 움직여 줍니다.
 	OrbitTarget = OrbitTarget + Delta;
-#else
 #endif
 }
 
@@ -195,7 +195,7 @@ void FCamera::Rotate(float DeltaYaw, float DeltaPitch)
 
 FMatrix FCamera::GetViewMatrix() const
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //orbit rotate중인 물체를 이용해 view matrix를 계산합니다.
 	FVector Target = OrbitTarget;
 #else
 	FVector Target = Position + GetForward();

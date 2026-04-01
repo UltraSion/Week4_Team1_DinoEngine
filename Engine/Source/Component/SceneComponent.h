@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "ActorComponent.h"
 
+class FArchive;
 class ENGINE_API USceneComponent : public UActorComponent
 {
 public:
@@ -20,7 +21,7 @@ public:
 	void DetachFromParent();
 	FVector GetWorldLocation() const;
 	const FMatrix& GetWorldTransform() const;
-
+	virtual void Serialize(class FArchive& Ar) override;
 private:
 	void MarkTransformDirty();
 	void UpdateWorldTransform() const;

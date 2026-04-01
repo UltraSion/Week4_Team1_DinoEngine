@@ -138,7 +138,7 @@ void FEditorViewportClient::Attach(FCore* Core)
 	SolidWireFrameFillMaterial = FMaterialManager::Get().FindByName(SolidWireframeFillMaterialName);
 	SolidWireFrameLineMaterial = FMaterialManager::Get().FindByName(SolidWireframeLineMaterialName);
 	CreateGridResource(GRenderer);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서 보여줄 normal과 uv를 준비합니다
 	CreateViewerDebugMaterials(GRenderer);
 #endif
 }
@@ -628,7 +628,7 @@ void FEditorViewportClient::HandleMessage(FCore* Core, HWND Hwnd, UINT Msg, WPAR
 	case WM_KEYUP:
 		OnKeyUp(WParam, LParam);
 		return;
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서만 사용하는 더블클릭입니다
 	case WM_LBUTTONDBLCLK:
 		ResetCameraToInitialState();
 		return;
@@ -672,7 +672,7 @@ void FEditorViewportClient::Tick(float DeltaTime)
 {
 	FViewportClient::Tick(DeltaTime);
 	CameraFunctionManager.Tick(DeltaTime);
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //더블클릭으로 카메라 위치를 초기화합니다.
 	if (!bResetCameraAnimating || !bHasInitialCameraState)
 	{
 		return;
@@ -700,8 +700,6 @@ void FEditorViewportClient::Tick(float DeltaTime)
 		bResetCameraAnimating = false;
 		ResetAnimationElapsed = 0.0f;
 	}
-#else
-	(void)DeltaTime;
 #endif
 }
 
@@ -754,7 +752,7 @@ float FEditorViewportClient::GetObjViewerBottomZ(AActor* TargetActor) const
 
 void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 orbit rotate를 하므로 pivot을 대상의 중심으로 맞춰줍니다
 	if (!TargetActor)
 	{
 		TargetActor = GetSelectedActor();
@@ -770,13 +768,11 @@ void FEditorViewportClient::RefreshObjViewerCameraPivot(AActor* TargetActor)
 		CameraTransform.SetOrbitTarget(PrimitiveComponent->GetWorldBounds().Center);
 	}
 #else
-	(void)TargetActor;
 #endif
 }
 
 void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSaveInitialState)
 {
-#if IS_OBJ_VIEWER
 	if (!TargetActor)
 	{
 		return;
@@ -804,10 +800,6 @@ void FEditorViewportClient::FrameObjViewerCamera(AActor* TargetActor, bool bSave
 	{
 		SaveInitialCameraState();
 	}
-#else
-	(void)TargetActor;
-	(void)bSaveInitialState;
-#endif
 }
 
 bool FEditorViewportClient::CanUseEditingTools(FCore* Core, ULevel*& OutLevel, UWorld*& OutWorld) const
@@ -863,7 +855,7 @@ void FEditorViewportClient::HandleEditorHotkeys(WPARAM WParam, bool bRightMouseD
 
 void FEditorViewportClient::HandleSelectionClick(FCore* Core, UWorld* World, AActor* SelectedActor)
 {
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 차단되는 기능
 	return;
 #endif
 
@@ -1221,7 +1213,7 @@ void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (!Core || !GRenderer || !FilePath.ends_with(".obj"))
+	if (!Core || !GRenderer || (!FilePath.ends_with(".obj") && !FilePath.ends_with(".dasset")))
 	{
 		return;
 	}
@@ -1242,19 +1234,16 @@ void FEditorViewportClient::HandleFileDropOnViewport(const FString& FilePath)
 		if (USceneComponent* Root = MeshActor->GetRootComponent())
 		{
 			FTransform Transform = Root->GetRelativeTransform();
-			Transform.SetLocation(SpawnLocation);
+			FVector FinalLocation = SpawnLocation;;
+#if IS_OBJ_VIEWER //뷰어에서만 높이(Z) 보정값을 추가 계산
+			FinalLocation.Z -= GetObjViewerBottomZ(MeshActor);
+#endif
+			Transform.SetLocation(FinalLocation);
 			Root->SetRelativeTransform(Transform);
 		}
-#if IS_OBJ_VIEWER
+
+#if IS_OBJ_VIEWER //파일에 대해 자동으로 pivot을 업데이트합니다.
 		Core->SetSelectedActor(MeshActor);
-		if (USceneComponent* Root = MeshActor->GetRootComponent())
-		{
-			FTransform Transform = Root->GetRelativeTransform();
-			FVector Location = Transform.GetLocation();
-			Location.Z -= GetObjViewerBottomZ(MeshActor);
-			Transform.SetLocation(Location);
-			Root->SetRelativeTransform(Transform);
-		}
 		RefreshObjViewerCameraPivot(MeshActor);
 		FrameObjViewerCamera(MeshActor, true);
 #else
@@ -1324,7 +1313,7 @@ void FEditorViewportClient::BuildRenderCommands(TArray<AActor*>& InActors, FRend
 		}
 	}
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 강제로 Cull None을 적용합니다
 	for (FRenderCommand& Command : OutQueue.Commands)
 	{
 		if (Command.RenderLayer != ERenderLayer::Overlay)
@@ -1361,7 +1350,7 @@ void FEditorViewportClient::PostRender(FCore* Core, FRenderer* Renderer)
 
 	Core->RenderStatOverlay(Renderer, GetViewportWidth(), GetViewportHeight());
 
-#if IS_OBJ_VIEWER
+#if IS_OBJ_VIEWER //뷰어에서는 하이라이트도 띄우지 않습니다.
 	return;
 #endif
 
@@ -1591,7 +1580,6 @@ FMatrix FEditorViewportClient::GetGridWorldMatrix() const
 	FMatrix Rotation;
 	FVector Scale = FVector::OneVector;
 	int32 Interval = 10;
-	float distance = CameraTransform.GetPosition().X;
 
 	FVector CameraLocation = CameraTransform.GetPosition();
 	switch (CameraViewType)

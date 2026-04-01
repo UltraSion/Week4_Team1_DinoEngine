@@ -120,7 +120,7 @@ public:
 
 	void MarkPendingKill();
 	bool IsPendingKill() const;
-
+	virtual void Serialize(class FArchive& Ar);
 private:
 	FString      Name;
 	UObject* Outer = nullptr;

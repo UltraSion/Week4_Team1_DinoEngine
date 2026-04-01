@@ -8,6 +8,7 @@ struct ID3D11Device;
 struct FMeshData;
 struct FMeshSection;
 struct FBoxSphereBounds;
+class FArchive;
 class ENGINE_API UMeshComponent : public UPrimitiveComponent
 {
 	DECLARE_RTTI(UMeshComponent, UPrimitiveComponent)
@@ -22,6 +23,7 @@ class ENGINE_API UMeshComponent : public UPrimitiveComponent
 
 
 	virtual FBoxSphereBounds GetWorldBounds() const;
+	virtual void Serialize(FArchive& Ar) override;
 protected:
 
 	TArray<FMaterial*> OverrideMaterials;

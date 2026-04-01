@@ -84,7 +84,7 @@ void FPrimitiveObj::LoadObj(const FString& FilePath)
 		return;
 	}
 
-	std::ifstream File(FPaths::ToAbsolutePath(FilePath));
+	std::ifstream File(FPaths::ToWide(FPaths::ToAbsolutePath(FilePath)));
 	if (!File.is_open())
 	{
 		printf("[OBJ] Failed to open: %s\n", FilePath.c_str());

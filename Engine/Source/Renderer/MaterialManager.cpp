@@ -216,7 +216,32 @@ std::shared_ptr<FMaterial> FMaterialManager::LoadFromFile(
 		Mat->SetDepthStencilOption(depthStencilOption);
 		Mat->SetDepthStencilState(DepthStencilState);
 
-		// DepthBias 등의 추가 옵션을 지원하려면 여기에 추가
+		FBlendStateOption blendOption;
+		blendOption.BlendEnable = false;
+		blendOption.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendOption.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendOption.BlendOp = D3D11_BLEND_OP_ADD;
+		blendOption.SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendOption.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+		blendOption.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		if (RenderStatesJson.contains("BlendEnable"))
+			blendOption.BlendEnable = RenderStatesJson["BlendEnable"].get<bool>();
+		if (RenderStatesJson.contains("SrcBlend"))
+			blendOption.SrcBlend = RenderStatesJson["SrcBlend"].get<D3D11_BLEND>();
+		if (RenderStatesJson.contains("DestBlend"))
+			blendOption.DestBlend = RenderStatesJson["DestBlend"].get<D3D11_BLEND>();
+		if (RenderStatesJson.contains("BlendOp"))
+			blendOption.BlendOp = RenderStatesJson["BlendOp"].get<D3D11_BLEND_OP>();
+		if (RenderStatesJson.contains("SrcBlendAlpha"))
+			blendOption.SrcBlendAlpha = RenderStatesJson["SrcBlendAlpha"].get<D3D11_BLEND>();
+		if (RenderStatesJson.contains("DestBlendAlpha"))
+			blendOption.DestBlendAlpha = RenderStatesJson["DestBlendAlpha"].get<D3D11_BLEND>();
+		if (RenderStatesJson.contains("BlendOpAlpha"))
+			blendOption.BlendOpAlpha = RenderStatesJson["BlendOpAlpha"].get<D3D11_BLEND_OP>();
+
+		auto BlendState = InStateManager->GetOrCreateBlendState(blendOption);
+		Mat->SetBlendOption(blendOption);
+		Mat->SetBlendState(BlendState);
 	}
 
 	// 상수 버퍼 로드
