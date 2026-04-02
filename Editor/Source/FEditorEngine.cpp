@@ -52,21 +52,23 @@ namespace
 
 	FString PromptForObjFilePath()
 	{
-		char FileName[MAX_PATH] = "";
-		const FString MeshDir = FPaths::MeshDir().string();
+		wchar_t FileName[MAX_PATH] = L"";
+		const std::wstring MeshDir = FPaths::MeshDir().wstring();
+		static constexpr wchar_t FileFilter[] =
+			L"Mesh Files (*.obj;*.dasset)\0*.obj;*.dasset\0OBJ Files (*.obj)\0*.obj\0DinoAsset Files (*.dasset)\0*.dasset\0All Files (*.*)\0*.*\0\0";
 
-		OPENFILENAMEA Ofn = {};
-		Ofn.lStructSize = sizeof(OPENFILENAMEA);
-		Ofn.lpstrFilter = "Mesh Files (*.obj;*.dasset)\0*.obj;*.dasset\0OBJ Files (*.obj)\0*.obj\0DinoAsset Files (*.dasset)\0*.dasset\0All Files (*.*)\0*.*\0";
+		OPENFILENAMEW Ofn = {};
+		Ofn.lStructSize = sizeof(OPENFILENAMEW);
+		Ofn.lpstrFilter = FileFilter;
 		Ofn.lpstrFile = FileName;
 		Ofn.nMaxFile = MAX_PATH;
-		Ofn.lpstrDefExt = "obj";
+		Ofn.lpstrDefExt = L"obj";
 		Ofn.lpstrInitialDir = MeshDir.c_str();
 		Ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-		if (GetOpenFileNameA(&Ofn))
+		if (GetOpenFileNameW(&Ofn))
 		{
-			return FString(FileName);
+			return FPaths::ToString(FileName);
 		}
 
 		return "";
@@ -271,7 +273,8 @@ void FEditorEngine::RunObjViewerStartupTest()
 		return;
 	}
 
-	const std::filesystem::path AssetPath = FPaths::ToAbsolutePath(SelectedPath);
+	const FString AbsoluteAssetPath = FPaths::ToAbsolutePath(SelectedPath);
+	const std::filesystem::path AssetPath(FPaths::ToWide(AbsoluteAssetPath));
 	const std::filesystem::path Extension = AssetPath.extension();
 	if (!std::filesystem::exists(AssetPath) || (Extension != ".obj" && Extension != ".OBJ" && Extension != ".dasset"))
 	{
@@ -290,7 +293,7 @@ void FEditorEngine::RunObjViewerStartupTest()
 	AStaticMeshActor* MeshActor = Level->SpawnActor<AStaticMeshActor>("ObjViewerMesh");
 	if (MeshActor)
 	{
-		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AssetPath.string());
+		MeshActor->LoadStaticMesh(GRenderer->GetDevice(), AbsoluteAssetPath);
 		Core->SetSelectedActor(MeshActor);
 	}
 	EditorUI.SyncSelectedActorProperty();
