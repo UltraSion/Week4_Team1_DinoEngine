@@ -44,6 +44,7 @@ void FAssetRegistry::SearchAllAssets(const FString& RootDir)
 			if (Ext == ".dasset") Data.AssetClass = "StaticMesh";
 			else if (Ext == ".png" || Ext == ".jpg" || Ext == ".jpeg") Data.AssetClass = "Texture";
 			else if (Ext == ".json") Data.AssetClass = "Material";
+			else if (Ext == ".scene") Data.AssetClass = "Scene";
 			else Data.AssetClass = "Unknown";
 
 			// 대소문자 무시 검색을 위해 Key를 소문자로 저장

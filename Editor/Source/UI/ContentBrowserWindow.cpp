@@ -158,7 +158,7 @@ void FContentBrowserWindow::DrawGridItem(const std::filesystem::directory_entry&
 		std::string Ext = Path.extension().string();
 		std::ranges::transform(Ext, Ext.begin(), [](unsigned char c) { return std::tolower(c); });
 
-		if (Ext != ".json" && Ext != ".dasset" && Ext != ".png" && Ext != ".jpg" && Ext != ".jpeg")
+		if (Ext != ".json" && Ext != ".scene" && Ext != ".dasset" && Ext != ".png" && Ext != ".jpg" && Ext != ".jpeg")
 		{
 			return; // 지원하지 않는 포맷은 건너뜀
 		}

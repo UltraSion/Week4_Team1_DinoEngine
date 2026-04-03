@@ -1366,7 +1366,8 @@ EEditorViewportType FEditorViewportClient::GetOrthoViewTypeFromViewportType(EEdi
 void FEditorViewportClient::HandleFileDoubleClick(const FString& FilePath)
 {
 	FCore* Core = EditorUI.GetCore();
-	if (!Core || !GRenderer || !FilePath.ends_with(".json"))
+	const bool bIsSceneFile = FilePath.ends_with(".json") || FilePath.ends_with(".scene");
+	if (!Core || !GRenderer || !bIsSceneFile)
 	{
 		return;
 	}
